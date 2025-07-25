@@ -1,1 +1,232 @@
+/* RESET & BASE */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
+    transition: background 0.3s, color 0.3s;
+}
+body {
+    background: #121212;
+    color: #fff;
+}
+.light-mode {
+    background: #f9f9f9;
+    color: #121212;
+}
+
+/* HEADER */
+header {
+    position: relative;
+    height: 40vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+header .splash-bg {
+    width: 120%;
+    filter: blur(10px);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0.6;
+}
+header .overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.4);
+}
+.header-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+}
+.header-content h1 {
+    font-size: 3rem;
+    margin-top: 10px;
+}
+.header-content p {
+    font-size: 1.2rem;
+    color: #bbb;
+}
+.logo {
+    width: 80px;
+}
+
+/* HAMBURGER */
+.hamburger {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    font-size: 30px;
+    cursor: pointer;
+    z-index: 3;
+    color: #fff;
+}
+
+/* THEME TOGGLE */
+.theme-toggle {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #fff;
+}
+.light-mode .theme-toggle {
+    color: #121212;
+}
+
+/* SIDE NAV */
+.side-nav {
+    height: 100%;
+    width: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background: #1f1f1f;
+    overflow-x: hidden;
+    transition: 0.4s;
+    padding-top: 60px;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.side-nav button {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 18px;
+    margin: 15px 0;
+    cursor: pointer;
+    transition: 0.3s;
+}
+.side-nav button:hover {
+    color: #00d4ff;
+}
+.side-nav .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 30px;
+    text-decoration: none;
+    color: #fff;
+}
+.menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: none;
+    z-index: 4;
+}
+
+/* TAB CONTENT */
+#tab-content {
+    padding: 30px 20px;
+    max-width: 900px;
+    margin: auto;
+    text-align: center;
+}
+.tab-panel {
+    display: none;
+    animation: fadeIn 0.5s;
+}
+.tab-panel.active {
+    display: block;
+}
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* HOME HIGHLIGHTS */
+.highlights {
+    margin-top: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+.highlight {
+    font-size: 20px;
+    padding: 12px;
+    background: #1f1f1f;
+    border-radius: 8px;
+    opacity: 0;
+    position: relative;
+}
+.highlight.left {
+    transform: translateX(-100%);
+}
+.highlight.right {
+    transform: translateX(100%);
+}
+.highlight.visible {
+    opacity: 1;
+    transform: translateX(0);
+    transition: all 0.8s ease-out;
+}
+.light-mode .highlight {
+    background: #e0e0e0;
+    color: #121212;
+}
+
+/* DOWNLOAD BUTTONS */
+.download-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+.btn {
+    background: #00d4ff;
+    color: #121212;
+    padding: 12px 20px;
+    text-decoration: none;
+    font-weight: bold;
+    border-radius: 6px;
+    transition: 0.3s;
+}
+.btn:hover {
+    background: #009ec7;
+}
+
+/* SUPPORT */
+.gmail-icon {
+    width: 24px;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+.support-link {
+    display: inline-block;
+    color: #fff;
+    font-size: 18px;
+    margin-top: 10px;
+}
+.light-mode .support-link {
+    color: #121212;
+}
+
+/* FOOTER */
+footer {
+    padding: 15px;
+    background: #1f1f1f;
+    margin-top: 40px;
+    font-size: 14px;
+    text-align: center;
+}
+footer a {
+    color: #00d4ff;
+    text-decoration: none;
+}
+.light-mode footer {
+    background: #e0e0e0;
+}
 /* CSS from previous step (same as before) */
