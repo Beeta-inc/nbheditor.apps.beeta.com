@@ -214,6 +214,13 @@ header .overlay {
     color: #121212;
 }
 
+/* MOTTO STYLING */
+.motto {
+    color: #00d4ff;
+    font-weight: bold;
+    font-style: italic;
+}
+
 /* FOOTER */
 footer {
     padding: 15px;
@@ -228,5 +235,4 @@ footer a {
 }
 .light-mode footer {
     background: #e0e0e0;
-}
-/* CSS from previous step (same as before) */
+    }
