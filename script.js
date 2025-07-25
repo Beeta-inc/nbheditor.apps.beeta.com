@@ -52,13 +52,20 @@ if (localStorage.getItem('theme') === 'light') {
 
 // Scroll Animation for Highlights
 const highlights = document.querySelectorAll('.highlight');
-window.addEventListener('scroll', () => {
-    const triggerBottom = window.innerHeight / 1.2;
+
+function checkHighlights() {
+    const triggerBottom = window.innerHeight / 1.1; // more aggressive for mobile
     highlights.forEach(highlight => {
         const rect = highlight.getBoundingClientRect();
         if (rect.top < triggerBottom) {
             highlight.classList.add('visible');
         }
     });
-});
+}
+
+// Run on scroll
+window.addEventListener('scroll', checkHighlights);
+
+// Run on page load (important for mobile)
+window.addEventListener('load', checkHighlights);
 // JS from previous step (same as before)
