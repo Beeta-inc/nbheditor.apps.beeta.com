@@ -1,111 +1,92 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NbhEditor - Fast. Simple. Linux Native.</title>
-<link rel="icon" href="./assets/logo-beeta.png" type="image/png">
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="./style.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NbhEditor - Modern Linux Native Editor</title>
+  <link rel="stylesheet" href="./style.css" />
+  <link rel="icon" href="./assets/logo-beeta.png" type="image/png" />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&family=Manrope:wght@400;600&display=swap" rel="stylesheet" />
 </head>
 <body>
+  <div class="theme-toggle" id="themeToggle" title="Toggle Theme">🌙</div>
 
-<!-- HEADER -->
-<header>
-    <div class="overlay"></div>
-    <img src="./assets/splash.png" alt="NbhEditor Splash" class="splash-bg">
-    <div class="header-content">
-        <img src="./assets/logo-beeta.png" alt="NbhEditor Logo" class="logo">
-        <h1>NbhEditor</h1>
-        <p>Fast. Simple. Linux Native.</p>
+  <!-- HERO SECTION -->
+  <header class="hero-section">
+    <div class="hero-overlay"></div>
+    <img src="./assets/splash.png" alt="Background" class="hero-bg" />
+    <div class="hero-content">
+      <img src="./assets/logo-beeta.png" alt="NbhEditor Logo" class="hero-logo" />
+      <h1>NbhEditor</h1>
+      <p class="tagline">Fast. Simple. Linux Native.</p>
+      <p class="built-with"><img src="./assets/java-logo.png" alt="Java Logo" class="java-icon" /> Built with Java</p>
+      <div class="cta-buttons">
+        <a href="#download" class="btn">Download</a>
+        <a href="#features" class="btn btn-outline">Learn More</a>
+      </div>
     </div>
+  </header>
 
-    <!-- Hamburger Menu -->
-    <div class="hamburger" id="hamburger">&#9776;</div>
+  <!-- NAVIGATION -->
+  <nav class="main-nav" id="navbar">
+    <div class="hamburger" id="hamburger">☰</div>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#about-editor">About</a></li>
+      <li><a href="#about-beeta">About Beeta</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#download">Download</a></li>
+      <li><a href="#support">Support</a></li>
+    </ul>
+  </nav>
 
-    <!-- Theme Toggle -->
-    <div class="theme-toggle" id="themeToggle" title="Toggle Theme">🌙</div>
-</header>
+  <main>
+    <!-- ABOUT NBHEDITOR -->
+    <section id="about-editor" class="section fade-in">
+      <h2>About NbhEditor</h2>
+      <p>NbhEditor is a sleek, lightning-fast Linux-native text editor powered by JavaFX. Built for developers who value simplicity, speed, and efficiency.</p>
+    </section>
 
-<!-- Side Navigation -->
-<nav class="side-nav" id="sideNav">
-    <a href="#" class="close-btn" id="closeBtn">&times;</a>
-    <button class="tab-btn active" data-tab="home">Home</button>
-    <button class="tab-btn" data-tab="about-editor">About NbhEditor</button>
-    <button class="tab-btn" data-tab="about-beeta">About Beeta</button>
-    <button class="tab-btn" data-tab="features">Features</button>
-    <button class="tab-btn" data-tab="download">Download</button>
-    <button class="tab-btn" data-tab="support">Support</button>
-</nav>
-<div class="menu-overlay" id="menuOverlay"></div>
+    <!-- ABOUT BEETA -->
+    <section id="about-beeta" class="section fade-in">
+      <h2>About Beeta</h2>
+      <p>Beeta is an open-source Linux OS. Its motto is <span class="motto">"Made For Human"</span>. It features Beeta AI, a Copilot-like intelligent assistant that helps with everything from installation to daily productivity tasks.</p>
+    </section>
 
-<!-- MAIN CONTENT -->
-<section id="tab-content">
-    <!-- HOME -->
-    <div class="tab-panel active" id="home">
-        <h2>Welcome to NbhEditor</h2>
-        <p>Your lightweight, Linux-native text editor built for simplicity and speed.</p>
-        <div class="highlights">
-            <div class="highlight left">✔ Linux Native</div>
-            <div class="highlight right">✔ Auto-Save & Recovery</div>
-            <div class="highlight left">✔ Modern JavaFX UI</div>
-            <div class="highlight right">✔ Lightweight & Fast</div>
-        </div>
-    </div>
+    <!-- FEATURES -->
+    <section id="features" class="section fade-in features-grid">
+      <h2>Core Features</h2>
+      <div class="feature-card">🧠 AI-Assisted Editing</div>
+      <div class="feature-card">⚡ Lightning Fast</div>
+      <div class="feature-card">🌙 Dark & Light Theme</div>
+      <div class="feature-card">🧩 Plugin Ready</div>
+    </section>
 
-    <!-- About NbhEditor -->
-    <div class="tab-panel" id="about-editor">
-        <h2>About NbhEditor</h2>
-        <p>NbhEditor is designed for Linux users who need a fast, modern text editor with auto-save, customizable themes, and a smooth JavaFX interface.</p>
-    </div>
+    <!-- DOWNLOAD -->
+    <section id="download" class="section fade-in">
+      <h2>Download NbhEditor</h2>
+      <div class="download-buttons">
+        <a href="#" class="btn">Linux AMD64</a>
+        <a href="#" class="btn">Linux x86</a>
+        <a href="#" class="btn">Linux ARM64</a>
+        <a href="#" class="btn">Linux ARM32</a>
+      </div>
+    </section>
 
-    <!-- About Beeta -->
-    <div class="tab-panel" id="about-beeta">
-        <h2>About Beeta</h2>
-        <p>Beeta is an open-source Linux operating system. Its motto is 
-            <span class="motto">"Made For Human"</span>.
-        </p>
-        <p>It features <strong>Beeta AI</strong>, an intelligent assistant similar to GitHub Copilot, but built for Linux. 
-           Beeta AI helps you with everything—from installation to day-to-day tasks.</p>
-    </div>
+    <!-- SUPPORT -->
+    <section id="support" class="section fade-in">
+      <h2>Support</h2>
+      <p>Need help? Contact us:</p>
+      <a href="mailto:beeta.main@gmail.com" class="support-link">
+        <img src="./assets/gmail-icon.png" alt="Email" class="gmail-icon" /> beeta.main@gmail.com
+      </a>
+    </section>
+  </main>
 
-    <!-- Features -->
-    <div class="tab-panel" id="features">
-        <h2>Features</h2>
-        <ul>
-            <li>✔ Auto-Save & Recovery</li>
-            <li>✔ Modern JavaFX UI</li>
-            <li>✔ Lightweight & Optimized for Linux</li>
-            <li>✔ Customizable Themes</li>
-        </ul>
-    </div>
+  <!-- FOOTER -->
+  <footer class="footer">
+    <p>© 2025 Beeta ® | <img src="./assets/java-logo.png" alt="Java Logo" class="java-footer-icon" /> Powered by Java</p>
+  </footer>
 
-    <!-- Download -->
-    <div class="tab-panel" id="download">
-        <h2>Download NbhEditor</h2>
-        <div class="download-buttons">
-            <a href="#" class="btn">Linux AMD64</a>
-            <a href="#" class="btn">Linux x86</a>
-            <a href="#" class="btn">Linux ARM64</a>
-            <a href="#" class="btn">Linux ARM32</a>
-        </div>
-    </div>
-
-    <!-- Support -->
-    <div class="tab-panel" id="support">
-        <h2>Support</h2>
-        <p>Need help? Contact us:</p>
-        <a href="mailto:beeta.main@gmail.com" class="support-link">
-            <img src="./assets/gmail-icon.png" alt="Email" class="gmail-icon"> beeta.main@gmail.com
-        </a>
-    </div>
-</section>
-
-<!-- FOOTER -->
-<footer>
-    <p>© 2025 Beeta ® | <a href="#">GitHub</a></p>
-</footer>
-
-<script src="./script.js"></script>
+  <script src="./script.js"></script>
 </body>
 </html>
