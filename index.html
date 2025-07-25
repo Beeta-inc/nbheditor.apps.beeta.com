@@ -4,25 +4,30 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NbhEditor - Fast. Simple. Linux Native.</title>
-<link rel="icon" href="assets/logo-beeta.png" type="image/png">
+<link rel="icon" href="./assets/logo-beeta.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="./style.css">
 </head>
 <body>
 
+<!-- HEADER -->
 <header>
     <div class="overlay"></div>
-    <img src="assets/splash.png" alt="NbhEditor Splash" class="splash-bg">
+    <img src="./assets/splash.png" alt="NbhEditor Splash" class="splash-bg">
     <div class="header-content">
-        <img src="assets/logo-beeta.png" alt="NbhEditor Logo" class="logo">
+        <img src="./assets/logo-beeta.png" alt="NbhEditor Logo" class="logo">
         <h1>NbhEditor</h1>
         <p>Fast. Simple. Linux Native.</p>
     </div>
 
+    <!-- Hamburger Menu -->
     <div class="hamburger" id="hamburger">&#9776;</div>
+
+    <!-- Theme Toggle -->
     <div class="theme-toggle" id="themeToggle" title="Toggle Theme">🌙</div>
 </header>
 
+<!-- Side Navigation -->
 <nav class="side-nav" id="sideNav">
     <a href="#" class="close-btn" id="closeBtn">&times;</a>
     <button class="tab-btn active" data-tab="home">Home</button>
@@ -34,7 +39,9 @@
 </nav>
 <div class="menu-overlay" id="menuOverlay"></div>
 
+<!-- MAIN CONTENT -->
 <section id="tab-content">
+    <!-- HOME -->
     <div class="tab-panel active" id="home">
         <h2>Welcome to NbhEditor</h2>
         <p>Your lightweight, Linux-native text editor built for simplicity and speed.</p>
@@ -46,16 +53,19 @@
         </div>
     </div>
 
+    <!-- About NbhEditor -->
     <div class="tab-panel" id="about-editor">
         <h2>About NbhEditor</h2>
         <p>NbhEditor is designed for Linux users who need a fast, modern text editor with auto-save, customizable themes, and a smooth JavaFX interface.</p>
     </div>
 
+    <!-- About Beeta -->
     <div class="tab-panel" id="about-beeta">
         <h2>About Beeta</h2>
         <p>Beeta is the creative force behind NbhEditor, focused on delivering powerful and user-friendly tools for Linux enthusiasts.</p>
     </div>
 
+    <!-- Features -->
     <div class="tab-panel" id="features">
         <h2>Features</h2>
         <ul>
@@ -66,6 +76,7 @@
         </ul>
     </div>
 
+    <!-- Download -->
     <div class="tab-panel" id="download">
         <h2>Download NbhEditor</h2>
         <div class="download-buttons">
@@ -76,19 +87,21 @@
         </div>
     </div>
 
+    <!-- Support -->
     <div class="tab-panel" id="support">
         <h2>Support</h2>
         <p>Need help? Contact us:</p>
         <a href="mailto:beeta.main@gmail.com" class="support-link">
-            <img src="assets/gmail-icon.png" alt="Email" class="gmail-icon"> beeta.main@gmail.com
+            <img src="./assets/gmail-icon.png" alt="Email" class="gmail-icon"> beeta.main@gmail.com
         </a>
     </div>
 </section>
 
+<!-- FOOTER -->
 <footer>
     <p>© 2025 Beeta ® | <a href="#">GitHub</a></p>
 </footer>
 
-<script src="script.js"></script>
+<script src="./script.js"></script>
 </body>
 </html>
