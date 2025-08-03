@@ -301,4 +301,9 @@ h2 {
   .hamburger {
     display: block;
   }
-    
+  @media (min-width: 769px) {
+  .nav-links {
+    display: flex !important;
+  }
+}
+  
