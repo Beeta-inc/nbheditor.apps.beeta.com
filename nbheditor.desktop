@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Terminal=false
+Encoding=UTF-8
+Version=1.1
+Name=NBHEditor
+StartupWMClass=NBHeditor
+Exec=gnome-terminal -- sh -c  "$HOME/Downloads/nbheditor/nbheditorstart.sh"
+Categories=Development;IDE;
+Icon=/usr/share/applications/Icon.png

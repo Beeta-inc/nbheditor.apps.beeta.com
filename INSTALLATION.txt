@@ -1,0 +1,50 @@
+Software Name : Noywrit Editor
+Lisence : Based on GPLv2 lisense. No One should use it for any commersial purpose.
+minimum specs needed---------------------------
+i)  processor- AMD Athlon or Intel Core2 duo processor or any 64bit architecture CPU 
+ii) ram- 200 mb to 400 mb
+iii) os- All linux OS(Specially ubuntu) now any linux os
+iv) gpu- Above processor integrated gpu is enough
+v) Storage- 800mb
+
+
+How to Install--------------------
+step 1 : run the nbheditor_install.sh file in terminal
+step2 : while installation the installer will ask to give your sudo password
+
+
+How to remove -------------------------
+
+step 1 : run the nbheditor_uninstaller.sh file in SUDO or ROOT ONLY
+
+
+
+How to install in other linux------------------
+
+step 1 : Install java jdk minimum 17
+step 2 : start the installer
+
+
+
+NOTE : ARM cpu is not compatible
+       Please do not mske it run in Windows
+       It dose not contain any virus as checked. It is never been   run on windows or developed on any other Windows host OS .
+       
+       REMEMBER THAT YOUR DESKTOP SHOULD HAVE THE CAPABILITY TO SHOW .desktop FILE. ELSE YOU WILL NOT ABLE TO RUN NEITHER SEE THE DESKTOP ICON.
+       
+UPDATE :- New update has been released on 21/7/2024 which includes that the app need not have the ability to store the the application displaying property in ubuntu or kde only and gui os can show it. The java is not needed to be instakked manually and the all distrbution can now run it.    
+  
+  
+TroubleShooting :-
+
+If the the launcher is not working make sure it is executable or allow launching is allowed.After that also it dose not work go the Documents directory and in tarminal run the nbheditorstart.sh file 
+if it runs then install the software dex using termial. After doing so go to the Desktop directory and run "dex nbheditor.desktop" if it runs then your home enviroment has some problem in that case you need to reinstall the OS and by full formating the hdd. If you are having some issue then reffer to the installation video as provided in the new version 
+
+
+In case if there is problem in any of the file while running them manually. Please contact me. 
+
+
+Developed by- Noywrit Bhowmik
+contact - bhowmiknoywrit@gmail.com
+
+Thank you!!!
