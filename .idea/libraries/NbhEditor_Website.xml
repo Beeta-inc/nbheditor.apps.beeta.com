@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="NbhEditor-Website">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/NbhEditor-Website.zip!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
