@@ -27,7 +27,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.prefs.Preferences;
-
+// updated to texteditor.java with deepseek ai mode
 public class texteditor extends Application {
 
   private TextArea textArea;

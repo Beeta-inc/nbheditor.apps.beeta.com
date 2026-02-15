@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
+//add deekseek dependecies
 import org.json.*;
 
 public class DeepSeekAIService {
