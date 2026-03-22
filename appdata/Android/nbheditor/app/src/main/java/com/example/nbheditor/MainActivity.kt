@@ -119,6 +119,15 @@ class MainActivity : AppCompatActivity() {
         binding.appBarMain.contentMain.navHostFragmentContentMain.isVisible = false
     }
 
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.main_menu, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return handleMenuItem(item) || super.onOptionsItemSelected(item)
+    }
+
     private fun setupEditor() {
         editorBinding.textArea.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -310,12 +319,71 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
-    // Stub methods to satisfy calls in the provided code
+    private fun handleMenuItem(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.newMenuItem -> {
+                editorBinding.textArea.setText("")
+                currentFileUri = null
+                textChanged = false
+                updateLineNumbers()
+                showNotification("New File", Color.BLUE)
+            }
+            R.id.openMenuItem -> {
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "text/*"
+                }
+                openFileLauncher.launch(intent)
+            }
+            R.id.saveMenuItem -> {
+                currentFileUri?.let { saveToFile(it) } ?: run {
+                    val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                        addCategory(Intent.CATEGORY_OPENABLE)
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TITLE, "untitled.txt")
+                    }
+                    saveFileAsLauncher.launch(intent)
+                }
+            }
+            R.id.saveAsMenuItem -> {
+                val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TITLE, "untitled.txt")
+                }
+                saveFileAsLauncher.launch(intent)
+            }
+            R.id.improveMenuItem -> improveWithAI()
+            R.id.lightThemeMenuItem -> {
+                isDarkTheme = false
+                applyTheme()
+            }
+            R.id.darkThemeMenuItem -> {
+                isDarkTheme = true
+                applyTheme()
+            }
+            R.id.quitMenuItem -> finish()
+            else -> return false
+        }
+        return true
+    }
+
+    private fun applyTheme() {
+        val bgColor = if (isDarkTheme) Color.parseColor("#121212") else Color.WHITE
+        val textColor = if (isDarkTheme) Color.WHITE else Color.BLACK
+        editorBinding.textArea.setBackgroundColor(bgColor)
+        editorBinding.textArea.setTextColor(textColor)
+        editorBinding.lineNumbersScroll.setBackgroundColor(if (isDarkTheme) Color.parseColor("#1E1E1E") else Color.parseColor("#F0F0F0"))
+        updateLineNumbers()
+    }
+
+    // Stub methods to satisfy remaining calls
     private fun detectAndApplySystemTheme() {}
     private fun checkForRecovery() {}
-    private fun handleMenuItem(item: MenuItem) {}
-    private fun saveToFileWithAnimation(uri: Uri) {}
+    private fun saveToFileWithAnimation(uri: Uri) { saveToFile(uri) }
     private fun showOverlay(msg: String, color: Int) {}
     private fun hideOverlay() {}
-    private fun showNotification(msg: String, color: Int) {}
+    private fun showNotification(msg: String, color: Int) {
+        Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+    }
 }
