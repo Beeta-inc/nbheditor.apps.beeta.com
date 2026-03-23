@@ -1,7 +1,6 @@
 package com.example.nbheditor
 
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.graphics.Color
@@ -16,7 +15,6 @@ import android.util.Log
 import android.view.Gravity
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
@@ -27,9 +25,11 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.example.nbheditor.databinding.ActivityMainBinding
 import com.example.nbheditor.databinding.FragmentEditorBinding
-import com.google.ai.client.generativeai.GenerativeModel
-import com.google.ai.client.generativeai.type.generationConfig
+import com.google.gson.Gson
 import kotlinx.coroutines.*
+import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
@@ -51,18 +51,18 @@ class MainActivity : AppCompatActivity() {
         if (textChanged) performAutoSave()
     }
 
-    // AI related
+    // AI related (OpenRouter)
     private var aiJob: Job? = null
-    private val generativeModel = GenerativeModel(
-        modelName = "gemini-1.5-flash",
-        apiKey = "AIzaSyAjO1m3x5uh5oqKt05nPRsS_H4MlgkUqN0",
-        generationConfig = generationConfig {
-            temperature = 0.7f
-            topK = 40
-            topP = 0.95f
-            maxOutputTokens = 100
-        }
-    )
+    private val client = OkHttpClient()
+    private val gson = Gson()
+    private val OPENROUTER_API_KEY = "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" // Replace with your key
+    private val MODEL_NAME = "nvidia/nemotron-nano-12b-v2-vl"
+
+    // Data classes for OpenRouter API
+    data class ChatMessage(val role: String, val content: String)
+    data class ChatRequest(val model: String, val messages: List<ChatMessage>)
+    data class ChatResponse(val choices: List<Choice>)
+    data class Choice(val message: ChatMessage)
 
     private val openFileLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
@@ -155,15 +155,15 @@ class MainActivity : AppCompatActivity() {
         }
 
         aiJob = lifecycleScope.launch {
-            delay(500)
+            delay(1000) // Longer delay for API calls
             try {
-                if (generativeModel.apiKey.startsWith("YOUR_")) return@launch
+                if (OPENROUTER_API_KEY.contains("YOUR_KEY")) return@launch
 
                 val context = if (text.length > 500) text.substring(text.length - 500) else text
-                val prompt = "Continue this text briefly. Separate 2-3 short options with | symbol. Text: $context"
+                val prompt = "Continue this text briefly. Separate 2-3 short options with | symbol. Return ONLY the options. Text: $context"
                 
-                val response = generativeModel.generateContent(prompt)
-                val suggestions = response.text?.split("|")?.map { it.trim() }?.filter { it.isNotEmpty() }
+                val result = callOpenRouter(prompt)
+                val suggestions = result?.split("|")?.map { it.trim() }?.filter { it.isNotEmpty() }
                 
                 withContext(Dispatchers.Main) {
                     if (!suggestions.isNullOrEmpty()) {
@@ -174,9 +174,32 @@ class MainActivity : AppCompatActivity() {
                 }
             } catch (e: Exception) {
                 if (e is CancellationException) return@launch
-                Log.e("AI_ERROR", "Check internet or API key", e)
+                Log.e("AI_ERROR", "API Error", e)
                 withContext(Dispatchers.Main) { editorBinding.aiSuggestionContainer.isVisible = false }
             }
+        }
+    }
+
+    private suspend fun callOpenRouter(prompt: String): String? = withContext(Dispatchers.IO) {
+        val requestBody = ChatRequest(
+            model = MODEL_NAME,
+            messages = listOf(ChatMessage("user", prompt))
+        )
+        
+        val body = gson.toJson(requestBody).toRequestBody("application/json".toMediaType())
+        val request = Request.Builder()
+            .url("https://openrouter.ai/api/v1/chat/completions")
+            .post(body)
+            .addHeader("Authorization", "Bearer $OPENROUTER_API_KEY")
+            .addHeader("HTTP-Referer", "http://localhost") // Required by OpenRouter
+            .addHeader("X-Title", "NBH Editor")
+            .build()
+
+        client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) throw Exception("Unexpected code $response")
+            val responseData = response.body?.string()
+            val chatResponse = gson.fromJson(responseData, ChatResponse::class.java)
+            chatResponse.choices.firstOrNull()?.message?.content
         }
     }
 
@@ -226,17 +249,17 @@ class MainActivity : AppCompatActivity() {
             try {
                 showOverlay("AI Improving...", Color.MAGENTA)
             } catch (e: Exception) {
-                Log.e("UI_ERROR", "Overlay views missing in layout")
+                Log.e("UI_ERROR", "Overlay views missing")
             }
             
             try {
-                val response = generativeModel.generateContent("Fix and improve this text: $selectedText")
-                response.text?.let { fixedText ->
+                val fixedText = callOpenRouter("Fix and improve this text, return only the improved version: $selectedText")
+                fixedText?.let {
                     withContext(Dispatchers.Main) {
                         if (start < end) {
-                            editorBinding.textArea.text.replace(start, end, fixedText)
+                            editorBinding.textArea.text.replace(start, end, it)
                         } else {
-                            editorBinding.textArea.setText(fixedText)
+                            editorBinding.textArea.setText(it)
                         }
                         showNotification("✓ Improved with AI", Color.parseColor("#4CAF50"))
                     }
@@ -274,8 +297,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupAutoSave() {
-    }
+    private fun setupAutoSave() {}
 
     private fun triggerAutoSaveDelay() {
         handler.removeCallbacks(typingDelayRunnable)
@@ -377,7 +399,6 @@ class MainActivity : AppCompatActivity() {
         updateLineNumbers()
     }
 
-    // Stub methods to satisfy remaining calls
     private fun detectAndApplySystemTheme() {}
     private fun checkForRecovery() {}
     private fun saveToFileWithAnimation(uri: Uri) { saveToFile(uri) }
