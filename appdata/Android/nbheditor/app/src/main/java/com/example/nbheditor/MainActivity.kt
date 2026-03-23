@@ -56,7 +56,7 @@ class MainActivity : AppCompatActivity() {
     private val client = OkHttpClient()
     private val gson = Gson()
     private val OPENROUTER_API_KEY = "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" // Replace with your key
-    private val MODEL_NAME = "deepseek/deepseek-chat:free"
+    private val MODEL_NAME = "nvidia/nemotron-3-super-120b-a12b:free"
 
     // Data classes for OpenRouter API
     data class ChatMessage(val role: String, val content: String)
@@ -196,7 +196,11 @@ class MainActivity : AppCompatActivity() {
             .build()
 
         client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) throw Exception("Unexpected code $response")
+            if (!response.isSuccessful) {
+                val errorBody = response.body?.string()
+                Log.e("AI_ERROR", "Request failed with code ${response.code}: $errorBody")
+                throw Exception("Unexpected code $response")
+            }
             val responseData = response.body?.string()
             val chatResponse = gson.fromJson(responseData, ChatResponse::class.java)
             chatResponse.choices.firstOrNull()?.message?.content
@@ -204,24 +208,26 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showAISuggestions(suggestions: List<String>) {
-        editorBinding.aiSuggestionList.removeAllViews()
-        for (suggestion in suggestions) {
-            val btn = Button(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
-                text = suggestion
-                setOnClickListener { applySuggestion(suggestion) }
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    marginStart = 8
-                    marginEnd = 8
+        editorBinding.aiSuggestionContainer.post {
+            editorBinding.aiSuggestionList.removeAllViews()
+            for (suggestion in suggestions) {
+                val btn = Button(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+                    text = suggestion
+                    setOnClickListener { applySuggestion(suggestion) }
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        marginStart = 8
+                        marginEnd = 8
+                    }
+                    isAllCaps = false
+                    textSize = 12f
                 }
-                isAllCaps = false
-                textSize = 12f
+                editorBinding.aiSuggestionList.addView(btn)
             }
-            editorBinding.aiSuggestionList.addView(btn)
+            editorBinding.aiSuggestionContainer.isVisible = true
         }
-        editorBinding.aiSuggestionContainer.isVisible = true
     }
 
     private fun applySuggestion(suggestion: String) {
