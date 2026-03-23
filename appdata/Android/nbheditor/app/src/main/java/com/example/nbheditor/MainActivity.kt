@@ -55,7 +55,7 @@ class MainActivity : AppCompatActivity() {
     private var aiJob: Job? = null
     private val client = OkHttpClient()
     private val gson = Gson()
-    private val OPENROUTER_API_KEY = "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" // Replace with your key
+    private val OPENROUTER_API_KEY = "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" // Replace with your key
     private val MODEL_NAME = "deepseek/deepseek-chat:free"
 
     // Data classes for OpenRouter API

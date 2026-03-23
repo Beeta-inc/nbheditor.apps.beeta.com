@@ -4,13 +4,8 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0de2c8aa-c6b7-419c-b7cd-e9cbf2927e27" name="Changes" comment="Added abdoid version n">
-      <change beforePath="$PROJECT_DIR$/.gradle/file-system.probe" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/file-system.probe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/build.gradle.kts" afterDir="false" />
+    <list default="true" id="0de2c8aa-c6b7-419c-b7cd-e9cbf2927e27" name="Changes" comment="changed to openrouter and deepseek">
       <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/example/nbheditor/MainActivity.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/example/nbheditor/MainActivity.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/gradle/libs.versions.toml" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/gradle/libs.versions.toml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/gradle/libs.versions.toml" beforeDir="false" afterPath="$PROJECT_DIR$/gradle/libs.versions.toml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -266,13 +261,31 @@
       <option name="project" value="LOCAL" />
       <updated>1774183990522</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="changed to openrouter">
+      <option name="closed" value="true" />
+      <created>1774255214023</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1774255214023</updated>
+    </task>
+    <task id="LOCAL-00005" summary="changed to openrouter and deepseek">
+      <option name="closed" value="true" />
+      <created>1774255689573</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1774255689573</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Added abdoid version" />
     <MESSAGE value="Added abdoid version n" />
-    <option name="LAST_COMMIT_MESSAGE" value="Added abdoid version n" />
+    <MESSAGE value="changed to openrouter" />
+    <MESSAGE value="changed to openrouter and deepseek" />
+    <option name="LAST_COMMIT_MESSAGE" value="changed to openrouter and deepseek" />
   </component>
   <component name="play_dynamic_filters_status">
     <option name="appIdToCheckInfo">
