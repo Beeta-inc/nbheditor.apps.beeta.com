@@ -56,7 +56,7 @@ class MainActivity : AppCompatActivity() {
     private val client = OkHttpClient()
     private val gson = Gson()
     private val OPENROUTER_API_KEY = "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" // Replace with your key
-    private val MODEL_NAME = "nvidia/nemotron-nano-12b-v2-vl"
+    private val MODEL_NAME = "deepseek/deepseek-chat:free"
 
     // Data classes for OpenRouter API
     data class ChatMessage(val role: String, val content: String)
