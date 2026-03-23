@@ -59,7 +59,7 @@ class MainActivity : AppCompatActivity() {
     private var aiJob: Job? = null
     private val client = OkHttpClient()
     private val gson = Gson()
-    private val OPENROUTER_API_KEY = "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" // Replace with your key
+    private val OPENROUTER_API_KEY = "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"
     private val MODEL_NAME = "nvidia/nemotron-3-super-120b-a12b:free"
 
     private lateinit var chatAdapter: ChatAdapter
@@ -128,7 +128,6 @@ class MainActivity : AppCompatActivity() {
         
         // Hide unused UI elements from the template
         binding.appBarMain.fab?.isVisible = false
-        binding.appBarMain.contentMain.navHostFragmentContentMain.isVisible = false
     }
 
     private fun setupBottomNav() {
@@ -137,13 +136,13 @@ class MainActivity : AppCompatActivity() {
                 R.id.nav_editor -> {
                     editorBinding.root.visibility = View.VISIBLE
                     aiChatBinding.root.visibility = View.GONE
-                    supportActionBar?.title = "NBH Editor"
+                    binding.appBarMain.toolbarTitle?.text = "NBH Editor"
                     true
                 }
                 R.id.nav_ai_chat -> {
                     editorBinding.root.visibility = View.GONE
                     aiChatBinding.root.visibility = View.VISIBLE
-                    supportActionBar?.title = "Ask AI"
+                    binding.appBarMain.toolbarTitle?.text = "Ask AI"
                     true
                 }
                 else -> false
@@ -171,7 +170,7 @@ class MainActivity : AppCompatActivity() {
                             aiChatBinding.chatRecyclerView.smoothScrollToPosition(chatAdapter.itemCount - 1)
                         }
                     } catch (e: Exception) {
-                        Toast.makeText(this@MainActivity, "Chat Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@MainActivity, e.message, Toast.LENGTH_LONG).show()
                     }
                 }
             }
@@ -214,7 +213,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         aiJob = lifecycleScope.launch {
-            delay(1000) // Longer delay for API calls
+            delay(1000)
             try {
                 if (OPENROUTER_API_KEY.contains("YOUR_KEY")) return@launch
 
@@ -234,7 +233,6 @@ class MainActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 if (e is CancellationException) return@launch
                 Log.e("AI_ERROR", "API Error", e)
-                withContext(Dispatchers.Main) { editorBinding.aiSuggestionContainer.isVisible = false }
             }
         }
     }
@@ -250,18 +248,17 @@ class MainActivity : AppCompatActivity() {
             .url("https://openrouter.ai/api/v1/chat/completions")
             .post(body)
             .addHeader("Authorization", "Bearer $OPENROUTER_API_KEY")
-            .addHeader("HTTP-Referer", "http://localhost") // Required by OpenRouter
+            .addHeader("HTTP-Referer", "https://nbheditor.apps.beeta.com")
             .addHeader("X-Title", "NBH Editor")
             .build()
 
         client.newCall(request).execute().use { response ->
+            val responseBody = response.body?.string()
             if (!response.isSuccessful) {
-                val errorBody = response.body?.string()
-                Log.e("AI_ERROR", "Request failed with code ${response.code}: $errorBody")
-                throw Exception("Unexpected code $response")
+                Log.e("AI_ERROR", "Error: ${response.code} $responseBody")
+                throw Exception("AI Error (${response.code}): $responseBody")
             }
-            val responseData = response.body?.string()
-            val chatResponse = gson.fromJson(responseData, ChatResponse::class.java)
+            val chatResponse = gson.fromJson(responseBody, ChatResponse::class.java)
             chatResponse.choices.firstOrNull()?.message?.content
         }
     }
@@ -332,7 +329,7 @@ class MainActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 Log.e("AI_ERROR", "Improvement failed", e)
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@MainActivity, "AI failed: ${e.message}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@MainActivity, e.message, Toast.LENGTH_LONG).show()
                 }
             } finally {
                 withContext(Dispatchers.Main) { hideOverlay() }
