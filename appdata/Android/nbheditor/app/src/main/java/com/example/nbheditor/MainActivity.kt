@@ -15,6 +15,7 @@ import android.util.Log
 import android.view.Gravity
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
@@ -23,7 +24,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.GravityCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.nbheditor.databinding.ActivityMainBinding
+import com.example.nbheditor.databinding.FragmentAiChatBinding
 import com.example.nbheditor.databinding.FragmentEditorBinding
 import com.google.gson.Gson
 import kotlinx.coroutines.*
@@ -38,6 +41,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var editorBinding: FragmentEditorBinding
+    private lateinit var aiChatBinding: FragmentAiChatBinding
     private lateinit var prefs: SharedPreferences
     
     private var currentFileUri: Uri? = null
@@ -57,6 +61,8 @@ class MainActivity : AppCompatActivity() {
     private val gson = Gson()
     private val OPENROUTER_API_KEY = "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" // Replace with your key
     private val MODEL_NAME = "nvidia/nemotron-3-super-120b-a12b:free"
+
+    private lateinit var chatAdapter: ChatAdapter
 
     // Data classes for OpenRouter API
     data class ChatMessage(val role: String, val content: String)
@@ -101,22 +107,75 @@ class MainActivity : AppCompatActivity() {
             true
         }
 
-        // Inflate editor layout into content_main's root
+        // Setup UI components
         val contentRoot = binding.appBarMain.contentMain.root as ViewGroup
         contentRoot.removeAllViews()
+        
         editorBinding = FragmentEditorBinding.inflate(layoutInflater, contentRoot, true)
+        aiChatBinding = FragmentAiChatBinding.inflate(layoutInflater, contentRoot, true)
+        
+        // Initial state: Show Editor
+        aiChatBinding.root.visibility = View.GONE
         
         prefs = getPreferences(MODE_PRIVATE)
         
         setupEditor()
+        setupAiChat()
+        setupBottomNav()
         setupAutoSave()
         detectAndApplySystemTheme()
         checkForRecovery()
         
         // Hide unused UI elements from the template
         binding.appBarMain.fab?.isVisible = false
-        binding.appBarMain.contentMain.bottomNavView?.isVisible = false
         binding.appBarMain.contentMain.navHostFragmentContentMain.isVisible = false
+    }
+
+    private fun setupBottomNav() {
+        binding.appBarMain.contentMain.bottomNavView?.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_editor -> {
+                    editorBinding.root.visibility = View.VISIBLE
+                    aiChatBinding.root.visibility = View.GONE
+                    supportActionBar?.title = "NBH Editor"
+                    true
+                }
+                R.id.nav_ai_chat -> {
+                    editorBinding.root.visibility = View.GONE
+                    aiChatBinding.root.visibility = View.VISIBLE
+                    supportActionBar?.title = "Ask AI"
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    private fun setupAiChat() {
+        chatAdapter = ChatAdapter()
+        aiChatBinding.chatRecyclerView.layoutManager = LinearLayoutManager(this)
+        aiChatBinding.chatRecyclerView.adapter = chatAdapter
+
+        aiChatBinding.sendButton.setOnClickListener {
+            val query = aiChatBinding.queryEditText.text.toString()
+            if (query.isNotBlank()) {
+                val userMsg = ChatMessage("user", query)
+                chatAdapter.addMessage(userMsg)
+                aiChatBinding.queryEditText.text.clear()
+                
+                lifecycleScope.launch {
+                    try {
+                        val aiResponse = callOpenRouter(query)
+                        aiResponse?.let {
+                            chatAdapter.addMessage(ChatMessage("assistant", it))
+                            aiChatBinding.chatRecyclerView.smoothScrollToPosition(chatAdapter.itemCount - 1)
+                        }
+                    } catch (e: Exception) {
+                        Toast.makeText(this@MainActivity, "Chat Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
