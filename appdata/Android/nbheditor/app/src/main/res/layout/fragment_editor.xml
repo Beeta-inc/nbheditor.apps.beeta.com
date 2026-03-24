@@ -10,8 +10,10 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:orientation="horizontal"
+        app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toTopOf="@+id/aiSuggestionContainer"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <ScrollView
             android:id="@+id/lineNumbersScroll"
@@ -47,7 +49,10 @@
         android:visibility="gone"
         android:background="#E3F2FD"
         android:padding="4dp"
-        app:layout_constraintBottom_toTopOf="@+id/autoSaveContainer">
+        app:layout_constraintTop_toBottomOf="@+id/editor_container"
+        app:layout_constraintBottom_toTopOf="@+id/autoSaveContainer"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
         <LinearLayout
             android:id="@+id/aiSuggestionList"
             android:layout_width="wrap_content"
@@ -63,7 +68,10 @@
         android:padding="6dp"
         android:visibility="gone"
         android:background="#f8f8f8"
-        app:layout_constraintBottom_toBottomOf="parent">
+        app:layout_constraintTop_toBottomOf="@+id/aiSuggestionContainer"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
 
         <TextView
             android:id="@+id/autoSaveLabel"

@@ -108,12 +108,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Setup UI components
-        val contentRoot = binding.appBarMain.contentMain.root as ViewGroup
-        contentRoot.removeAllViews()
-        
-        editorBinding = FragmentEditorBinding.inflate(layoutInflater, contentRoot, true)
-        aiChatBinding = FragmentAiChatBinding.inflate(layoutInflater, contentRoot, true)
-        
+        val container = binding.appBarMain.contentMain.fragmentContainer
+
+        editorBinding = FragmentEditorBinding.inflate(layoutInflater, container, false)
+        aiChatBinding = FragmentAiChatBinding.inflate(layoutInflater, container, false)
+        container.addView(editorBinding.root)
+        container.addView(aiChatBinding.root)
+
         // Initial state: Show Editor
         aiChatBinding.root.visibility = View.GONE
         
@@ -126,23 +127,22 @@ class MainActivity : AppCompatActivity() {
         detectAndApplySystemTheme()
         checkForRecovery()
         
-        // Hide unused UI elements from the template
-        binding.appBarMain.fab?.isVisible = false
+
     }
 
     private fun setupBottomNav() {
-        binding.appBarMain.contentMain.bottomNavView?.setOnItemSelectedListener { item ->
+        binding.appBarMain.contentMain.bottomNavView.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_editor -> {
                     editorBinding.root.visibility = View.VISIBLE
                     aiChatBinding.root.visibility = View.GONE
-                    binding.appBarMain.toolbarTitle?.text = "NBH Editor"
+                    supportActionBar?.title = "NBH Editor"
                     true
                 }
                 R.id.nav_ai_chat -> {
                     editorBinding.root.visibility = View.GONE
                     aiChatBinding.root.visibility = View.VISIBLE
-                    binding.appBarMain.toolbarTitle?.text = "Ask AI"
+                    supportActionBar?.title = "Ask AI"
                     true
                 }
                 else -> false
@@ -170,7 +170,7 @@ class MainActivity : AppCompatActivity() {
                             aiChatBinding.chatRecyclerView.smoothScrollToPosition(chatAdapter.itemCount - 1)
                         }
                     } catch (e: Exception) {
-                        Toast.makeText(this@MainActivity, e.message, Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@MainActivity, "Chat Error: ${e.message}", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -248,15 +248,15 @@ class MainActivity : AppCompatActivity() {
             .url("https://openrouter.ai/api/v1/chat/completions")
             .post(body)
             .addHeader("Authorization", "Bearer $OPENROUTER_API_KEY")
-            .addHeader("HTTP-Referer", "https://nbheditor.apps.beeta.com")
+            .addHeader("HTTP-Referer", "http://localhost") 
             .addHeader("X-Title", "NBH Editor")
             .build()
 
         client.newCall(request).execute().use { response ->
             val responseBody = response.body?.string()
             if (!response.isSuccessful) {
-                Log.e("AI_ERROR", "Error: ${response.code} $responseBody")
-                throw Exception("AI Error (${response.code}): $responseBody")
+                Log.e("AI_ERROR", "Request failed with code ${response.code}: $responseBody")
+                throw Exception("Error ${response.code}")
             }
             val chatResponse = gson.fromJson(responseBody, ChatResponse::class.java)
             chatResponse.choices.firstOrNull()?.message?.content
@@ -329,7 +329,7 @@ class MainActivity : AppCompatActivity() {
             } catch (e: Exception) {
                 Log.e("AI_ERROR", "Improvement failed", e)
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@MainActivity, e.message, Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@MainActivity, "AI failed", Toast.LENGTH_LONG).show()
                 }
             } finally {
                 withContext(Dispatchers.Main) { hideOverlay() }
@@ -464,8 +464,14 @@ class MainActivity : AppCompatActivity() {
     private fun detectAndApplySystemTheme() {}
     private fun checkForRecovery() {}
     private fun saveToFileWithAnimation(uri: Uri) { saveToFile(uri) }
-    private fun showOverlay(msg: String, color: Int) {}
-    private fun hideOverlay() {}
+    private fun showOverlay(msg: String, color: Int) {
+        editorBinding.overlayText.text = msg
+        editorBinding.overlayView.setBackgroundColor(color and 0x4DFFFFFF.toInt())
+        editorBinding.overlayView.visibility = View.VISIBLE
+    }
+    private fun hideOverlay() {
+        editorBinding.overlayView.visibility = View.GONE
+    }
     private fun showNotification(msg: String, color: Int) {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
     }
