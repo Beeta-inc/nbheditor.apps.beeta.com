@@ -7,4 +7,23 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- NBH Editor brand colors -->
+    <color name="editor_bg">#FF1E1E2E</color>
+    <color name="editor_surface">#FF2A2A3E</color>
+    <color name="editor_line_numbers_bg">#FF181825</color>
+    <color name="editor_line_number_text">#FF6C7086</color>
+    <color name="editor_text">#FFCDD6F4</color>
+    <color name="editor_hint">#FF585B70</color>
+    <color name="accent_primary">#FF89B4FA</color>
+    <color name="accent_secondary">#FFA6E3A1</color>
+    <color name="suggestion_bg">#FF313244</color>
+    <color name="toolbar_bg">#FF181825</color>
+    <color name="bottom_nav_bg">#FF181825</color>
+    <color name="chat_user_bubble">#FF89B4FA</color>
+    <color name="chat_ai_bubble">#FF313244</color>
+    <color name="chat_user_text">#FF1E1E2E</color>
+    <color name="chat_ai_text">#FFCDD6F4</color>
+    <color name="input_bg">#FF313244</color>
+    <color name="divider">#FF45475A</color>
 </resources>
