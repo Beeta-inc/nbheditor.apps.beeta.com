@@ -64,8 +64,9 @@ class MainActivity : AppCompatActivity() {
     private val gson = Gson()
     private val OPENROUTER_API_KEY = "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"
     // Fast free model for suggestions; reliable model for chat/improve
-    private val FAST_MODEL = "google/gemma-3-4b-it:free"
-    private val CHAT_MODEL = "google/gemma-3-4b-it:free"
+    private val FAST_MODEL = "google/gemma-3n-e4b-it:free"
+    private val CHAT_MODEL = "google/gemma-3-12b-it:free"
+    private val FALLBACK_MODEL = "google/gemma-3n-e4b-it:free"
 
     private lateinit var chatAdapter: ChatAdapter
 
@@ -264,27 +265,37 @@ class MainActivity : AppCompatActivity() {
 
     private suspend fun callOpenRouter(prompt: String, model: String, maxTokens: Int = 512): String? =
         withContext(Dispatchers.IO) {
-            val body = gson.toJson(
-                ChatRequest(model, listOf(ChatMessage("user", prompt)), maxTokens)
-            ).toRequestBody("application/json".toMediaType())
-
-            val request = Request.Builder()
-                .url("https://openrouter.ai/api/v1/chat/completions")
-                .post(body)
-                .addHeader("Authorization", "Bearer $OPENROUTER_API_KEY")
-                .addHeader("HTTP-Referer", "https://nbheditor.apps.beeta.com")
-                .addHeader("X-Title", "NBH Editor")
-                .build()
-
-            client.newCall(request).execute().use { response ->
-                val responseBody = response.body?.string()
-                if (!response.isSuccessful) {
-                    Log.e("AI", "HTTP ${response.code}: $responseBody")
-                    throw Exception("Server error ${response.code}")
+            val modelsToTry = if (model == FALLBACK_MODEL) listOf(model)
+                             else listOf(model, FALLBACK_MODEL)
+            var lastError: Exception? = null
+            for (m in modelsToTry) {
+                try {
+                    val body = gson.toJson(
+                        ChatRequest(m, listOf(ChatMessage("user", prompt)), maxTokens)
+                    ).toRequestBody("application/json".toMediaType())
+                    val request = Request.Builder()
+                        .url("https://openrouter.ai/api/v1/chat/completions")
+                        .post(body)
+                        .addHeader("Authorization", "Bearer $OPENROUTER_API_KEY")
+                        .addHeader("HTTP-Referer", "https://nbheditor.apps.beeta.com")
+                        .addHeader("X-Title", "NBH Editor")
+                        .build()
+                    client.newCall(request).execute().use { response ->
+                        val responseBody = response.body?.string()
+                        if (response.code == 429) throw Exception("rate_limited")
+                        if (!response.isSuccessful) {
+                            Log.e("AI", "HTTP ${response.code}: $responseBody")
+                            throw Exception("Server error ${response.code}")
+                        }
+                        return@withContext gson.fromJson(responseBody, ChatResponse::class.java)
+                            .choices.firstOrNull()?.message?.content?.trim()
+                    }
+                } catch (e: Exception) {
+                    if (e.message == "rate_limited") { lastError = e; continue }
+                    throw e
                 }
-                gson.fromJson(responseBody, ChatResponse::class.java)
-                    .choices.firstOrNull()?.message?.content?.trim()
             }
+            throw lastError ?: Exception("All models rate limited")
         }
 
     private fun showAISuggestions(suggestions: List<String>) {
