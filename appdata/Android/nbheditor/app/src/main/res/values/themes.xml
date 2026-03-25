@@ -21,7 +21,7 @@
         <item name="android:background">@color/toolbar_bg</item>
     </style>
 
-    <style name="Theme.Nbheditor.PopupOverlay" parent="ThemeOverlay.AppCompat.Dark" />
+    <style name="Theme.Nbheditor.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
     <style name="Widget.Nbheditor.BottomNav" parent="Widget.MaterialComponents.BottomNavigationView">
         <item name="android:background">@color/bottom_nav_bg</item>

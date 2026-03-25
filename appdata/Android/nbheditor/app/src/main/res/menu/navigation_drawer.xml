@@ -22,11 +22,24 @@
             android:title="Save As..." />
     </group>
 
-    <group>
+    <group android:id="@+id/group_settings">
         <item
-            android:id="@+id/nav_settings"
-            android:icon="@drawable/ic_settings_black_24dp"
-            android:title="Settings" />
+            android:id="@+id/nav_theme_auto"
+            android:icon="@android:drawable/ic_menu_compass"
+            android:title="Theme: Auto (System)" />
+        <item
+            android:id="@+id/nav_theme_dark"
+            android:icon="@android:drawable/ic_menu_month"
+            android:title="Theme: Dark" />
+        <item
+            android:id="@+id/nav_theme_light"
+            android:icon="@android:drawable/ic_menu_day"
+            android:title="Theme: Light" />
+        <item
+            android:id="@+id/nav_toggle_ai"
+            android:icon="@drawable/ic_ai_sparkle"
+            android:title="Disable AI"
+            android:checkable="true" />
     </group>
 
 </menu>

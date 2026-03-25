@@ -20,6 +20,7 @@ import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.GravityCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
@@ -27,6 +28,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.nbheditor.databinding.ActivityMainBinding
 import com.example.nbheditor.databinding.FragmentAiChatBinding
 import com.example.nbheditor.databinding.FragmentEditorBinding
+import com.google.android.material.chip.Chip
 import com.google.gson.Gson
 import kotlinx.coroutines.*
 import okhttp3.*
@@ -47,6 +49,7 @@ class MainActivity : AppCompatActivity() {
     private var currentFileUri: Uri? = null
     private var textChanged = false
     private var isTyping = false
+    private var aiEnabled = true
 
     private val handler = Handler(Looper.getMainLooper())
     private val typingDelayRunnable = Runnable {
@@ -54,7 +57,6 @@ class MainActivity : AppCompatActivity() {
         if (textChanged) performAutoSave()
     }
 
-    // AI
     private var aiJob: Job? = null
     private val client = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
@@ -63,7 +65,6 @@ class MainActivity : AppCompatActivity() {
         .build()
     private val gson = Gson()
     private val OPENROUTER_API_KEY = "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"
-    // Fast free model for suggestions; reliable model for chat/improve
     private val FAST_MODEL = "google/gemma-3n-e4b-it:free"
     private val CHAT_MODEL = "google/gemma-3-12b-it:free"
     private val FALLBACK_MODEL = "google/gemma-3n-e4b-it:free"
@@ -75,10 +76,23 @@ class MainActivity : AppCompatActivity() {
     data class ChatResponse(val choices: List<Choice>)
     data class Choice(val message: ChatMessage)
 
+    // Broad file type support
+    private val SUPPORTED_MIME_TYPES = arrayOf(
+        "text/*", "application/json", "application/xml",
+        "application/javascript", "application/typescript",
+        "application/x-python", "application/x-sh",
+        "application/x-kotlin", "application/x-java",
+        "application/octet-stream"
+    )
+
     private val openFileLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let { uri ->
-                contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+                try {
+                    contentResolver.takePersistableUriPermission(
+                        uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    )
+                } catch (_: Exception) {}
                 openFileFromUri(uri)
             }
         }
@@ -96,6 +110,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        prefs = getPreferences(MODE_PRIVATE)
+
+        // Apply saved theme before setContentView
+        applyThemeMode(prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM))
+        aiEnabled = prefs.getBoolean("ai_enabled", true)
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         setSupportActionBar(binding.appBarMain.toolbar)
@@ -114,6 +134,9 @@ class MainActivity : AppCompatActivity() {
             true
         }
 
+        // Reflect AI toggle state in drawer
+        binding.navView.menu.findItem(R.id.nav_toggle_ai)?.isChecked = !aiEnabled
+
         val container = binding.appBarMain.contentMain.fragmentContainer
         editorBinding = FragmentEditorBinding.inflate(layoutInflater, container, false)
         aiChatBinding = FragmentAiChatBinding.inflate(layoutInflater, container, false)
@@ -121,12 +144,15 @@ class MainActivity : AppCompatActivity() {
         container.addView(aiChatBinding.root)
         aiChatBinding.root.visibility = View.GONE
 
-        prefs = getPreferences(MODE_PRIVATE)
-
         setupEditor()
         setupAiChat()
         setupBottomNav()
         checkForRecovery()
+    }
+
+    private fun applyThemeMode(mode: Int) {
+        AppCompatDelegate.setDefaultNightMode(mode)
+        prefs.edit().putInt("theme_mode", mode).apply()
     }
 
     private fun setupBottomNav() {
@@ -150,7 +176,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupAiChat() {
-        chatAdapter = ChatAdapter()
+        chatAdapter = ChatAdapter { text -> insertTextIntoEditor(text) }
         aiChatBinding.chatRecyclerView.layoutManager = LinearLayoutManager(this).apply {
             stackFromEnd = true
         }
@@ -163,14 +189,33 @@ class MainActivity : AppCompatActivity() {
         }
 
         aiChatBinding.sendButton.setOnClickListener { sendChatMessage() }
-
         aiChatBinding.queryEditText.setOnEditorActionListener { _, _, _ ->
-            sendChatMessage()
-            true
+            sendChatMessage(); true
         }
     }
 
+    private fun insertTextIntoEditor(text: String) {
+        // Switch to editor tab
+        binding.appBarMain.contentMain.bottomNavView.selectedItemId = R.id.nav_editor
+        editorBinding.root.visibility = View.VISIBLE
+        aiChatBinding.root.visibility = View.GONE
+        binding.appBarMain.toolbarTitle?.text = "NBH Editor"
+
+        // Insert at cursor or append
+        val editText = editorBinding.textArea
+        val cursor = editText.selectionStart.coerceAtLeast(0)
+        val current = editText.text ?: return
+        val insertion = if (cursor > 0 && current.isNotEmpty() && current[cursor - 1] != '\n')
+            "\n\n$text\n" else "$text\n"
+        current.insert(cursor, insertion)
+        Toast.makeText(this, "✓ Inserted into editor", Toast.LENGTH_SHORT).show()
+    }
+
     private fun sendChatMessage() {
+        if (!aiEnabled) {
+            Toast.makeText(this, "AI is disabled. Enable it in Settings.", Toast.LENGTH_SHORT).show()
+            return
+        }
         val query = aiChatBinding.queryEditText.text.toString().trim()
         if (query.isBlank()) return
 
@@ -226,7 +271,7 @@ class MainActivity : AppCompatActivity() {
                 updateLineNumbers()
                 handler.removeCallbacks(typingDelayRunnable)
                 handler.postDelayed(typingDelayRunnable, 2000)
-                triggerAISuggestions()
+                if (aiEnabled) triggerAISuggestions()
             }
             override fun afterTextChanged(s: Editable?) {}
         })
@@ -247,7 +292,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         aiJob = lifecycleScope.launch {
-            delay(1200)
+            delay(1500)
             try {
                 val context = if (text.length > 300) text.takeLast(300) else text
                 val prompt = "Complete this text with 2 short options separated by |. Only return the options, nothing else:\n$context"
@@ -265,14 +310,12 @@ class MainActivity : AppCompatActivity() {
 
     private suspend fun callOpenRouter(prompt: String, model: String, maxTokens: Int = 512): String? =
         withContext(Dispatchers.IO) {
-            val modelsToTry = if (model == FALLBACK_MODEL) listOf(model)
-                             else listOf(model, FALLBACK_MODEL)
+            val modelsToTry = if (model == FALLBACK_MODEL) listOf(model) else listOf(model, FALLBACK_MODEL)
             var lastError: Exception? = null
             for (m in modelsToTry) {
                 try {
-                    val body = gson.toJson(
-                        ChatRequest(m, listOf(ChatMessage("user", prompt)), maxTokens)
-                    ).toRequestBody("application/json".toMediaType())
+                    val body = gson.toJson(ChatRequest(m, listOf(ChatMessage("user", prompt)), maxTokens))
+                        .toRequestBody("application/json".toMediaType())
                     val request = Request.Builder()
                         .url("https://openrouter.ai/api/v1/chat/completions")
                         .post(body)
@@ -299,29 +342,47 @@ class MainActivity : AppCompatActivity() {
         }
 
     private fun showAISuggestions(suggestions: List<String>) {
-        editorBinding.aiSuggestionList.removeAllViews()
-        for (s in suggestions) {
-            val btn = Button(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+        val list = editorBinding.aiSuggestionList
+        // Keep the sparkle icon (first child), remove old chips
+        while (list.childCount > 1) list.removeViewAt(1)
+
+        val chipColors = listOf("#FF89B4FA", "#FFA6E3A1", "#FFCBA6F7", "#FFFAB387")
+        suggestions.forEachIndexed { i, s ->
+            val chip = Chip(this).apply {
                 text = s
-                isAllCaps = false
+                isClickable = true
+                isCheckable = false
+                chipBackgroundColor = android.content.res.ColorStateList.valueOf(
+                    Color.parseColor(chipColors[i % chipColors.size] + "33")
+                )
+                setTextColor(Color.parseColor(chipColors[i % chipColors.size]))
+                chipStrokeColor = android.content.res.ColorStateList.valueOf(
+                    Color.parseColor(chipColors[i % chipColors.size] + "88")
+                )
+                chipStrokeWidth = 1f
                 textSize = 12f
-                setOnClickListener { applySuggestion(s) }
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.WRAP_CONTENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply { marginStart = 8; marginEnd = 8 }
+                ).apply { marginStart = 6; marginEnd = 6 }
+                setOnClickListener { applySuggestion(s) }
             }
-            editorBinding.aiSuggestionList.addView(btn)
+            list.addView(chip)
         }
         editorBinding.aiSuggestionContainer.isVisible = true
     }
 
     private fun applySuggestion(suggestion: String) {
-        editorBinding.textArea.text.insert(editorBinding.textArea.selectionStart, suggestion)
+        val pos = editorBinding.textArea.selectionStart.coerceAtLeast(0)
+        editorBinding.textArea.text.insert(pos, suggestion)
         editorBinding.aiSuggestionContainer.isVisible = false
     }
 
     private fun improveWithAI() {
+        if (!aiEnabled) {
+            Toast.makeText(this, "AI is disabled. Enable it in Settings.", Toast.LENGTH_SHORT).show()
+            return
+        }
         val start = editorBinding.textArea.selectionStart
         val end = editorBinding.textArea.selectionEnd
         val selectedText = if (start < end) editorBinding.textArea.text.substring(start, end)
@@ -332,7 +393,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        editorBinding.overlayText.text = "Improving with AI..."
+        editorBinding.overlayText.text = "✦ Improving with AI..."
         editorBinding.overlayView.visibility = View.VISIBLE
 
         lifecycleScope.launch {
@@ -368,9 +429,9 @@ class MainActivity : AppCompatActivity() {
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 )
                 gravity = Gravity.END
-                setPadding(0, 0, 10, 0)
+                setPadding(0, 0, 8, 0)
                 typeface = Typeface.MONOSPACE
-                setTextColor(Color.parseColor("#FF6C7086"))
+                setTextColor(resources.getColor(R.color.editor_line_number_text, theme))
                 textSize = 12f
             }
             editorBinding.lineNumbersVBox.addView(tv)
@@ -391,7 +452,10 @@ class MainActivity : AppCompatActivity() {
                 currentFileUri = uri
                 textChanged = false
                 updateLineNumbers()
-                Toast.makeText(this, "File opened", Toast.LENGTH_SHORT).show()
+                // Show filename in toolbar
+                val name = uri.lastPathSegment?.substringAfterLast('/') ?: "File"
+                binding.appBarMain.toolbarTitle?.text = name
+                Toast.makeText(this, "Opened: $name", Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
             Toast.makeText(this, "Failed to open file", Toast.LENGTH_SHORT).show()
@@ -419,18 +483,22 @@ class MainActivity : AppCompatActivity() {
                 binding.appBarMain.toolbarTitle?.text = "NBH Editor"
             }
             R.id.nav_open_file, R.id.openMenuItem -> {
-                openFileLauncher.launch(Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
-                    type = "text/*"
-                })
+                    type = "*/*"
+                    putExtra(Intent.EXTRA_MIME_TYPES, SUPPORTED_MIME_TYPES)
+                }
+                openFileLauncher.launch(intent)
             }
             R.id.nav_save_file, R.id.saveMenuItem -> {
-                currentFileUri?.let { saveToFile(it); Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show() }
-                    ?: saveFileAsLauncher.launch(Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-                        addCategory(Intent.CATEGORY_OPENABLE)
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_TITLE, "untitled.txt")
-                    })
+                currentFileUri?.let {
+                    saveToFile(it)
+                    Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show()
+                } ?: saveFileAsLauncher.launch(Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TITLE, "untitled.txt")
+                })
             }
             R.id.nav_save_as, R.id.saveAsMenuItem -> {
                 saveFileAsLauncher.launch(Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
@@ -438,6 +506,16 @@ class MainActivity : AppCompatActivity() {
                     type = "text/plain"
                     putExtra(Intent.EXTRA_TITLE, "untitled.txt")
                 })
+            }
+            R.id.nav_theme_auto -> applyThemeMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+            R.id.nav_theme_dark -> applyThemeMode(AppCompatDelegate.MODE_NIGHT_YES)
+            R.id.nav_theme_light -> applyThemeMode(AppCompatDelegate.MODE_NIGHT_NO)
+            R.id.nav_toggle_ai -> {
+                aiEnabled = !aiEnabled
+                prefs.edit().putBoolean("ai_enabled", aiEnabled).apply()
+                item.isChecked = !aiEnabled
+                if (!aiEnabled) editorBinding.aiSuggestionContainer.isVisible = false
+                Toast.makeText(this, if (aiEnabled) "AI Enabled" else "AI Disabled", Toast.LENGTH_SHORT).show()
             }
             R.id.improveMenuItem -> improveWithAI()
             R.id.quitMenuItem -> finish()

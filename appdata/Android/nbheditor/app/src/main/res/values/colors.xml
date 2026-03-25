@@ -8,7 +8,7 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- NBH Editor brand colors -->
+    <!-- NBH Editor dark theme (default) -->
     <color name="editor_bg">#FF1E1E2E</color>
     <color name="editor_surface">#FF2A2A3E</color>
     <color name="editor_line_numbers_bg">#FF181825</color>
@@ -17,6 +17,8 @@
     <color name="editor_hint">#FF585B70</color>
     <color name="accent_primary">#FF89B4FA</color>
     <color name="accent_secondary">#FFA6E3A1</color>
+    <color name="accent_purple">#FFCBA6F7</color>
+    <color name="accent_peach">#FFFAB387</color>
     <color name="suggestion_bg">#FF313244</color>
     <color name="toolbar_bg">#FF181825</color>
     <color name="bottom_nav_bg">#FF181825</color>
