@@ -64,8 +64,8 @@ class MainActivity : AppCompatActivity() {
     private val gson = Gson()
     private val OPENROUTER_API_KEY = "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"
     // Fast free model for suggestions; reliable model for chat/improve
-    private val FAST_MODEL = "mistralai/mistral-7b-instruct:free"
-    private val CHAT_MODEL = "mistralai/mistral-7b-instruct:free"
+    private val FAST_MODEL = "google/gemma-3-4b-it:free"
+    private val CHAT_MODEL = "google/gemma-3-4b-it:free"
 
     private lateinit var chatAdapter: ChatAdapter
 
@@ -134,13 +134,13 @@ class MainActivity : AppCompatActivity() {
                 R.id.nav_editor -> {
                     editorBinding.root.visibility = View.VISIBLE
                     aiChatBinding.root.visibility = View.GONE
-                    binding.appBarMain.toolbarTitle.text = "NBH Editor"
+                    binding.appBarMain.toolbarTitle?.text = "NBH Editor"
                     true
                 }
                 R.id.nav_ai_chat -> {
                     editorBinding.root.visibility = View.GONE
                     aiChatBinding.root.visibility = View.VISIBLE
-                    binding.appBarMain.toolbarTitle.text = "Beeta AI"
+                    binding.appBarMain.toolbarTitle?.text = "Beeta AI"
                     true
                 }
                 else -> false
@@ -405,7 +405,7 @@ class MainActivity : AppCompatActivity() {
                 currentFileUri = null
                 textChanged = false
                 updateLineNumbers()
-                binding.appBarMain.toolbarTitle.text = "NBH Editor"
+                binding.appBarMain.toolbarTitle?.text = "NBH Editor"
             }
             R.id.nav_open_file, R.id.openMenuItem -> {
                 openFileLauncher.launch(Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
