@@ -5,9 +5,9 @@
     android:layout_height="wrap_content"
     android:gravity="start"
     android:paddingStart="12dp"
-    android:paddingEnd="48dp"
-    android:paddingTop="4dp"
-    android:paddingBottom="4dp"
+    android:paddingEnd="56dp"
+    android:paddingTop="3dp"
+    android:paddingBottom="3dp"
     android:orientation="vertical">
 
     <TextView
@@ -15,17 +15,19 @@
         android:layout_height="wrap_content"
         android:text="Beeta AI"
         android:textSize="10sp"
-        android:textColor="#FF6C7086"
-        android:paddingStart="4dp"
-        android:paddingBottom="2dp" />
+        android:textColor="#FF89B4FA"
+        android:paddingStart="2dp"
+        android:paddingBottom="3dp"
+        android:letterSpacing="0.05" />
 
     <com.google.android.material.card.MaterialCardView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:cardBackgroundColor="#FF313244"
-        app:cardCornerRadius="16dp"
+        app:cardBackgroundColor="#FF2A2A3E"
+        app:cardCornerRadius="4dp"
         app:cardElevation="0dp"
-        app:strokeWidth="0dp">
+        app:strokeWidth="1dp"
+        app:strokeColor="#FF45475A">
 
         <TextView
             android:id="@+id/messageText"
@@ -34,8 +36,9 @@
             android:padding="12dp"
             android:textColor="#FFCDD6F4"
             android:textSize="14sp"
-            android:lineSpacingMultiplier="1.4"
-            android:maxWidth="280dp" />
+            android:lineSpacingMultiplier="1.5"
+            android:maxWidth="300dp"
+            android:fontFamily="sans-serif" />
 
     </com.google.android.material.card.MaterialCardView>
 </LinearLayout>

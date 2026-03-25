@@ -5,21 +5,21 @@
     android:id="@+id/coordinator_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     tools:context=".MainActivity">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:elevation="0dp"
-        app:elevation="0dp"
-        android:theme="@style/Theme.Nbheditor.AppBarOverlay">
+        android:fitsSystemWindows="true"
+        android:background="@color/toolbar_bg"
+        app:elevation="0dp">
 
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
-            app:titleTextAppearance="@style/TextAppearance.MaterialComponents.Headline6"
+            android:background="@color/toolbar_bg"
             app:popupTheme="@style/Theme.Nbheditor.PopupOverlay">
 
             <LinearLayout
@@ -27,14 +27,24 @@
                 android:layout_height="match_parent"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="●"
+                    android:textColor="@color/accent_primary"
+                    android:textSize="10sp"
+                    android:paddingEnd="6dp" />
+
                 <TextView
                     android:id="@+id/toolbarTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="NBH Editor"
-                    android:textColor="@android:color/white"
+                    android:textColor="@color/editor_text"
                     android:textStyle="bold"
-                    android:textSize="18sp" />
+                    android:textSize="17sp"
+                    android:letterSpacing="0.02" />
             </LinearLayout>
 
         </androidx.appcompat.widget.Toolbar>

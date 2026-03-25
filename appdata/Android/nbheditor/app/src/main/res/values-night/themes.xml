@@ -1,16 +1,14 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Theme.Nbheditor" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
-        <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/purple_200</item>
-        <item name="colorPrimaryVariant">@color/purple_700</item>
-        <item name="colorOnPrimary">@color/black</item>
-        <!-- Secondary brand color. -->
-        <item name="colorSecondary">@color/teal_200</item>
-        <item name="colorSecondaryVariant">@color/teal_200</item>
-        <item name="colorOnSecondary">@color/black</item>
-        <!-- Status bar color. -->
-        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
-        <!-- Customize your theme here. -->
+    <style name="Theme.Nbheditor" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/toolbar_bg</item>
+        <item name="colorPrimaryVariant">@color/editor_surface</item>
+        <item name="colorOnPrimary">@color/editor_text</item>
+        <item name="colorSecondary">@color/accent_primary</item>
+        <item name="colorSecondaryVariant">@color/accent_primary</item>
+        <item name="colorOnSecondary">@color/editor_bg</item>
+        <item name="android:statusBarColor">@color/toolbar_bg</item>
+        <item name="android:navigationBarColor">@color/bottom_nav_bg</item>
+        <item name="android:windowBackground">@color/editor_bg</item>
+        <item name="bottomNavigationStyle">@style/Widget.Nbheditor.BottomNav</item>
     </style>
 </resources>

@@ -12,7 +12,7 @@
         <item name="bottomNavigationStyle">@style/Widget.Nbheditor.BottomNav</item>
     </style>
 
-    <style name="Theme.Nbheditor.NoActionBar">
+    <style name="Theme.Nbheditor.NoActionBar" parent="Theme.Nbheditor">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
     </style>
