@@ -405,21 +405,21 @@ class MainActivity : AppCompatActivity() {
     
     private fun handleMenuItem(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.newMenuItem -> {
+            R.id.nav_new_file, R.id.newMenuItem -> {
                 editorBinding.textArea.setText("")
                 currentFileUri = null
                 textChanged = false
                 updateLineNumbers()
                 showNotification("New File", Color.BLUE)
             }
-            R.id.openMenuItem -> {
+            R.id.nav_open_file, R.id.openMenuItem -> {
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
                     type = "text/*"
                 }
                 openFileLauncher.launch(intent)
             }
-            R.id.saveMenuItem -> {
+            R.id.nav_save_file, R.id.saveMenuItem -> {
                 currentFileUri?.let { saveToFile(it) } ?: run {
                     val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
                         addCategory(Intent.CATEGORY_OPENABLE)
@@ -429,7 +429,7 @@ class MainActivity : AppCompatActivity() {
                     saveFileAsLauncher.launch(intent)
                 }
             }
-            R.id.saveAsMenuItem -> {
+            R.id.nav_save_as, R.id.saveAsMenuItem -> {
                 val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
                     type = "text/plain"

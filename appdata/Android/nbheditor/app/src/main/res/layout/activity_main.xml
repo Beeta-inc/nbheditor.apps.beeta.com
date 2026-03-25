@@ -25,6 +25,10 @@
             android:layout_height="match_parent"
             android:layout_gravity="start"
             android:fitsSystemWindows="true"
+            android:background="@color/editor_surface"
+            app:itemTextColor="@color/editor_text"
+            app:itemIconTint="@color/accent_primary"
+            app:itemBackground="@null"
             app:headerLayout="@layout/nav_header_main"
             app:menu="@menu/navigation_drawer" />
 
