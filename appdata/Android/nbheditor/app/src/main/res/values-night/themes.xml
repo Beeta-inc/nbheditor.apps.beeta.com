@@ -11,4 +11,22 @@
         <item name="android:windowBackground">@color/editor_bg</item>
         <item name="bottomNavigationStyle">@style/Widget.Nbheditor.BottomNav</item>
     </style>
+
+    <style name="Theme.Nbheditor.NoActionBar" parent="Theme.Nbheditor">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+    </style>
+
+    <style name="Theme.Nbheditor.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
+        <item name="android:background">@color/toolbar_bg</item>
+    </style>
+
+    <style name="Theme.Nbheditor.PopupOverlay" parent="ThemeOverlay.AppCompat.Dark" />
+
+    <style name="Widget.Nbheditor.BottomNav" parent="Widget.MaterialComponents.BottomNavigationView">
+        <item name="android:background">@color/bottom_nav_bg</item>
+        <item name="itemIconTint">@color/bottom_nav_item_color</item>
+        <item name="itemTextColor">@color/bottom_nav_item_color</item>
+        <item name="itemRippleColor">@color/accent_primary</item>
+    </style>
 </resources>

@@ -17,7 +17,7 @@
         <item name="windowNoTitle">true</item>
     </style>
 
-    <style name="Theme.Nbheditor.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
+    <style name="Theme.Nbheditor.AppBarOverlay" parent="ThemeOverlay.AppCompat.ActionBar">
         <item name="android:background">@color/toolbar_bg</item>
     </style>
 

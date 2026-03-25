@@ -8,24 +8,24 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- NBH Editor dark theme (default) -->
-    <color name="editor_bg">#FF1E1E2E</color>
-    <color name="editor_surface">#FF2A2A3E</color>
-    <color name="editor_line_numbers_bg">#FF181825</color>
-    <color name="editor_line_number_text">#FF6C7086</color>
-    <color name="editor_text">#FFCDD6F4</color>
-    <color name="editor_hint">#FF585B70</color>
-    <color name="accent_primary">#FF89B4FA</color>
-    <color name="accent_secondary">#FFA6E3A1</color>
-    <color name="accent_purple">#FFCBA6F7</color>
-    <color name="accent_peach">#FFFAB387</color>
-    <color name="suggestion_bg">#FF313244</color>
-    <color name="toolbar_bg">#FF181825</color>
-    <color name="bottom_nav_bg">#FF181825</color>
-    <color name="chat_user_bubble">#FF89B4FA</color>
-    <color name="chat_ai_bubble">#FF313244</color>
-    <color name="chat_user_text">#FF1E1E2E</color>
-    <color name="chat_ai_text">#FFCDD6F4</color>
-    <color name="input_bg">#FF313244</color>
-    <color name="divider">#FF45475A</color>
+    <!-- Light mode (default) - Catppuccin Latte -->
+    <color name="editor_bg">#FFEFF1F5</color>
+    <color name="editor_surface">#FFE6E9EF</color>
+    <color name="editor_line_numbers_bg">#FFDCE0E8</color>
+    <color name="editor_line_number_text">#FF8C8FA1</color>
+    <color name="editor_text">#FF4C4F69</color>
+    <color name="editor_hint">#FF9CA0B0</color>
+    <color name="accent_primary">#FF1E66F5</color>
+    <color name="accent_secondary">#FF40A02B</color>
+    <color name="accent_purple">#FF8839EF</color>
+    <color name="accent_peach">#FFFE640B</color>
+    <color name="suggestion_bg">#FFCCD0DA</color>
+    <color name="toolbar_bg">#FFDCE0E8</color>
+    <color name="bottom_nav_bg">#FFDCE0E8</color>
+    <color name="chat_user_bubble">#FF1E66F5</color>
+    <color name="chat_ai_bubble">#FFE6E9EF</color>
+    <color name="chat_user_text">#FFFFFFFF</color>
+    <color name="chat_ai_text">#FF4C4F69</color>
+    <color name="input_bg">#FFCCD0DA</color>
+    <color name="divider">#FFBCC0CC</color>
 </resources>
