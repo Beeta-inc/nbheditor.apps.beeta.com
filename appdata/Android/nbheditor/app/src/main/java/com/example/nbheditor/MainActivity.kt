@@ -64,17 +64,30 @@ class MainActivity : AppCompatActivity() {
         .writeTimeout(15, TimeUnit.SECONDS)
         .build()
     private val gson = Gson()
+
+    // Google AI Studio key — free tier: 1500 req/day, 15 req/min, resets daily
+    // Get yours free at: https://aistudio.google.com/apikey
+    private val GEMINI_API_KEY = "AIzaSyAjO1m3x5uh5oqKt05nPRsS_H4MlgkUqN0"
+    private val GEMINI_MODEL = "gemini-2.0-flash"
+
+    // OpenRouter fallback (used if Gemini key not set)
     private val OPENROUTER_API_KEY = "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"
-    private val FAST_MODEL = "google/gemma-3n-e4b-it:free"
-    private val CHAT_MODEL = "google/gemma-3-12b-it:free"
-    private val FALLBACK_MODEL = "google/gemma-3n-e4b-it:free"
+    private val OR_FAST_MODEL = "stepfun/step-3.5-flash:free"
+    private val OR_CHAT_MODEL = "stepfun/step-3.5-flash:free"
 
     private lateinit var chatAdapter: ChatAdapter
 
     data class ChatMessage(val role: String, val content: String)
+    // OpenRouter
     data class ChatRequest(val model: String, val messages: List<ChatMessage>, val max_tokens: Int = 512)
     data class ChatResponse(val choices: List<Choice>)
     data class Choice(val message: ChatMessage)
+    // Gemini
+    data class GeminiPart(val text: String)
+    data class GeminiContent(val parts: List<GeminiPart>)
+    data class GeminiRequest(val contents: List<GeminiContent>)
+    data class GeminiCandidate(val content: GeminiContent)
+    data class GeminiResponse(val candidates: List<GeminiCandidate>)
 
     // Broad file type support
     private val SUPPORTED_MIME_TYPES = arrayOf(
@@ -228,7 +241,7 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val aiResponse = callOpenRouter(query, CHAT_MODEL, maxTokens = 1024)
+                val aiResponse = callAI(query, maxTokens = 1024)
                 aiChatBinding.typingRow.visibility = View.GONE
                 if (aiResponse != null) {
                     chatAdapter.addMessage(ChatMessage("assistant", aiResponse))
@@ -296,7 +309,7 @@ class MainActivity : AppCompatActivity() {
             try {
                 val context = if (text.length > 300) text.takeLast(300) else text
                 val prompt = "Complete this text with 2 short options separated by |. Only return the options, nothing else:\n$context"
-                val result = callOpenRouter(prompt, FAST_MODEL, maxTokens = 80)
+                val result = callAI(prompt, maxTokens = 80)
                 val suggestions = result?.split("|")?.map { it.trim() }?.filter { it.isNotEmpty() }?.take(2)
                 withContext(Dispatchers.Main) {
                     if (!suggestions.isNullOrEmpty()) showAISuggestions(suggestions)
@@ -308,9 +321,33 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private suspend fun callAI(prompt: String, maxTokens: Int = 512): String? {
+        // Try Gemini first (1500 req/day free, much higher limits)
+        if (GEMINI_API_KEY != "YOUR_GEMINI_API_KEY_HERE") {
+            try { return callGemini(prompt) } catch (_: Exception) {}
+        }
+        // Fallback to OpenRouter
+        return callOpenRouter(prompt, OR_CHAT_MODEL, maxTokens)
+    }
+
+    private suspend fun callGemini(prompt: String): String? = withContext(Dispatchers.IO) {
+        val body = gson.toJson(GeminiRequest(listOf(GeminiContent(listOf(GeminiPart(prompt))))))
+            .toRequestBody("application/json".toMediaType())
+        val request = Request.Builder()
+            .url("https://generativelanguage.googleapis.com/v1beta/models/$GEMINI_MODEL:generateContent?key=$GEMINI_API_KEY")
+            .post(body)
+            .build()
+        client.newCall(request).execute().use { response ->
+            val rb = response.body?.string()
+            if (!response.isSuccessful) throw Exception("Gemini ${response.code}")
+            gson.fromJson(rb, GeminiResponse::class.java)
+                .candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text?.trim()
+        }
+    }
+
     private suspend fun callOpenRouter(prompt: String, model: String, maxTokens: Int = 512): String? =
         withContext(Dispatchers.IO) {
-            val modelsToTry = if (model == FALLBACK_MODEL) listOf(model) else listOf(model, FALLBACK_MODEL)
+            val modelsToTry = listOf(model, OR_FAST_MODEL).distinct()
             var lastError: Exception? = null
             for (m in modelsToTry) {
                 try {
@@ -324,13 +361,10 @@ class MainActivity : AppCompatActivity() {
                         .addHeader("X-Title", "NBH Editor")
                         .build()
                     client.newCall(request).execute().use { response ->
-                        val responseBody = response.body?.string()
+                        val rb = response.body?.string()
                         if (response.code == 429) throw Exception("rate_limited")
-                        if (!response.isSuccessful) {
-                            Log.e("AI", "HTTP ${response.code}: $responseBody")
-                            throw Exception("Server error ${response.code}")
-                        }
-                        return@withContext gson.fromJson(responseBody, ChatResponse::class.java)
+                        if (!response.isSuccessful) throw Exception("HTTP ${response.code}")
+                        return@withContext gson.fromJson(rb, ChatResponse::class.java)
                             .choices.firstOrNull()?.message?.content?.trim()
                     }
                 } catch (e: Exception) {
@@ -399,7 +433,7 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             try {
                 val prompt = "Rewrite the following text to be clearer and better. Return ONLY the rewritten text with no explanation:\n\n$selectedText"
-                val result = callOpenRouter(prompt, CHAT_MODEL, maxTokens = selectedText.length.coerceAtLeast(200))
+                val result = callAI(prompt, maxTokens = selectedText.length.coerceAtLeast(200))
                 withContext(Dispatchers.Main) {
                     result?.let {
                         if (start < end) editorBinding.textArea.text.replace(start, end, it)
