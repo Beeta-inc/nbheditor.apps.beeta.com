@@ -11,7 +11,7 @@
     <item
         android:id="@+id/improveMenuItem"
         android:title="Fix with AI"
-        android:icon="@android:drawable/ic_menu_manage"
+        android:icon="@drawable/ic_ai_sparkle"
         app:showAsAction="ifRoom" />
 
     <item
