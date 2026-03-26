@@ -9,18 +9,8 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0de2c8aa-c6b7-419c-b7cd-e9cbf2927e27" name="Changes" comment="fixed some issues">
-      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/drawable/ic_ai_sparkle.xml" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/drawable/ic_ai_sparkle.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/menu/main_menu.xml" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/menu/main_menu.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/values-v31/themes.xml" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/values-v31/themes.xml" afterDir="false" />
+    <list default="true" id="0de2c8aa-c6b7-419c-b7cd-e9cbf2927e27" name="Changes" comment="final updates for version1">
+      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/build.gradle.kts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -78,6 +68,8 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "Android App.nbheditor.app.executor": "Debug",
+    "ApkExportedModule": "nbheditor.app",
+    "BundleExportedModule": "nbheditor.app",
     "Gradle.Configure Daemon JVM Criteria.executor": "Run",
     "GradleDaemonJvmCriteriaMigrationNotification.isNotificationDisabled": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
@@ -541,7 +533,23 @@
       <option name="project" value="LOCAL" />
       <updated>1774517918181</updated>
     </task>
-    <option name="localTasksCounter" value="37" />
+    <task id="LOCAL-00037" summary="fixed some issues and ui updates">
+      <option name="closed" value="true" />
+      <created>1774518251794</created>
+      <option name="number" value="00037" />
+      <option name="presentableId" value="LOCAL-00037" />
+      <option name="project" value="LOCAL" />
+      <updated>1774518251794</updated>
+    </task>
+    <task id="LOCAL-00038" summary="final updates for version1">
+      <option name="closed" value="true" />
+      <created>1774518310999</created>
+      <option name="number" value="00038" />
+      <option name="presentableId" value="LOCAL-00038" />
+      <option name="project" value="LOCAL" />
+      <updated>1774518310999</updated>
+    </task>
+    <option name="localTasksCounter" value="39" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -561,7 +569,9 @@
     <MESSAGE value="fixed ui" />
     <MESSAGE value="fixed some issues and ui" />
     <MESSAGE value="fixed some issues" />
-    <option name="LAST_COMMIT_MESSAGE" value="fixed some issues" />
+    <MESSAGE value="fixed some issues and ui updates" />
+    <MESSAGE value="final updates for version1" />
+    <option name="LAST_COMMIT_MESSAGE" value="final updates for version1" />
   </component>
   <component name="XDebuggerManager">
     <watches-manager>
