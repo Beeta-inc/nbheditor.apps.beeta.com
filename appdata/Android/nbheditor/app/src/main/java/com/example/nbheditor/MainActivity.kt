@@ -148,7 +148,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Reflect AI toggle state in drawer
-        binding.navView.menu.findItem(R.id.nav_toggle_ai)?.isChecked = !aiEnabled
+        binding.navView.menu.findItem(R.id.nav_toggle_ai)?.let {
+            it.isChecked = !aiEnabled
+            it.title = if (aiEnabled) "Disable AI" else "Enable AI"
+        }
 
         val container = binding.appBarMain.contentMain.fragmentContainer
         editorBinding = FragmentEditorBinding.inflate(layoutInflater, container, false)
@@ -282,6 +285,7 @@ class MainActivity : AppCompatActivity() {
                 textChanged = true
                 isTyping = true
                 updateLineNumbers()
+                updateToolbarTitle()
                 handler.removeCallbacks(typingDelayRunnable)
                 handler.postDelayed(typingDelayRunnable, 2000)
                 if (aiEnabled) triggerAISuggestions()
@@ -432,11 +436,15 @@ class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val prompt = "Rewrite the following text to be clearer and better. Return ONLY the rewritten text with no explanation:\n\n$selectedText"
-                val result = callAI(prompt, maxTokens = selectedText.length.coerceAtLeast(200))
+                val isSelection = start < end
+                val prompt = if (isSelection)
+                    "Fix and complete this text precisely. If there are missing values (like a math answer after =, a missing word, incomplete sentence), fill them in at exactly the right position. Return ONLY the corrected text, no explanation:\n\n$selectedText"
+                else
+                    "Review and improve this entire text. Fix errors, complete incomplete parts, and improve clarity. Return ONLY the improved text:\n\n$selectedText"
+                val result = callAI(prompt, maxTokens = (selectedText.length * 2).coerceAtLeast(300))
                 withContext(Dispatchers.Main) {
                     result?.let {
-                        if (start < end) editorBinding.textArea.text.replace(start, end, it)
+                        if (isSelection) editorBinding.textArea.text.replace(start, end, it)
                         else editorBinding.textArea.setText(it)
                         Toast.makeText(this@MainActivity, "✓ Improved", Toast.LENGTH_SHORT).show()
                     } ?: Toast.makeText(this@MainActivity, "No result from AI", Toast.LENGTH_SHORT).show()
@@ -478,6 +486,16 @@ class MainActivity : AppCompatActivity() {
         textChanged = false
     }
 
+    private fun updateToolbarTitle() {
+        val name = currentFileUri?.lastPathSegment?.substringAfterLast('/') ?: "NBH Editor"
+        val dot = if (textChanged) " ●" else ""
+        binding.appBarMain.toolbarTitle?.text = "$name$dot"
+        binding.appBarMain.toolbarTitle?.setTextColor(
+            if (textChanged) resources.getColor(R.color.accent_primary, theme)
+            else resources.getColor(R.color.editor_text, theme)
+        )
+    }
+
     private fun openFileFromUri(uri: Uri) {
         try {
             contentResolver.openInputStream(uri)?.use {
@@ -486,10 +504,8 @@ class MainActivity : AppCompatActivity() {
                 currentFileUri = uri
                 textChanged = false
                 updateLineNumbers()
-                // Show filename in toolbar
-                val name = uri.lastPathSegment?.substringAfterLast('/') ?: "File"
-                binding.appBarMain.toolbarTitle?.text = name
-                Toast.makeText(this, "Opened: $name", Toast.LENGTH_SHORT).show()
+                updateToolbarTitle()
+                Toast.makeText(this, "Opened", Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
             Toast.makeText(this, "Failed to open file", Toast.LENGTH_SHORT).show()
@@ -501,6 +517,7 @@ class MainActivity : AppCompatActivity() {
             contentResolver.openOutputStream(uri, "wt")?.use {
                 OutputStreamWriter(it).use { w -> w.write(editorBinding.textArea.text.toString()) }
                 textChanged = false
+                updateToolbarTitle()
             }
         } catch (e: Exception) {
             Toast.makeText(this, "Failed to save", Toast.LENGTH_SHORT).show()
@@ -509,14 +526,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleMenuItem(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.nav_new_file, R.id.newMenuItem -> {
+            R.id.nav_new_file -> {
                 editorBinding.textArea.setText("")
                 currentFileUri = null
                 textChanged = false
                 updateLineNumbers()
-                binding.appBarMain.toolbarTitle?.text = "NBH Editor"
+                updateToolbarTitle()
             }
-            R.id.nav_open_file, R.id.openMenuItem -> {
+            R.id.nav_open_file -> {
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
                     type = "*/*"
@@ -533,8 +550,9 @@ class MainActivity : AppCompatActivity() {
                     type = "text/plain"
                     putExtra(Intent.EXTRA_TITLE, "untitled.txt")
                 })
+                updateToolbarTitle()
             }
-            R.id.nav_save_as, R.id.saveAsMenuItem -> {
+            R.id.nav_save_as -> {
                 saveFileAsLauncher.launch(Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
                     type = "text/plain"
@@ -548,6 +566,7 @@ class MainActivity : AppCompatActivity() {
                 aiEnabled = !aiEnabled
                 prefs.edit().putBoolean("ai_enabled", aiEnabled).apply()
                 item.isChecked = !aiEnabled
+                item.title = if (aiEnabled) "Disable AI" else "Enable AI"
                 if (!aiEnabled) editorBinding.aiSuggestionContainer.isVisible = false
                 Toast.makeText(this, if (aiEnabled) "AI Enabled" else "AI Disabled", Toast.LENGTH_SHORT).show()
             }

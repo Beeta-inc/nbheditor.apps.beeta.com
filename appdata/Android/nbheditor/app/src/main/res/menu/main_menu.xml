@@ -11,18 +11,12 @@
     <item
         android:id="@+id/improveMenuItem"
         android:title="Fix with AI"
-        android:icon="@drawable/ic_ai_sparkle"
+        android:icon="@android:drawable/ic_menu_manage"
         app:showAsAction="ifRoom" />
 
     <item
-        android:id="@+id/menu_more"
-        android:title="More"
-        app:showAsAction="never">
-        <menu>
-            <item android:id="@+id/newMenuItem" android:title="New File" />
-            <item android:id="@+id/openMenuItem" android:title="Open File..." />
-            <item android:id="@+id/saveAsMenuItem" android:title="Save As..." />
-            <item android:id="@+id/quitMenuItem" android:title="Quit" />
-        </menu>
-    </item>
+        android:id="@+id/quitMenuItem"
+        android:title="Quit"
+        app:showAsAction="never" />
+
 </menu>
