@@ -17,6 +17,12 @@
         <item name="windowNoTitle">true</item>
     </style>
 
+    <style name="Theme.Nbheditor.Splash" parent="Theme.Nbheditor.NoActionBar">
+        <item name="android:windowBackground">@color/editor_bg</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowContentOverlay">@null</item>
+    </style>
+
     <style name="Theme.Nbheditor.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar">
         <item name="android:background">@color/toolbar_bg</item>
     </style>

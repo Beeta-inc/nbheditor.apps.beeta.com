@@ -20,7 +20,7 @@
         <activity
             android:name="com.beeta.nbheditor.SplashActivity"
             android:exported="true"
-            android:theme="@style/Theme.Nbheditor.NoActionBar">
+            android:theme="@style/Theme.Nbheditor.Splash">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

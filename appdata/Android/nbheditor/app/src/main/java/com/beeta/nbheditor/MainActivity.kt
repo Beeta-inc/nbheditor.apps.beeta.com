@@ -65,15 +65,26 @@ class MainActivity : AppCompatActivity() {
         .build()
     private val gson = Gson()
 
-    // Google AI Studio key — free tier: 1500 req/day, 15 req/min, resets daily
-    // Get yours free at: https://aistudio.google.com/apikey
+    // ── AI Backend ────────────────────────────────────────────────────────────
+    // Priority: OpenRouter free models (1→6) then Google Gemini as final fallback
+    // Each model is skipped on 429 rate-limit and the next one is tried.
+
+    private val OPENROUTER_API_KEY = "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"
+
+    // 6 free OpenRouter models tried in order
+    private val OR_MODELS = listOf(
+        "stepfun/step-3.5-flash:free",            // 1 — fast, generous limits
+        "mistralai/mistral-7b-instruct:free",     // 2 — reliable
+        "meta-llama/llama-3.2-3b-instruct:free",  // 3 — Meta Llama free
+        "google/gemma-3-4b-it:free",              // 4 — Google Gemma free
+        "qwen/qwen3-0.6b:free",                   // 5 — Qwen tiny, very fast
+        "microsoft/phi-3-mini-128k-instruct:free" // 6 — Microsoft Phi-3 free
+    )
+
+    // Google AI Studio — final fallback (1500 req/day free)
+    // Get your key at: https://aistudio.google.com/apikey
     private val GEMINI_API_KEY = "AIzaSyAjO1m3x5uh5oqKt05nPRsS_H4MlgkUqN0"
     private val GEMINI_MODEL = "gemini-2.0-flash"
-
-    // OpenRouter fallback (used if Gemini key not set)
-    private val OPENROUTER_API_KEY = "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"
-    private val OR_FAST_MODEL = "stepfun/step-3.5-flash:free"
-    private val OR_CHAT_MODEL = "stepfun/step-3.5-flash:free"
 
     private lateinit var chatAdapter: ChatAdapter
 
@@ -327,12 +338,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private suspend fun callAI(prompt: String, maxTokens: Int = 512): String? {
-        // Try Gemini first (1500 req/day free, much higher limits)
-        if (GEMINI_API_KEY != "YOUR_GEMINI_API_KEY_HERE") {
-            try { return callGemini(prompt) } catch (_: Exception) {}
+        // Try all 6 OpenRouter free models first
+        try {
+            return callOpenRouter(prompt, maxTokens)
+        } catch (e: Exception) {
+            Log.w("AI", "All OpenRouter models exhausted: ${e.message}")
         }
-        // Fallback to OpenRouter
-        return callOpenRouter(prompt, OR_CHAT_MODEL, maxTokens)
+        // Final fallback: Google Gemini
+        if (GEMINI_API_KEY != "YOUR_GEMINI_API_KEY_HERE") {
+            try {
+                return callGemini(prompt)
+            } catch (e: Exception) {
+                Log.e("AI", "Gemini also failed: ${e.message}")
+            }
+        }
+        throw Exception("All AI providers exhausted")
     }
 
     private suspend fun callGemini(prompt: String): String? = withContext(Dispatchers.IO) {
@@ -350,13 +370,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun callOpenRouter(prompt: String, model: String, maxTokens: Int = 512): String? =
+    private suspend fun callOpenRouter(prompt: String, maxTokens: Int = 512): String? =
         withContext(Dispatchers.IO) {
-            val modelsToTry = listOf(model, OR_FAST_MODEL).distinct()
             var lastError: Exception? = null
-            for (m in modelsToTry) {
+            for ((index, model) in OR_MODELS.withIndex()) {
                 try {
-                    val body = gson.toJson(ChatRequest(m, listOf(ChatMessage("user", prompt)), maxTokens))
+                    Log.d("AI", "Trying OpenRouter model ${index + 1}/${OR_MODELS.size}: $model")
+                    val body = gson.toJson(ChatRequest(model, listOf(ChatMessage("user", prompt)), maxTokens))
                         .toRequestBody("application/json".toMediaType())
                     val request = Request.Builder()
                         .url("https://openrouter.ai/api/v1/chat/completions")
@@ -367,17 +387,36 @@ class MainActivity : AppCompatActivity() {
                         .build()
                     client.newCall(request).execute().use { response ->
                         val rb = response.body?.string()
-                        if (response.code == 429) throw Exception("rate_limited")
-                        if (!response.isSuccessful) throw Exception("HTTP ${response.code}")
-                        return@withContext gson.fromJson(rb, ChatResponse::class.java)
-                            .choices.firstOrNull()?.message?.content?.trim()
+                        when {
+                            response.code == 429 -> {
+                                Log.w("AI", "Model $model rate limited, trying next")
+                                throw Exception("rate_limited")
+                            }
+                            response.code == 401 || response.code == 403 -> {
+                                // Auth error — no point trying other models
+                                throw Exception("Auth error ${response.code}: check OpenRouter API key")
+                            }
+                            !response.isSuccessful -> {
+                                Log.w("AI", "Model $model failed with ${response.code}, trying next")
+                                throw Exception("rate_limited") // treat other errors as skip
+                            }
+                            else -> {
+                                val result = gson.fromJson(rb, ChatResponse::class.java)
+                                    .choices.firstOrNull()?.message?.content?.trim()
+                                Log.d("AI", "Success with model $model")
+                                return@withContext result
+                            }
+                        }
                     }
                 } catch (e: Exception) {
-                    if (e.message == "rate_limited") { lastError = e; continue }
-                    throw e
+                    if (e.message == "rate_limited" || e.message?.startsWith("rate_limited") == true) {
+                        lastError = e
+                        continue // try next model
+                    }
+                    throw e // re-throw auth errors and real failures
                 }
             }
-            throw lastError ?: Exception("All models rate limited")
+            throw lastError ?: Exception("All OpenRouter models exhausted")
         }
 
     private fun showAISuggestions(suggestions: List<String>) {

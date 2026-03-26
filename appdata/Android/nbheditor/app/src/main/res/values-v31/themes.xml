@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Nbheditor.Splash" parent="Theme.Nbheditor.NoActionBar">
+        <item name="android:windowSplashScreenBackground">@color/editor_bg</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/logo_beeta</item>
+        <item name="android:windowBackground">@color/editor_bg</item>
+    </style>
+</resources>
