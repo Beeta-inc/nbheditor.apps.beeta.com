@@ -1,4 +1,4 @@
-package com.example.nbheditor.ui.settings
+package com.beeta.nbheditor.ui.reflow
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -7,11 +7,11 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import com.example.nbheditor.databinding.FragmentSettingsBinding
+import com.beeta.nbheditor.databinding.FragmentReflowBinding
 
-class SettingsFragment : Fragment() {
+class ReflowFragment : Fragment() {
 
-    private var _binding: FragmentSettingsBinding? = null
+    private var _binding: FragmentReflowBinding? = null
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -22,14 +22,14 @@ class SettingsFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        val settingsViewModel =
-            ViewModelProvider(this).get(SettingsViewModel::class.java)
+        val reflowViewModel =
+            ViewModelProvider(this).get(ReflowViewModel::class.java)
 
-        _binding = FragmentSettingsBinding.inflate(inflater, container, false)
+        _binding = FragmentReflowBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
-        val textView: TextView = binding.textSettings
-        settingsViewModel.text.observe(viewLifecycleOwner) {
+        val textView: TextView = binding.textReflow
+        reflowViewModel.text.observe(viewLifecycleOwner) {
             textView.text = it
         }
         return root

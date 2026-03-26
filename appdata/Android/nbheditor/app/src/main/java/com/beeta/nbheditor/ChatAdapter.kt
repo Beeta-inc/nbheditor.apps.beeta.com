@@ -1,4 +1,4 @@
-package com.example.nbheditor
+package com.beeta.nbheditor
 
 import android.graphics.Color
 import android.graphics.Typeface

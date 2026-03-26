@@ -1,4 +1,4 @@
-package com.example.nbheditor
+package com.beeta.nbheditor
 
 import android.app.Activity
 import android.content.Intent
@@ -25,9 +25,9 @@ import androidx.core.view.GravityCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.nbheditor.databinding.ActivityMainBinding
-import com.example.nbheditor.databinding.FragmentAiChatBinding
-import com.example.nbheditor.databinding.FragmentEditorBinding
+import com.beeta.nbheditor.databinding.ActivityMainBinding
+import com.beeta.nbheditor.databinding.FragmentAiChatBinding
+import com.beeta.nbheditor.databinding.FragmentEditorBinding
 import com.google.android.material.chip.Chip
 import com.google.gson.Gson
 import kotlinx.coroutines.*
@@ -116,6 +116,7 @@ class MainActivity : AppCompatActivity() {
             result.data?.data?.let { uri ->
                 currentFileUri = uri
                 saveToFile(uri)
+                updateToolbarTitle()
                 Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show()
             }
         }
@@ -486,8 +487,22 @@ class MainActivity : AppCompatActivity() {
         textChanged = false
     }
 
+    private fun getFileName(uri: Uri): String {
+        // Try content resolver display name first (most reliable)
+        try {
+            contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val name = cursor.getString(0)
+                    if (!name.isNullOrBlank()) return name
+                }
+            }
+        } catch (_: Exception) {}
+        // Fallback: decode the last path segment
+        return android.net.Uri.decode(uri.lastPathSegment)?.substringAfterLast('/')?.substringAfterLast(':') ?: "untitled"
+    }
+
     private fun updateToolbarTitle() {
-        val name = currentFileUri?.lastPathSegment?.substringAfterLast('/') ?: "NBH Editor"
+        val name = if (currentFileUri != null) getFileName(currentFileUri!!) else "NBH Editor"
         val dot = if (textChanged) " ●" else ""
         binding.appBarMain.toolbarTitle?.text = "$name$dot"
         binding.appBarMain.toolbarTitle?.setTextColor(

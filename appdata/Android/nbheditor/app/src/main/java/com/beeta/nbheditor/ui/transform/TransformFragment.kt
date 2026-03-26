@@ -1,4 +1,4 @@
-package com.example.nbheditor.ui.transform
+package com.beeta.nbheditor.ui.transform
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -12,9 +12,9 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.example.nbheditor.R
-import com.example.nbheditor.databinding.FragmentTransformBinding
-import com.example.nbheditor.databinding.ItemTransformBinding
+import com.beeta.nbheditor.R
+import com.beeta.nbheditor.databinding.FragmentTransformBinding
+import com.beeta.nbheditor.databinding.ItemTransformBinding
 
 /**
  * Fragment that demonstrates a responsive layout pattern where the format of the content

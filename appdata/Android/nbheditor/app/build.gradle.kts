@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.nbheditor"
+    namespace = "com.beeta.nbheditor"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.example.nbheditor"
+        applicationId = "com.beeta.nbheditor"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
