@@ -445,37 +445,61 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "AI is disabled. Enable it in Settings.", Toast.LENGTH_SHORT).show()
             return
         }
-        val start = editorBinding.textArea.selectionStart
-        val end = editorBinding.textArea.selectionEnd
-        val selectedText = if (start < end) editorBinding.textArea.text.substring(start, end)
-                           else editorBinding.textArea.text.toString()
+        val editText = editorBinding.textArea
+        val start = editText.selectionStart.coerceAtLeast(0)
+        val end = editText.selectionEnd.coerceAtLeast(0)
+        val isSelection = start < end
+        val selectedText = if (isSelection) editText.text.substring(start, end)
+                           else editText.text.toString()
 
         if (selectedText.isBlank()) {
             Toast.makeText(this, "Nothing to improve", Toast.LENGTH_SHORT).show()
             return
         }
 
+        // Snapshot the text to improve before async call
+        val textSnapshot = selectedText
+
         editorBinding.overlayText.text = "✦ Improving with AI..."
         editorBinding.overlayView.visibility = View.VISIBLE
 
         lifecycleScope.launch {
             try {
-                val isSelection = start < end
                 val prompt = if (isSelection)
-                    "Fix and complete this text precisely. If there are missing values (like a math answer after =, a missing word, incomplete sentence), fill them in at exactly the right position. Return ONLY the corrected text, no explanation:\n\n$selectedText"
+                    "Fix and complete this text precisely. Fill in any missing values at exactly the right position (e.g. a math answer after =, a missing word, incomplete sentence). Return ONLY the corrected text, no explanation:\n\n$textSnapshot"
                 else
-                    "Review and improve this entire text. Fix errors, complete incomplete parts, and improve clarity. Return ONLY the improved text:\n\n$selectedText"
-                val result = callAI(prompt, maxTokens = (selectedText.length * 2).coerceAtLeast(300))
+                    "Review and improve this entire text. Fix errors, complete incomplete parts, improve clarity. Return ONLY the improved text, no explanation:\n\n$textSnapshot"
+
+                val result = callAI(prompt, maxTokens = (textSnapshot.length * 2).coerceAtLeast(300))
+
                 withContext(Dispatchers.Main) {
-                    result?.let {
-                        if (isSelection) editorBinding.textArea.text.replace(start, end, it)
-                        else editorBinding.textArea.setText(it)
+                    if (result.isNullOrBlank()) {
+                        Toast.makeText(this@MainActivity, "AI returned no result. Try again.", Toast.LENGTH_SHORT).show()
+                        return@withContext
+                    }
+                    try {
+                        if (isSelection) {
+                            // Re-validate positions are still valid
+                            val len = editText.text.length
+                            val safeStart = start.coerceIn(0, len)
+                            val safeEnd = end.coerceIn(safeStart, len)
+                            editText.text.replace(safeStart, safeEnd, result)
+                        } else {
+                            // Preserve cursor position after full-text replace
+                            val cursorPos = editText.selectionStart
+                            editText.text.replace(0, editText.text.length, result)
+                            editText.setSelection(cursorPos.coerceIn(0, editText.text.length))
+                        }
                         Toast.makeText(this@MainActivity, "✓ Improved", Toast.LENGTH_SHORT).show()
-                    } ?: Toast.makeText(this@MainActivity, "No result from AI", Toast.LENGTH_SHORT).show()
+                    } catch (e: Exception) {
+                        // Fallback if Editable replace fails
+                        editText.setText(result)
+                        Toast.makeText(this@MainActivity, "✓ Improved", Toast.LENGTH_SHORT).show()
+                    }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@MainActivity, "AI error: ${e.message?.take(50)}", Toast.LENGTH_LONG).show()
+                    Toast.makeText(this@MainActivity, "AI error: ${e.message?.take(80)}", Toast.LENGTH_LONG).show()
                 }
             } finally {
                 withContext(Dispatchers.Main) { editorBinding.overlayView.visibility = View.GONE }
