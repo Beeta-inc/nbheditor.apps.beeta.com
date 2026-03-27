@@ -340,19 +340,19 @@ class MainActivity : AppCompatActivity() {
     private suspend fun callAI(prompt: String, maxTokens: Int = 512): String? {
         // Try all 6 OpenRouter free models first
         try {
-            return callOpenRouter(prompt, maxTokens)
+            val result = callOpenRouter(prompt, maxTokens)
+            if (result != null) return result
         } catch (e: Exception) {
-            Log.w("AI", "All OpenRouter models exhausted: ${e.message}")
+            Log.w("AI", "OpenRouter failed: ${e.message}")
         }
         // Final fallback: Google Gemini
-        if (GEMINI_API_KEY != "YOUR_GEMINI_API_KEY_HERE") {
-            try {
-                return callGemini(prompt)
-            } catch (e: Exception) {
-                Log.e("AI", "Gemini also failed: ${e.message}")
-            }
+        try {
+            val result = callGemini(prompt)
+            if (result != null) return result
+        } catch (e: Exception) {
+            Log.e("AI", "Gemini failed: ${e.message}")
         }
-        throw Exception("All AI providers exhausted")
+        return null
     }
 
     private suspend fun callGemini(prompt: String): String? = withContext(Dispatchers.IO) {
@@ -372,10 +372,9 @@ class MainActivity : AppCompatActivity() {
 
     private suspend fun callOpenRouter(prompt: String, maxTokens: Int = 512): String? =
         withContext(Dispatchers.IO) {
-            var lastError: Exception? = null
             for ((index, model) in OR_MODELS.withIndex()) {
                 try {
-                    Log.d("AI", "Trying OpenRouter model ${index + 1}/${OR_MODELS.size}: $model")
+                    Log.d("AI", "Trying model ${index + 1}/${OR_MODELS.size}: $model")
                     val body = gson.toJson(ChatRequest(model, listOf(ChatMessage("user", prompt)), maxTokens))
                         .toRequestBody("application/json".toMediaType())
                     val request = Request.Builder()
@@ -387,36 +386,21 @@ class MainActivity : AppCompatActivity() {
                         .build()
                     client.newCall(request).execute().use { response ->
                         val rb = response.body?.string()
-                        when {
-                            response.code == 429 -> {
-                                Log.w("AI", "Model $model rate limited, trying next")
-                                throw Exception("rate_limited")
-                            }
-                            response.code == 401 || response.code == 403 -> {
-                                // Auth error — no point trying other models
-                                throw Exception("Auth error ${response.code}: check OpenRouter API key")
-                            }
-                            !response.isSuccessful -> {
-                                Log.w("AI", "Model $model failed with ${response.code}, trying next")
-                                throw Exception("rate_limited") // treat other errors as skip
-                            }
-                            else -> {
-                                val result = gson.fromJson(rb, ChatResponse::class.java)
-                                    .choices.firstOrNull()?.message?.content?.trim()
-                                Log.d("AI", "Success with model $model")
+                        if (response.isSuccessful) {
+                            val result = gson.fromJson(rb, ChatResponse::class.java)
+                                .choices.firstOrNull()?.message?.content?.trim()
+                            if (result != null) {
+                                Log.d("AI", "✓ Success with $model")
                                 return@withContext result
                             }
                         }
+                        Log.w("AI", "Model $model failed (${response.code}), trying next")
                     }
                 } catch (e: Exception) {
-                    if (e.message == "rate_limited" || e.message?.startsWith("rate_limited") == true) {
-                        lastError = e
-                        continue // try next model
-                    }
-                    throw e // re-throw auth errors and real failures
+                    Log.w("AI", "Model $model error: ${e.message}")
                 }
             }
-            throw lastError ?: Exception("All OpenRouter models exhausted")
+            null
         }
 
     private fun showAISuggestions(suggestions: List<String>) {
