@@ -25,32 +25,40 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="4dp"
         app:cardBackgroundColor="@color/chat_ai_bubble"
-        app:cardCornerRadius="4dp"
+        app:cardCornerRadius="8dp"
         app:cardElevation="0dp"
         app:strokeWidth="1dp"
         app:strokeColor="@color/divider">
 
-        <!-- Simple text (no code blocks) -->
-        <TextView
-            android:id="@+id/messageText"
+        <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:padding="12dp"
-            android:textColor="@color/chat_ai_text"
-            android:textSize="14sp"
-            android:lineSpacingMultiplier="1.5"
-            android:maxWidth="300dp"
-            android:fontFamily="sans-serif" />
+            android:orientation="vertical">
+
+            <!-- Simple text (no code blocks) -->
+            <TextView
+                android:id="@+id/messageText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:padding="12dp"
+                android:textColor="@color/chat_ai_text"
+                android:textSize="14sp"
+                android:lineSpacingMultiplier="1.5"
+                android:maxWidth="300dp"
+                android:fontFamily="sans-serif" />
+
+            <!-- Mixed content container (text + code blocks) -->
+            <LinearLayout
+                android:id="@+id/codeBlockContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="8dp"
+                android:visibility="gone" />
+
+        </LinearLayout>
 
     </com.google.android.material.card.MaterialCardView>
-
-    <!-- Mixed content container (text + code blocks) -->
-    <LinearLayout
-        android:id="@+id/codeBlockContainer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:visibility="gone" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/insertBtn"

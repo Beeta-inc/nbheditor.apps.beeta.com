@@ -99,8 +99,8 @@ class ChatAdapter(
                             text = content
                             typeface = Typeface.MONOSPACE
                             textSize = 12f
-                            setTextColor(Color.parseColor("#A6E3A1"))
-                            setBackgroundColor(Color.parseColor("#1E1E2E"))
+                            setTextColor(ContextCompat.getColor(context, R.color.accent_secondary))
+                            setBackgroundColor(ContextCompat.getColor(context, R.color.editor_line_numbers_bg))
                             setPadding(24, 16, 24, 16)
                             layoutParams = LinearLayout.LayoutParams(
                                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -112,7 +112,7 @@ class ChatAdapter(
                         val tv = TextView(context)
                         tv.text = buildInlineSpannable(content.trim())
                         tv.textSize = 14f
-                        tv.setTextColor(Color.parseColor("#CDD6F4"))
+                        tv.setTextColor(ContextCompat.getColor(context, R.color.chat_ai_text))
                         tv.setLineSpacing(0f, 1.5f)
                         tv.layoutParams = LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.MATCH_PARENT,

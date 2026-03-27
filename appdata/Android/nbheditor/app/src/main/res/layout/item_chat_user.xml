@@ -23,8 +23,8 @@
     <com.google.android.material.card.MaterialCardView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:cardBackgroundColor="#FF89B4FA"
-        app:cardCornerRadius="4dp"
+        app:cardBackgroundColor="@color/chat_user_bubble"
+        app:cardCornerRadius="8dp"
         app:cardElevation="0dp"
         app:strokeWidth="0dp">
 
@@ -33,7 +33,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:padding="12dp"
-            android:textColor="#FF1E1E2E"
+            android:textColor="@color/chat_user_text"
             android:textSize="14sp"
             android:lineSpacingMultiplier="1.5"
             android:maxWidth="300dp"

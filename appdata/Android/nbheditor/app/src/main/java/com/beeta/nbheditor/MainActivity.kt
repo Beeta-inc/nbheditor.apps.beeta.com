@@ -321,7 +321,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         aiJob = lifecycleScope.launch {
-            delay(1500)
+            delay(60000) // 1 minute delay
             try {
                 val context = if (text.length > 300) text.takeLast(300) else text
                 val prompt = "Complete this text with 2 short options separated by |. Only return the options, nothing else:\n$context"
@@ -521,8 +521,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun performAutoSave() {
-        currentFileUri?.let { saveToFile(it) } ?: prefs.edit()
-            .putString("recovery_text", editorBinding.textArea.text.toString()).apply()
+        currentFileUri?.let { 
+            saveToFile(it)
+            // Save the file URI so we know user has an active file
+            prefs.edit().putString("last_file_uri", it.toString()).apply()
+        } ?: run {
+            // Only save recovery text if there's actual content and no file is open
+            val text = editorBinding.textArea.text.toString()
+            if (text.isNotBlank()) {
+                prefs.edit()
+                    .putString("recovery_text", text)
+                    .remove("last_file_uri")
+                    .apply()
+            }
+        }
         textChanged = false
     }
 
@@ -557,6 +569,11 @@ class MainActivity : AppCompatActivity() {
                 editorBinding.textArea.setText(content)
                 currentFileUri = uri
                 textChanged = false
+                // Clear recovery text and save this file as the active one
+                prefs.edit()
+                    .remove("recovery_text")
+                    .putString("last_file_uri", uri.toString())
+                    .apply()
                 updateLineNumbers()
                 updateToolbarTitle()
                 Toast.makeText(this, "Opened", Toast.LENGTH_SHORT).show()
@@ -584,6 +601,11 @@ class MainActivity : AppCompatActivity() {
                 editorBinding.textArea.setText("")
                 currentFileUri = null
                 textChanged = false
+                // Clear recovery and last file URI so new file doesn't restore old content
+                prefs.edit()
+                    .remove("recovery_text")
+                    .remove("last_file_uri")
+                    .apply()
                 updateLineNumbers()
                 updateToolbarTitle()
             }
@@ -632,8 +654,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkForRecovery() {
+        // Only recover if there's no saved file URI (user didn't open a file)
         val recovered = prefs.getString("recovery_text", null)
-        if (!recovered.isNullOrBlank() && editorBinding.textArea.text.isBlank()) {
+        val savedUri = prefs.getString("last_file_uri", null)
+        
+        if (!recovered.isNullOrBlank() && editorBinding.textArea.text.isBlank() && savedUri == null) {
             editorBinding.textArea.setText(recovered)
             updateLineNumbers()
             Toast.makeText(this, "Recovered unsaved text", Toast.LENGTH_SHORT).show()
