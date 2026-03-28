@@ -44,8 +44,12 @@
                     android:text="NBH Editor"
                     android:textColor="@color/editor_text"
                     android:textStyle="bold"
-                    android:textSize="17sp"
-                    android:letterSpacing="0.02" />
+                    android:textSize="19sp"
+                    android:letterSpacing="0.02"
+                    android:shadowColor="#44000000"
+                    android:shadowDx="0"
+                    android:shadowDy="1"
+                    android:shadowRadius="3" />
             </LinearLayout>
 
         </androidx.appcompat.widget.Toolbar>

@@ -683,6 +683,8 @@ open class MainActivity : AppCompatActivity() {
         val name = if (currentFileUri != null) getFileName(currentFileUri!!) else "NBH Editor"
         val dot = if (textChanged) " ●" else ""
         binding.appBarMain.toolbarTitle?.text = "$name$dot"
+        binding.appBarMain.toolbarTitle?.setTypeface(null, android.graphics.Typeface.BOLD)
+        binding.appBarMain.toolbarTitle?.textSize = 19f
         binding.appBarMain.toolbarTitle?.setTextColor(
             when {
                 textChanged -> resources.getColor(R.color.accent_primary, theme)
