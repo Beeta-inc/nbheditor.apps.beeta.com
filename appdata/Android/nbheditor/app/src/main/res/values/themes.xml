@@ -1,15 +1,20 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Theme.Nbheditor" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/toolbar_bg</item>
-        <item name="colorPrimaryVariant">@color/editor_surface</item>
-        <item name="colorOnPrimary">@color/editor_text</item>
-        <item name="colorSecondary">@color/accent_primary</item>
-        <item name="colorSecondaryVariant">@color/accent_primary</item>
-        <item name="colorOnSecondary">@color/editor_bg</item>
-        <item name="android:statusBarColor">@color/toolbar_bg</item>
-        <item name="android:navigationBarColor">@color/bottom_nav_bg</item>
-        <item name="android:windowBackground">@color/editor_bg</item>
+        <item name="colorPrimary">@color/accent_primary</item>
+        <item name="colorPrimaryVariant">@color/accent_purple</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/accent_secondary</item>
+        <item name="colorSecondaryVariant">@color/accent_secondary</item>
+        <item name="colorOnSecondary">@color/white</item>
+        <item name="android:statusBarColor">#00000000</item>
+        <item name="android:navigationBarColor">#00000000</item>
+        <item name="android:windowBackground">@color/glass_scene_bg</item>
+        <item name="android:windowTranslucentStatus">false</item>
+        <item name="android:windowTranslucentNavigation">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="23">true</item>
         <item name="bottomNavigationStyle">@style/Widget.Nbheditor.BottomNav</item>
+        <item name="navigationViewStyle">@style/Widget.Nbheditor.NavView</item>
     </style>
 
     <style name="Theme.Nbheditor.NoActionBar" parent="Theme.Nbheditor">
@@ -18,21 +23,26 @@
     </style>
 
     <style name="Theme.Nbheditor.Splash" parent="Theme.Nbheditor.NoActionBar">
-        <item name="android:windowBackground">@color/editor_bg</item>
+        <item name="android:windowBackground">@color/glass_scene_bg</item>
         <item name="android:windowFullscreen">true</item>
         <item name="android:windowContentOverlay">@null</item>
     </style>
 
     <style name="Theme.Nbheditor.AppBarOverlay" parent="ThemeOverlay.AppCompat.ActionBar">
-        <item name="android:background">@color/toolbar_bg</item>
+        <item name="android:background">#00000000</item>
     </style>
 
     <style name="Theme.Nbheditor.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
     <style name="Widget.Nbheditor.BottomNav" parent="Widget.MaterialComponents.BottomNavigationView">
-        <item name="android:background">@color/bottom_nav_bg</item>
+        <item name="android:background">#00000000</item>
         <item name="itemIconTint">@color/bottom_nav_item_color</item>
         <item name="itemTextColor">@color/bottom_nav_item_color</item>
         <item name="itemRippleColor">@color/accent_primary</item>
+        <item name="elevation">0dp</item>
+    </style>
+
+    <style name="Widget.Nbheditor.NavView" parent="Widget.MaterialComponents.NavigationView">
+        <item name="android:background">#00000000</item>
     </style>
 </resources>

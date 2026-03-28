@@ -1,8 +1,16 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Nbheditor.Splash" parent="Theme.Nbheditor.NoActionBar">
-        <item name="android:windowSplashScreenBackground">@color/editor_bg</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_beeta_foreground</item>
-        <item name="android:windowBackground">@color/editor_bg</item>
+    <style name="Theme.Nbheditor" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/accent_primary</item>
+        <item name="colorPrimaryVariant">@color/accent_purple</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/accent_secondary</item>
+        <item name="android:statusBarColor">#00000000</item>
+        <item name="android:navigationBarColor">#00000000</item>
+        <item name="android:windowBackground">@color/glass_scene_bg</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:enforceStatusBarContrast">false</item>
+        <item name="android:enforceNavigationBarContrast">false</item>
+        <item name="bottomNavigationStyle">@style/Widget.Nbheditor.BottomNav</item>
+        <item name="navigationViewStyle">@style/Widget.Nbheditor.NavView</item>
     </style>
 </resources>

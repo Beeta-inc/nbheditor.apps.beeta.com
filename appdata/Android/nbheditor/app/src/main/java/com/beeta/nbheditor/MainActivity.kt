@@ -6,6 +6,7 @@ import android.content.SharedPreferences
 import android.graphics.Color
 import android.graphics.Typeface
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -16,12 +17,14 @@ import android.view.Gravity
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.view.WindowManager
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.GravityCompat
+import androidx.core.view.WindowCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -69,7 +72,7 @@ class MainActivity : AppCompatActivity() {
     // Priority: OpenRouter free models (1→6) then Google Gemini as final fallback
     // Each model is skipped on 429 rate-limit and the next one is tried.
 
-    private val OPENROUTER_API_KEY = "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"
+    private val OPENROUTER_API_KEY = ""
 
     // 6 free OpenRouter models tried in order
     private val OR_MODELS = listOf(
@@ -141,9 +144,37 @@ class MainActivity : AppCompatActivity() {
         applyThemeMode(prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM))
         aiEnabled = prefs.getBoolean("ai_enabled", true)
 
+        // Edge-to-edge: let content draw behind system bars
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            window.setDecorFitsSystemWindows(false)
+        }
+        window.statusBarColor = android.graphics.Color.TRANSPARENT
+        window.navigationBarColor = android.graphics.Color.TRANSPARENT
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
         setSupportActionBar(binding.appBarMain.toolbar)
+
+        // Apply real blur to the background scene (API 31+)
+        GlassBlurHelper.applyBlur(binding.activityContainer, radius = 0f) // scene itself stays sharp
+        // Blur the nav drawer panel so it frosts over the content behind it
+        binding.drawerLayout.addDrawerListener(object : androidx.drawerlayout.widget.DrawerLayout.DrawerListener {
+            override fun onDrawerSlide(drawerView: View, slideOffset: Float) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    val blur = (slideOffset * 18f).coerceIn(0f, 18f)
+                    GlassBlurHelper.applyBlur(binding.appBarMain.root, blur)
+                }
+            }
+            override fun onDrawerOpened(drawerView: View) {
+                GlassBlurHelper.applyBlur(binding.appBarMain.root, 18f)
+            }
+            override fun onDrawerClosed(drawerView: View) {
+                GlassBlurHelper.clearBlur(binding.appBarMain.root)
+            }
+            override fun onDrawerStateChanged(newState: Int) {}
+        })
         supportActionBar?.setDisplayShowTitleEnabled(false)
 
         val toggle = ActionBarDrawerToggle(

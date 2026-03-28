@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="200dp"
-    android:background="@color/editor_line_numbers_bg"
+    android:layout_height="180dp"
+    android:background="@drawable/bg_glass_bar"
     android:gravity="bottom"
     android:orientation="vertical"
     android:padding="20dp">
@@ -10,15 +10,23 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/app_name"
+        android:text="✦"
         android:textColor="@color/accent_primary"
+        android:textSize="22sp"
+        android:paddingBottom="4dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/app_name"
+        android:textColor="@color/editor_text"
         android:textSize="22sp"
         android:textStyle="bold" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="v1.0.1  ·  @string/company_name"
+        android:text="v1.0.1  ·  Beeta Technologies Inc"
         android:textColor="@color/editor_line_number_text"
         android:textSize="11sp"
         android:paddingTop="3dp" />
@@ -26,7 +34,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/website"
+        android:text="nbheditor.pages.dev"
         android:textColor="@color/accent_secondary"
         android:textSize="11sp"
         android:paddingTop="2dp" />

@@ -3,15 +3,15 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/editor_bg">
+    android:background="@null">
 
-    <!-- Sticky header -->
+    <!-- Glass sticky header -->
     <LinearLayout
         android:id="@+id/chatHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:background="@color/editor_surface"
+        android:background="@drawable/bg_glass_bar"
         android:paddingStart="16dp"
         android:paddingEnd="16dp"
         android:paddingTop="14dp"
@@ -75,16 +75,16 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="✦"
-            android:textSize="40sp"
+            android:textSize="48sp"
             android:textColor="@color/accent_primary"
-            android:alpha="0.4" />
+            android:alpha="0.5" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Ask Beeta AI anything"
             android:textSize="16sp"
-            android:textColor="@color/editor_line_number_text"
+            android:textColor="@color/editor_text"
             android:paddingTop="8dp" />
 
         <TextView
@@ -143,13 +143,13 @@
         android:background="@color/divider"
         app:layout_constraintBottom_toTopOf="@id/inputBar" />
 
-    <!-- Input bar -->
+    <!-- Glass input bar -->
     <LinearLayout
         android:id="@+id/inputBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:background="@color/editor_surface"
+        android:background="@drawable/bg_glass_bar"
         android:paddingStart="12dp"
         android:paddingEnd="10dp"
         android:paddingTop="10dp"
@@ -157,12 +157,13 @@
         android:gravity="center_vertical"
         app:layout_constraintBottom_toBottomOf="parent">
 
+        <!-- Glass input field -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            app:cardBackgroundColor="@color/input_bg"
-            app:cardCornerRadius="22dp"
+            app:cardBackgroundColor="#1AFFFFFF"
+            app:cardCornerRadius="24dp"
             app:cardElevation="0dp"
             app:strokeWidth="1dp"
             app:strokeColor="@color/divider">
@@ -191,9 +192,9 @@
             android:layout_marginStart="10dp"
             android:src="@android:drawable/ic_menu_send"
             app:backgroundTint="@color/accent_primary"
-            app:tint="@color/editor_bg"
+            app:tint="@color/white"
             app:fabSize="mini"
-            app:elevation="2dp"
+            app:elevation="4dp"
             android:contentDescription="Send" />
 
     </LinearLayout>

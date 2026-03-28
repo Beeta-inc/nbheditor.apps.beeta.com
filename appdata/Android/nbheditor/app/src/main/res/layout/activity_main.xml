@@ -4,7 +4,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/activity_container"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@null">
 
     <androidx.drawerlayout.widget.DrawerLayout
         android:id="@+id/drawer_layout"
@@ -19,13 +20,14 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
+        <!-- Glass navigation drawer - uses same scene bg as window -->
         <com.google.android.material.navigation.NavigationView
             android:id="@+id/nav_view"
-            android:layout_width="wrap_content"
+            android:layout_width="280dp"
             android:layout_height="match_parent"
             android:layout_gravity="start"
             android:fitsSystemWindows="true"
-            android:background="@color/editor_surface"
+            android:background="?android:attr/windowBackground"
             app:itemTextColor="@color/editor_text"
             app:itemIconTint="@color/accent_primary"
             app:itemBackground="@null"

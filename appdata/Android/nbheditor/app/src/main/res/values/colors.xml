@@ -8,24 +8,27 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
 
-    <!-- Light mode (default) - Catppuccin Latte -->
-    <color name="editor_bg">#FFEFF1F5</color>
-    <color name="editor_surface">#FFE6E9EF</color>
-    <color name="editor_line_numbers_bg">#FFDCE0E8</color>
+    <!-- Light mode glass - warm frosted white scene -->
+    <color name="glass_scene_bg">#FFF0F4FF</color>
+    <color name="editor_bg">#00000000</color>
+    <color name="editor_surface">#26FFFFFF</color>
+    <color name="editor_line_numbers_bg">#1A000000</color>
     <color name="editor_line_number_text">#FF8C8FA1</color>
-    <color name="editor_text">#FF4C4F69</color>
-    <color name="editor_hint">#FF9CA0B0</color>
+    <color name="editor_text">#FF1E1E2E</color>
+    <color name="editor_hint">#889CA0B0</color>
     <color name="accent_primary">#FF1E66F5</color>
     <color name="accent_secondary">#FF40A02B</color>
     <color name="accent_purple">#FF8839EF</color>
     <color name="accent_peach">#FFFE640B</color>
-    <color name="suggestion_bg">#FFCCD0DA</color>
-    <color name="toolbar_bg">#FFDCE0E8</color>
-    <color name="bottom_nav_bg">#FFDCE0E8</color>
-    <color name="chat_user_bubble">#FF1E66F5</color>
-    <color name="chat_ai_bubble">#FFE6E9EF</color>
+    <color name="suggestion_bg">#26FFFFFF</color>
+    <color name="toolbar_bg">#00000000</color>
+    <color name="bottom_nav_bg">#00000000</color>
+    <color name="chat_user_bubble">#CC1E66F5</color>
+    <color name="chat_ai_bubble">#26FFFFFF</color>
     <color name="chat_user_text">#FFFFFFFF</color>
-    <color name="chat_ai_text">#FF4C4F69</color>
-    <color name="input_bg">#FFCCD0DA</color>
-    <color name="divider">#FFBCC0CC</color>
+    <color name="chat_ai_text">#FF1E1E2E</color>
+    <color name="input_bg">#26FFFFFF</color>
+    <color name="divider">#33000000</color>
+    <color name="glass_border">#44FFFFFF</color>
+    <color name="glass_tint">#1AFFFFFF</color>
 </resources>

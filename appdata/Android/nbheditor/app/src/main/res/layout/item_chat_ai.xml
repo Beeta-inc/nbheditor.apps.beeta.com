@@ -13,7 +13,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Beeta AI"
+        android:text="✦ Beeta AI"
         android:textSize="10sp"
         android:textColor="@color/accent_primary"
         android:paddingStart="2dp"
@@ -24,8 +24,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="4dp"
-        app:cardBackgroundColor="@color/chat_ai_bubble"
-        app:cardCornerRadius="8dp"
+        app:cardBackgroundColor="#26FFFFFF"
+        app:cardCornerRadius="12dp"
         app:cardElevation="0dp"
         app:strokeWidth="1dp"
         app:strokeColor="@color/divider">
@@ -35,7 +35,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- Simple text (no code blocks) -->
             <TextView
                 android:id="@+id/messageText"
                 android:layout_width="wrap_content"
@@ -47,7 +46,6 @@
                 android:maxWidth="300dp"
                 android:fontFamily="sans-serif" />
 
-            <!-- Mixed content container (text + code blocks) -->
             <LinearLayout
                 android:id="@+id/codeBlockContainer"
                 android:layout_width="match_parent"
