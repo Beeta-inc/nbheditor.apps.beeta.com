@@ -14,9 +14,20 @@
         <item name="bottomNavigationStyle">@style/Widget.Nbheditor.BottomNav</item>
     </style>
 
-    <style name="Theme.Nbheditor.NoActionBar" parent="Theme.Nbheditor">
-        <item name="windowActionBar">false</item>
-        <item name="windowNoTitle">true</item>
+    <style name="Theme.Nbheditor.Glass" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="colorPrimary">@color/accent_primary</item>
+        <item name="colorSecondary">@color/accent_secondary</item>
+        <item name="android:windowBackground">#00000000</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:statusBarColor">#00000000</item>
+        <item name="android:navigationBarColor">#00000000</item>
+        <item name="android:windowTranslucentStatus">false</item>
+        <item name="android:windowTranslucentNavigation">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowLightStatusBar" tools:targetApi="23">false</item>
+        <item name="bottomNavigationStyle">@style/Widget.Nbheditor.BottomNav</item>
+        <item name="navigationViewStyle">@style/Widget.Nbheditor.NavView</item>
     </style>
 
     <style name="Theme.Nbheditor.Splash" parent="Theme.Nbheditor.NoActionBar">

@@ -1,11 +1,15 @@
 <resources>
-    <style name="Theme.Nbheditor.Glass" parent="Theme.Nbheditor.NoActionBar">
+    <style name="Theme.Nbheditor.Glass" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="colorPrimary">@color/accent_primary</item>
         <item name="android:windowBackground">#00000000</item>
         <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowIsFloating">false</item>
         <item name="android:statusBarColor">#00000000</item>
         <item name="android:navigationBarColor">#00000000</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:enforceStatusBarContrast">false</item>
         <item name="android:enforceNavigationBarContrast">false</item>
+        <item name="bottomNavigationStyle">@style/Widget.Nbheditor.BottomNav</item>
+        <item name="navigationViewStyle">@style/Widget.Nbheditor.NavView</item>
     </style>
 </resources>

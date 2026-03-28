@@ -136,16 +136,21 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun attachBaseContext(newBase: android.content.Context?) {
+        super.attachBaseContext(newBase)
+        val prefs = newBase?.getSharedPreferences("nbheditor_prefs", MODE_PRIVATE)
+        if (prefs?.getBoolean("glass_mode", false) == true) {
+            theme.applyStyle(R.style.Theme_Nbheditor_Glass, true)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        prefs = getPreferences(MODE_PRIVATE)
+        prefs = getSharedPreferences("nbheditor_prefs", MODE_PRIVATE)
         isGlassMode = prefs.getBoolean("glass_mode", false)
 
         // Apply saved theme before setContentView
-        if (isGlassMode) {
-            setTheme(R.style.Theme_Nbheditor_Glass)
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-        } else {
+        if (!isGlassMode) {
             applyThemeModeNoRecreate(prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM))
         }
         aiEnabled = prefs.getBoolean("ai_enabled", true)
@@ -221,21 +226,59 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun applyGlassColors() {
-        val res = resources
+        val r = resources
+        val t = theme
+        val glassEditorSurface  = r.getColor(R.color.glass_editor_surface,  t)
+        val glassLineNumBg      = r.getColor(R.color.glass_line_numbers_bg,  t)
+        val glassLineNumText    = r.getColor(R.color.glass_line_number_text,  t)
+        val glassEditorText     = r.getColor(R.color.glass_editor_text,       t)
+        val glassEditorHint     = r.getColor(R.color.glass_editor_hint,       t)
+        val glassToolbarBg      = r.getColor(R.color.glass_toolbar_bg,        t)
+        val glassDivider        = r.getColor(R.color.glass_divider,           t)
+        val glassInputBg        = r.getColor(R.color.glass_input_bg,          t)
+        val glassAiBubble       = r.getColor(R.color.glass_chat_ai_bubble,    t)
+        val glassAiText         = r.getColor(R.color.glass_chat_ai_text,      t)
+        val accentPrimary       = r.getColor(R.color.accent_primary,          t)
+
+        // Root backgrounds — transparent so blur shows through
+        binding.activityContainer.setBackgroundColor(Color.TRANSPARENT)
+        binding.drawerLayout.setBackgroundColor(Color.TRANSPARENT)
+
         // Toolbar
-        binding.appBarMain.toolbar.setBackgroundColor(res.getColor(R.color.glass_toolbar_bg, theme))
+        binding.appBarMain.toolbar.setBackgroundColor(glassToolbarBg)
+        binding.appBarMain.toolbarTitle?.setTextColor(glassEditorText)
+
         // Bottom nav
-        binding.appBarMain.contentMain.bottomNavView.setBackgroundColor(res.getColor(R.color.glass_toolbar_bg, theme))
+        binding.appBarMain.contentMain.bottomNavView.setBackgroundColor(glassToolbarBg)
+
         // Nav drawer
-        binding.navView.setBackgroundColor(res.getColor(R.color.glass_toolbar_bg, theme))
-        // Editor area
-        editorBinding.lineNumbersScroll.setBackgroundColor(res.getColor(R.color.glass_line_numbers_bg, theme))
-        editorBinding.textArea.setBackgroundColor(res.getColor(R.color.glass_editor_surface, theme))
-        editorBinding.textArea.setTextColor(res.getColor(R.color.glass_editor_text, theme))
-        editorBinding.textArea.setHintTextColor(res.getColor(R.color.glass_editor_hint, theme))
-        // AI chat
-        aiChatBinding.chatHeader.setBackgroundColor(res.getColor(R.color.glass_toolbar_bg, theme))
-        aiChatBinding.inputBar.setBackgroundColor(res.getColor(R.color.glass_toolbar_bg, theme))
+        binding.navView.setBackgroundColor(glassToolbarBg)
+
+        // Fragment container — transparent
+        binding.appBarMain.contentMain.fragmentContainer.setBackgroundColor(Color.TRANSPARENT)
+
+        // Editor
+        editorBinding.contentPane.setBackgroundColor(Color.TRANSPARENT)
+        editorBinding.root.setBackgroundColor(Color.TRANSPARENT)
+        editorBinding.lineNumbersScroll.setBackgroundColor(glassLineNumBg)
+        editorBinding.textArea.setBackgroundColor(glassEditorSurface)
+        editorBinding.textArea.setTextColor(glassEditorText)
+        editorBinding.textArea.setHintTextColor(glassEditorHint)
+        editorBinding.aiSuggestionContainer.setBackgroundColor(glassToolbarBg)
+
+        // Update line number text colors
+        for (i in 0 until editorBinding.lineNumbersVBox.childCount) {
+            (editorBinding.lineNumbersVBox.getChildAt(i) as? TextView)?.setTextColor(glassLineNumText)
+        }
+
+        // AI Chat
+        aiChatBinding.root.setBackgroundColor(Color.TRANSPARENT)
+        aiChatBinding.chatHeader.setBackgroundColor(glassToolbarBg)
+        aiChatBinding.headerDivider.setBackgroundColor(glassDivider)
+        aiChatBinding.inputDivider.setBackgroundColor(glassDivider)
+        aiChatBinding.inputBar.setBackgroundColor(glassToolbarBg)
+        aiChatBinding.emptyState.setBackgroundColor(Color.TRANSPARENT)
+        aiChatBinding.chatRecyclerView.setBackgroundColor(Color.TRANSPARENT)
     }
 
     private fun setupBottomNav() {
@@ -576,7 +619,11 @@ class MainActivity : AppCompatActivity() {
                 gravity = Gravity.END
                 setPadding(0, 0, 8, 0)
                 typeface = Typeface.MONOSPACE
-                setTextColor(resources.getColor(R.color.editor_line_number_text, theme))
+                val lineNumColor = if (isGlassMode)
+                    resources.getColor(R.color.glass_line_number_text, theme)
+                else
+                    resources.getColor(R.color.editor_line_number_text, theme)
+                setTextColor(lineNumColor)
                 textSize = 12f
             }
             editorBinding.lineNumbersVBox.addView(tv)
@@ -620,8 +667,11 @@ class MainActivity : AppCompatActivity() {
         val dot = if (textChanged) " ●" else ""
         binding.appBarMain.toolbarTitle?.text = "$name$dot"
         binding.appBarMain.toolbarTitle?.setTextColor(
-            if (textChanged) resources.getColor(R.color.accent_primary, theme)
-            else resources.getColor(R.color.editor_text, theme)
+            when {
+                textChanged -> resources.getColor(R.color.accent_primary, theme)
+                isGlassMode -> resources.getColor(R.color.glass_editor_text, theme)
+                else        -> resources.getColor(R.color.editor_text, theme)
+            }
         )
     }
 
