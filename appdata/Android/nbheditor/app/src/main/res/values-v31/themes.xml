@@ -1,12 +1,10 @@
 <resources>
     <style name="Theme.Nbheditor" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="colorPrimary">@color/accent_primary</item>
-        <item name="colorPrimaryVariant">@color/accent_purple</item>
-        <item name="colorOnPrimary">@color/white</item>
-        <item name="colorSecondary">@color/accent_secondary</item>
         <item name="android:statusBarColor">#00000000</item>
         <item name="android:navigationBarColor">#00000000</item>
-        <item name="android:windowBackground">@drawable/bg_glass_scene_light</item>
+        <item name="android:windowBackground">#00000000</item>
+        <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:enforceStatusBarContrast">false</item>
         <item name="android:enforceNavigationBarContrast">false</item>

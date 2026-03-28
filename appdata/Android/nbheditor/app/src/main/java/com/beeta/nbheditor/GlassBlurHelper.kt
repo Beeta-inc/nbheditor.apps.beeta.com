@@ -1,28 +1,29 @@
 package com.beeta.nbheditor
 
-import android.graphics.RenderEffect
-import android.graphics.Shader
 import android.os.Build
-import android.view.View
+import android.view.Window
+import android.view.WindowManager
 
 object GlassBlurHelper {
 
     /**
-     * Applies a real frosted-glass blur to [view] using RenderEffect (API 31+).
-     * On older devices, the semi-transparent backgrounds in XML provide the glass look.
+     * Enables real frosted-glass blur of whatever is BEHIND the app window
+     * (live wallpaper, homescreen, other apps).
+     *
+     * Uses two complementary APIs:
+     *  - setBackgroundBlurRadius  → blurs the entire window background (API 31+)
+     *  - FLAG_BLUR_BEHIND + blurBehindRadius → blurs content behind a translucent window (API 31+)
+     *
+     * The window background must be transparent/semi-transparent for this to show through.
      */
-    fun applyBlur(view: View, radius: Float = 20f) {
+    fun enableWindowBlur(window: Window, blurRadius: Int = 80) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            view.setRenderEffect(
-                RenderEffect.createBlurEffect(radius, radius, Shader.TileMode.CLAMP)
-            )
-        }
-        // Below API 31: glass effect comes from semi-transparent XML backgrounds
-    }
-
-    fun clearBlur(view: View) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            view.setRenderEffect(null)
+            // Allow blur — must be set before or after setContentView
+            window.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
+            window.attributes = window.attributes.also { attrs ->
+                attrs.blurBehindRadius = blurRadius
+            }
+            window.setBackgroundBlurRadius(blurRadius)
         }
     }
 }
