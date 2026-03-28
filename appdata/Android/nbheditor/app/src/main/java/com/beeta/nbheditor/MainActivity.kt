@@ -194,7 +194,10 @@ open class MainActivity : AppCompatActivity() {
         if (isGlassMode) {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
             applyGlassColors()
-            GlassBlurHelper.enableWindowBlur(window, this, blurRadius = 60)
+            // Run blur on background thread to avoid blocking main thread (ANR)
+            window.decorView.post {
+                GlassBlurHelper.enableWindowBlur(window, this, blurRadius = 60)
+            }
         }
     }
 
@@ -615,26 +618,32 @@ open class MainActivity : AppCompatActivity() {
 
     private fun updateLineNumbers() {
         val lineCount = editorBinding.textArea.lineCount.coerceAtLeast(1)
-        if (editorBinding.lineNumbersVBox.childCount == lineCount) return
-        editorBinding.lineNumbersVBox.removeAllViews()
-        for (i in 1..lineCount) {
-            val tv = TextView(this).apply {
-                text = i.toString()
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                )
-                gravity = Gravity.END
-                setPadding(0, 0, 8, 0)
-                typeface = Typeface.MONOSPACE
-                val lineNumColor = if (isGlassMode)
-                    resources.getColor(R.color.glass_line_number_text, theme)
-                else
-                    resources.getColor(R.color.editor_line_number_text, theme)
-                setTextColor(lineNumColor)
-                textSize = 12f
+        val current = editorBinding.lineNumbersVBox.childCount
+        if (current == lineCount) return
+        // Add missing lines
+        if (lineCount > current) {
+            for (i in (current + 1)..lineCount) {
+                val tv = TextView(this).apply {
+                    text = i.toString()
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                    gravity = Gravity.END
+                    setPadding(0, 0, 8, 0)
+                    typeface = Typeface.MONOSPACE
+                    val lineNumColor = if (isGlassMode)
+                        resources.getColor(R.color.glass_line_number_text, theme)
+                    else
+                        resources.getColor(R.color.editor_line_number_text, theme)
+                    setTextColor(lineNumColor)
+                    textSize = 12f
+                }
+                editorBinding.lineNumbersVBox.addView(tv)
             }
-            editorBinding.lineNumbersVBox.addView(tv)
+        } else {
+            // Remove extra lines
+            editorBinding.lineNumbersVBox.removeViews(lineCount, current - lineCount)
         }
     }
 

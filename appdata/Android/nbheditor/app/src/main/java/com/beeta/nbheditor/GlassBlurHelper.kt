@@ -22,11 +22,15 @@ object GlassBlurHelper {
      */
     fun enableWindowBlur(window: Window, activity: Activity, blurRadius: Int = 200) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            // API 31+: native compositor blur — fast, runs on GPU, safe on main thread
             window.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
             window.attributes = window.attributes.also { it.blurBehindRadius = blurRadius.coerceAtMost(150) }
             window.setBackgroundBlurRadius(blurRadius)
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            blurWallpaperFallback(window, activity, blurRadius)
+            // API 29-30: RenderScript is CPU-heavy — run on background thread
+            Thread {
+                blurWallpaperFallback(window, activity, blurRadius)
+            }.start()
         }
     }
 
@@ -35,7 +39,6 @@ object GlassBlurHelper {
             val wallpaperManager = WallpaperManager.getInstance(activity)
             val wallpaperDrawable = wallpaperManager.drawable ?: return
 
-            // Draw wallpaper into a downscaled bitmap (faster blur + less memory)
             val scale = 0.25f
             val displayMetrics = activity.resources.displayMetrics
             val w = (displayMetrics.widthPixels * scale).toInt().coerceAtLeast(1)
@@ -46,17 +49,18 @@ object GlassBlurHelper {
             wallpaperDrawable.setBounds(0, 0, w, h)
             wallpaperDrawable.draw(canvas)
 
-            // RenderScript blur
-            val blurred = blurBitmap(activity, bitmap, 25f) // max RenderScript radius
+            val blurred = blurBitmap(activity, bitmap, 25f)
             bitmap.recycle()
 
-            // Scale back up to fill screen
             val fullSize = Bitmap.createScaledBitmap(blurred, displayMetrics.widthPixels, displayMetrics.heightPixels, true)
             blurred.recycle()
 
-            window.setBackgroundDrawable(BitmapDrawable(activity.resources, fullSize))
+            // Must set drawable back on main thread
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                window.setBackgroundDrawable(BitmapDrawable(activity.resources, fullSize))
+            }
         } catch (e: Exception) {
-            // Permission denied or wallpaper unavailable — leave transparent
+            // Permission denied or wallpaper unavailable
         }
     }
 

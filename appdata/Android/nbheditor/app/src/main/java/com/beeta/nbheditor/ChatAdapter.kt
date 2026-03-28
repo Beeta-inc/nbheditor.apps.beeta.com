@@ -95,6 +95,10 @@ class ChatAdapter(
 
             if (segments.size == 1 && !segments[0].isCode) {
                 messageText.text = buildRichText(segments[0].content)
+                messageText.textSize = 15f
+                messageText.typeface = Typeface.DEFAULT_BOLD
+                messageText.setTextColor(Color.BLACK)
+                messageText.setLineSpacing(0f, 1.6f)
                 messageText.visibility = View.VISIBLE
                 codeBlockContainer?.visibility = View.GONE
             } else {
@@ -151,8 +155,9 @@ class ChatAdapter(
         private fun addTextBlock(text: String) {
             val tv = TextView(ctx).apply {
                 this.text = buildRichText(text)
-                textSize = 14f
-                setTextColor(colorText)
+                textSize = 15f
+                typeface = Typeface.DEFAULT_BOLD
+                setTextColor(Color.BLACK)
                 setLineSpacing(0f, 1.6f)
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
