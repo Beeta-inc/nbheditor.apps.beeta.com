@@ -9,15 +9,7 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0de2c8aa-c6b7-419c-b7cd-e9cbf2927e27" name="Changes" comment="bug fixes">
-      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/resourceHashesCache.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/resourceHashesCache.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt" afterDir="false" />
-    </list>
+    <list default="true" id="0de2c8aa-c6b7-419c-b7cd-e9cbf2927e27" name="Changes" comment="bug fixes and ui update" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -254,22 +246,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1774176942839</updated>
-    </task>
-    <task id="LOCAL-00012" summary="fixed bugs">
-      <option name="closed" value="true" />
-      <created>1774259973775</created>
-      <option name="number" value="00012" />
-      <option name="presentableId" value="LOCAL-00012" />
-      <option name="project" value="LOCAL" />
-      <updated>1774259973775</updated>
-    </task>
-    <task id="LOCAL-00013" summary="fixed bugs">
-      <option name="closed" value="true" />
-      <created>1774345391527</created>
-      <option name="number" value="00013" />
-      <option name="presentableId" value="LOCAL-00013" />
-      <option name="project" value="LOCAL" />
-      <updated>1774345391527</updated>
     </task>
     <task id="LOCAL-00014" summary="fixed bugs">
       <option name="closed" value="true" />
@@ -647,11 +623,26 @@
       <option name="project" value="LOCAL" />
       <updated>1774691139072</updated>
     </task>
-    <option name="localTasksCounter" value="61" />
+    <task id="LOCAL-00061" summary="bug fixes">
+      <option name="closed" value="true" />
+      <created>1774691498266</created>
+      <option name="number" value="00061" />
+      <option name="presentableId" value="LOCAL-00061" />
+      <option name="project" value="LOCAL" />
+      <updated>1774691498266</updated>
+    </task>
+    <task id="LOCAL-00062" summary="bug fixes and ui update">
+      <option name="closed" value="true" />
+      <created>1774691670559</created>
+      <option name="number" value="00062" />
+      <option name="presentableId" value="LOCAL-00062" />
+      <option name="project" value="LOCAL" />
+      <updated>1774691670559</updated>
+    </task>
+    <option name="localTasksCounter" value="63" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="changed to openrouter and nemotorn" />
     <MESSAGE value="updated ui" />
     <MESSAGE value="fixed bugs" />
     <MESSAGE value="improved ui" />
@@ -676,7 +667,8 @@
     <MESSAGE value="fixed broken ui" />
     <MESSAGE value="fixed broken ui and bug fixes" />
     <MESSAGE value="bug fixes" />
-    <option name="LAST_COMMIT_MESSAGE" value="bug fixes" />
+    <MESSAGE value="bug fixes and ui update" />
+    <option name="LAST_COMMIT_MESSAGE" value="bug fixes and ui update" />
   </component>
   <component name="play_dynamic_filters_status">
     <option name="appIdToCheckInfo">
