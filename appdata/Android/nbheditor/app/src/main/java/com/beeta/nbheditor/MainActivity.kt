@@ -192,8 +192,9 @@ open class MainActivity : AppCompatActivity() {
         checkForRecovery()
 
         if (isGlassMode) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
             applyGlassColors()
-            GlassBlurHelper.enableWindowBlur(window, this, blurRadius = 80)
+            GlassBlurHelper.enableWindowBlur(window, this, blurRadius = 60)
         }
     }
 
@@ -270,6 +271,7 @@ open class MainActivity : AppCompatActivity() {
         editorBinding.textArea.setBackgroundColor(glassEditorSurface)
         editorBinding.textArea.setTextColor(glassEditorText)
         editorBinding.textArea.setHintTextColor(glassEditorHint)
+        editorBinding.textArea.setShadowLayer(4f, 0f, 1f, 0xFF000000.toInt())
         editorBinding.aiSuggestionContainer.setBackgroundColor(glassToolbarBg)
 
         // Update line number text colors

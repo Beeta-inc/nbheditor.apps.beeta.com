@@ -20,14 +20,12 @@ object GlassBlurHelper {
      * API 31+: real compositor blur behind the window (live wallpaper, homescreen, other apps).
      * API 29-30: RenderScript blur of the wallpaper bitmap set as window background.
      */
-    fun enableWindowBlur(window: Window, activity: Activity, blurRadius: Int = 80) {
+    fun enableWindowBlur(window: Window, activity: Activity, blurRadius: Int = 200) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            // Native window blur — works with live wallpapers in real-time
             window.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND)
-            window.attributes = window.attributes.also { it.blurBehindRadius = blurRadius }
+            window.attributes = window.attributes.also { it.blurBehindRadius = blurRadius.coerceAtMost(150) }
             window.setBackgroundBlurRadius(blurRadius)
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            // API 29-30: blur the wallpaper bitmap with RenderScript
             blurWallpaperFallback(window, activity, blurRadius)
         }
     }
@@ -49,7 +47,7 @@ object GlassBlurHelper {
             wallpaperDrawable.draw(canvas)
 
             // RenderScript blur
-            val blurred = blurBitmap(activity, bitmap, blurRadius.toFloat().coerceIn(1f, 25f))
+            val blurred = blurBitmap(activity, bitmap, 25f) // max RenderScript radius
             bitmap.recycle()
 
             // Scale back up to fill screen
