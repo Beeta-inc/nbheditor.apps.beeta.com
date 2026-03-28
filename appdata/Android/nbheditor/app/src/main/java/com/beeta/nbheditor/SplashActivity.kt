@@ -13,7 +13,10 @@ class SplashActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
         Handler(Looper.getMainLooper()).postDelayed({
-            startActivity(Intent(this, MainActivity::class.java))
+            val prefs = getSharedPreferences("nbheditor_prefs", MODE_PRIVATE)
+            val target = if (prefs.getBoolean("glass_mode", false))
+                GlassMainActivity::class.java else MainActivity::class.java
+            startActivity(Intent(this, target))
             finish()
         }, 1500)
     }

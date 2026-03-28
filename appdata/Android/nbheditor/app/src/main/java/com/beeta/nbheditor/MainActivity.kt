@@ -42,7 +42,7 @@ import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.util.concurrent.TimeUnit
 
-class MainActivity : AppCompatActivity() {
+open class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var editorBinding: FragmentEditorBinding
@@ -136,18 +136,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun attachBaseContext(newBase: android.content.Context?) {
-        super.attachBaseContext(newBase)
-        val prefs = newBase?.getSharedPreferences("nbheditor_prefs", MODE_PRIVATE)
-        if (prefs?.getBoolean("glass_mode", false) == true) {
-            theme.applyStyle(R.style.Theme_Nbheditor_Glass, true)
-        }
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefs = getSharedPreferences("nbheditor_prefs", MODE_PRIVATE)
-        isGlassMode = prefs.getBoolean("glass_mode", false)
+        isGlassMode = this is GlassMainActivity
 
         // Apply saved theme before setContentView
         if (!isGlassMode) {
@@ -216,13 +208,27 @@ class MainActivity : AppCompatActivity() {
         isGlassMode = false
         prefs.edit().putInt("theme_mode", mode).putBoolean("glass_mode", false).apply()
         AppCompatDelegate.setDefaultNightMode(mode)
-        recreate()
+        // If currently in glass activity, switch back to normal MainActivity
+        if (this is GlassMainActivity) {
+            startActivity(Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            })
+        } else {
+            recreate()
+        }
     }
 
     private fun applyGlassMode() {
         isGlassMode = true
         prefs.edit().putBoolean("glass_mode", true).apply()
-        recreate()
+        // Launch GlassMainActivity which has the Glass theme in manifest
+        if (this !is GlassMainActivity) {
+            startActivity(Intent(this, GlassMainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            })
+        } else {
+            recreate()
+        }
     }
 
     private fun applyGlassColors() {
