@@ -139,22 +139,27 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prefs = getPreferences(MODE_PRIVATE)
+        isGlassMode = prefs.getBoolean("glass_mode", false)
 
         // Apply saved theme before setContentView
-        applyThemeMode(prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM))
+        if (isGlassMode) {
+            setTheme(R.style.Theme_Nbheditor_Glass)
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+        } else {
+            applyThemeModeNoRecreate(prefs.getInt("theme_mode", AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM))
+        }
         aiEnabled = prefs.getBoolean("ai_enabled", true)
 
-        // Edge-to-edge: draw behind system bars so blur shows under status/nav bar too
-        WindowCompat.setDecorFitsSystemWindows(window, false)
-        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-        window.statusBarColor = Color.TRANSPARENT
-        window.navigationBarColor = Color.TRANSPARENT
+        // Edge-to-edge only in glass mode
+        if (isGlassMode) {
+            WindowCompat.setDecorFitsSystemWindows(window, false)
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+            window.statusBarColor = Color.TRANSPARENT
+            window.navigationBarColor = Color.TRANSPARENT
+        }
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-
-        // Real window blur-behind: must be called AFTER setContentView (DecorView must exist)
-        GlassBlurHelper.enableWindowBlur(window, blurRadius = 80)
         setSupportActionBar(binding.appBarMain.toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(false)
 
@@ -188,11 +193,49 @@ class MainActivity : AppCompatActivity() {
         setupAiChat()
         setupBottomNav()
         checkForRecovery()
+
+        if (isGlassMode) {
+            applyGlassColors()
+            GlassBlurHelper.enableWindowBlur(window, this, blurRadius = 80)
+        }
+    }
+
+    private var isGlassMode = false
+
+    private fun applyThemeModeNoRecreate(mode: Int) {
+        AppCompatDelegate.setDefaultNightMode(mode)
+        prefs.edit().putInt("theme_mode", mode).apply()
     }
 
     private fun applyThemeMode(mode: Int) {
+        isGlassMode = false
+        prefs.edit().putInt("theme_mode", mode).putBoolean("glass_mode", false).apply()
         AppCompatDelegate.setDefaultNightMode(mode)
-        prefs.edit().putInt("theme_mode", mode).apply()
+        recreate()
+    }
+
+    private fun applyGlassMode() {
+        isGlassMode = true
+        prefs.edit().putBoolean("glass_mode", true).apply()
+        recreate()
+    }
+
+    private fun applyGlassColors() {
+        val res = resources
+        // Toolbar
+        binding.appBarMain.toolbar.setBackgroundColor(res.getColor(R.color.glass_toolbar_bg, theme))
+        // Bottom nav
+        binding.appBarMain.contentMain.bottomNavView.setBackgroundColor(res.getColor(R.color.glass_toolbar_bg, theme))
+        // Nav drawer
+        binding.navView.setBackgroundColor(res.getColor(R.color.glass_toolbar_bg, theme))
+        // Editor area
+        editorBinding.lineNumbersScroll.setBackgroundColor(res.getColor(R.color.glass_line_numbers_bg, theme))
+        editorBinding.textArea.setBackgroundColor(res.getColor(R.color.glass_editor_surface, theme))
+        editorBinding.textArea.setTextColor(res.getColor(R.color.glass_editor_text, theme))
+        editorBinding.textArea.setHintTextColor(res.getColor(R.color.glass_editor_hint, theme))
+        // AI chat
+        aiChatBinding.chatHeader.setBackgroundColor(res.getColor(R.color.glass_toolbar_bg, theme))
+        aiChatBinding.inputBar.setBackgroundColor(res.getColor(R.color.glass_toolbar_bg, theme))
     }
 
     private fun setupBottomNav() {
@@ -658,6 +701,7 @@ class MainActivity : AppCompatActivity() {
             R.id.nav_theme_auto -> applyThemeMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
             R.id.nav_theme_dark -> applyThemeMode(AppCompatDelegate.MODE_NIGHT_YES)
             R.id.nav_theme_light -> applyThemeMode(AppCompatDelegate.MODE_NIGHT_NO)
+            R.id.nav_theme_glass -> applyGlassMode()
             R.id.nav_toggle_ai -> {
                 aiEnabled = !aiEnabled
                 prefs.edit().putBoolean("ai_enabled", aiEnabled).apply()

@@ -1,26 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Dark mode glass - Catppuccin Mocha frosted -->
-    <color name="glass_scene_bg">#FF0D0D1A</color>
-    <color name="editor_bg">#00000000</color>
-    <color name="editor_surface">#CC1E1E2E</color>
-    <color name="editor_line_numbers_bg">#BB181825</color>
-    <color name="editor_line_number_text">#FFA6ADC8</color>
-    <color name="editor_text">#FFFFFFFF</color>
-    <color name="editor_hint">#FF7F849C</color>
+    <!-- Dark mode (Catppuccin Mocha) - fully opaque -->
+    <color name="editor_bg">#FF1E1E2E</color>
+    <color name="editor_surface">#FF2A2A3E</color>
+    <color name="editor_line_numbers_bg">#FF181825</color>
+    <color name="editor_line_number_text">#FF6C7086</color>
+    <color name="editor_text">#FFCDD6F4</color>
+    <color name="editor_hint">#FF585B70</color>
     <color name="accent_primary">#FF89B4FA</color>
     <color name="accent_secondary">#FFA6E3A1</color>
     <color name="accent_purple">#FFCBA6F7</color>
     <color name="accent_peach">#FFFAB387</color>
-    <color name="suggestion_bg">#CC1E1E2E</color>
-    <color name="toolbar_bg">#00000000</color>
-    <color name="bottom_nav_bg">#00000000</color>
+    <color name="suggestion_bg">#FF313244</color>
+    <color name="toolbar_bg">#FF181825</color>
+    <color name="bottom_nav_bg">#FF181825</color>
     <color name="chat_user_bubble">#FF89B4FA</color>
-    <color name="chat_ai_bubble">#EE1E1E2E</color>
+    <color name="chat_ai_bubble">#FF313244</color>
     <color name="chat_user_text">#FF1E1E2E</color>
-    <color name="chat_ai_text">#FFFFFFFF</color>
-    <color name="input_bg">#CC1E1E2E</color>
-    <color name="divider">#55FFFFFF</color>
+    <color name="chat_ai_text">#FFCDD6F4</color>
+    <color name="input_bg">#FF313244</color>
+    <color name="divider">#FF45475A</color>
+
+    <!-- Glass mode colors for dark (used programmatically) -->
+    <color name="glass_scene_bg">#FF0D0D1A</color>
+    <color name="glass_editor_surface">#EE0D0D1A</color>
+    <color name="glass_line_numbers_bg">#DD0D0D1A</color>
+    <color name="glass_editor_text">#FFFFFFFF</color>
+    <color name="glass_editor_hint">#FFB0B3C8</color>
+    <color name="glass_line_number_text">#FFCDD6F4</color>
+    <color name="glass_toolbar_bg">#CC0D0D1A</color>
+    <color name="glass_divider">#55FFFFFF</color>
+    <color name="glass_chat_ai_bubble">#EE181825</color>
+    <color name="glass_chat_ai_text">#FFFFFFFF</color>
+    <color name="glass_input_bg">#EE181825</color>
     <color name="glass_border">#44FFFFFF</color>
-    <color name="glass_tint">#CC1E1E2E</color>
+    <color name="glass_tint">#EE181825</color>
 </resources>

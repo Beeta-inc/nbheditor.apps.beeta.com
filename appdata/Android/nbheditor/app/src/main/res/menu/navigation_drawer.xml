@@ -36,6 +36,10 @@
             android:icon="@android:drawable/ic_menu_day"
             android:title="Theme: Light" />
         <item
+            android:id="@+id/nav_theme_glass"
+            android:icon="@drawable/ic_ai_sparkle"
+            android:title="Theme: Glass" />
+        <item
             android:id="@+id/nav_toggle_ai"
             android:icon="@drawable/ic_ai_sparkle"
             android:title="Disable AI"
