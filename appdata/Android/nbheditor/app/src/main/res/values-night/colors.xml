@@ -21,18 +21,18 @@
     <color name="input_bg">#FF313244</color>
     <color name="divider">#FF45475A</color>
 
-    <!-- Glass mode colors for dark -->
+    <!-- Glass mode colors - black text on ultra transparent panels -->
     <color name="glass_scene_bg">#FF0D0D1A</color>
     <color name="glass_editor_surface">#221E1E2E</color>
     <color name="glass_line_numbers_bg">#11181825</color>
-    <color name="glass_editor_text">#FFFFFFFF</color>
-    <color name="glass_editor_hint">#FFCDD6F4</color>
-    <color name="glass_line_number_text">#FFFFFFFF</color>
+    <color name="glass_editor_text">#FF000000</color>
+    <color name="glass_editor_hint">#FF333333</color>
+    <color name="glass_line_number_text">#FF000000</color>
     <color name="glass_toolbar_bg">#221E1E2E</color>
-    <color name="glass_divider">#22FFFFFF</color>
+    <color name="glass_divider">#22000000</color>
     <color name="glass_chat_ai_bubble">#221E1E2E</color>
-    <color name="glass_chat_ai_text">#FFFFFFFF</color>
+    <color name="glass_chat_ai_text">#FF000000</color>
     <color name="glass_input_bg">#221E1E2E</color>
-    <color name="glass_border">#22FFFFFF</color>
+    <color name="glass_border">#22000000</color>
     <color name="glass_tint">#EE181825</color>
 </resources>
