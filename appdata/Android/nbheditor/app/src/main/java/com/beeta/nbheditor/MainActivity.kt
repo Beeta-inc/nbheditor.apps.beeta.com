@@ -160,6 +160,12 @@ open class MainActivity : AppCompatActivity() {
     private val saveFileAsLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let { uri ->
+                // Take persistable permission so the URI survives app restarts
+                try {
+                    contentResolver.takePersistableUriPermission(
+                        uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    )
+                } catch (_: Exception) {}
                 currentFileUri = uri
                 saveToFile(uri)
                 updateToolbarTitle()
@@ -484,43 +490,56 @@ open class MainActivity : AppCompatActivity() {
 
     private fun refreshHomeFiles() {
         val uriStrings = prefs.getStringSet("recent_files", emptySet()) ?: emptySet()
-        val entries = mutableListOf<FileCardAdapter.FileEntry>()
-
-        for (uriStr in uriStrings) {
-            try {
-                val uri = android.net.Uri.parse(uriStr)
-                val name = getFileName(uri)
-                // Read first 120 chars as preview
-                val preview = try {
-                    contentResolver.openInputStream(uri)?.use {
-                        BufferedReader(InputStreamReader(it)).readText()
-                            .replace(Regex("\\[img:[^\\]]+\\]"), "[image]")
-                            .take(120).trim()
-                    } ?: ""
-                } catch (e: Exception) { "" }
-                entries.add(FileCardAdapter.FileEntry(uri, name, preview))
-            } catch (e: Exception) { /* skip invalid URIs */ }
-        }
-
-        // Sort by name
-        entries.sortBy { it.name.lowercase() }
-
-        // Adjust grid columns based on count
-        val cols = when {
-            entries.size <= 2  -> 1
-            entries.size <= 10 -> 2
-            else               -> 3
-        }
-        (homeBinding.fileGrid.layoutManager as? androidx.recyclerview.widget.GridLayoutManager)
-            ?.spanCount = cols
-
-        if (entries.isEmpty()) {
+        if (uriStrings.isEmpty()) {
             homeBinding.emptyHomeState.visibility = View.VISIBLE
             homeBinding.fileGrid.visibility = View.GONE
-        } else {
-            homeBinding.emptyHomeState.visibility = View.GONE
-            homeBinding.fileGrid.visibility = View.VISIBLE
-            fileCardAdapter.setFiles(entries)
+            return
+        }
+
+        lifecycleScope.launch {
+            val entries = withContext(Dispatchers.IO) {
+                val list = mutableListOf<FileCardAdapter.FileEntry>()
+                for (uriStr in uriStrings) {
+                    try {
+                        val uri = android.net.Uri.parse(uriStr)
+                        // Verify we still have permission
+                        val hasPerm = contentResolver.persistedUriPermissions
+                            .any { it.uri == uri && it.isReadPermission }
+                        if (!hasPerm) continue
+
+                        val name = getFileName(uri)
+                        if (name == "untitled" || name.isBlank()) continue
+
+                        val preview = try {
+                            contentResolver.openInputStream(uri)?.use {
+                                BufferedReader(InputStreamReader(it)).readText()
+                                    .replace(Regex("\\[img:[^\\]]+\\]"), "[image]")
+                                    .take(150).trim()
+                            } ?: ""
+                        } catch (e: Exception) { "" }
+
+                        list.add(FileCardAdapter.FileEntry(uri, name, preview))
+                    } catch (e: Exception) { /* skip */ }
+                }
+                list.sortedBy { it.name.lowercase() }
+            }
+
+            val cols = when {
+                entries.size <= 2  -> 1
+                entries.size <= 10 -> 2
+                else               -> 3
+            }
+            (homeBinding.fileGrid.layoutManager as? androidx.recyclerview.widget.GridLayoutManager)
+                ?.spanCount = cols
+
+            if (entries.isEmpty()) {
+                homeBinding.emptyHomeState.visibility = View.VISIBLE
+                homeBinding.fileGrid.visibility = View.GONE
+            } else {
+                homeBinding.emptyHomeState.visibility = View.GONE
+                homeBinding.fileGrid.visibility = View.VISIBLE
+                fileCardAdapter.setFiles(entries)
+            }
         }
     }
 
@@ -1214,17 +1233,24 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun getFileName(uri: Uri): String {
-        // Try content resolver display name first (most reliable)
+        // Primary: content resolver DISPLAY_NAME column
         try {
-            contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+            contentResolver.query(
+                uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME),
+                null, null, null
+            )?.use { cursor ->
                 if (cursor.moveToFirst()) {
                     val name = cursor.getString(0)
                     if (!name.isNullOrBlank()) return name
                 }
             }
         } catch (_: Exception) {}
-        // Fallback: decode the last path segment
-        return android.net.Uri.decode(uri.lastPathSegment)?.substringAfterLast('/')?.substringAfterLast(':') ?: "untitled"
+        // Fallback: last path segment, strip everything before the last '/' or ':'
+        // but only keep it if it looks like a filename (contains a dot or is non-numeric)
+        val raw = android.net.Uri.decode(uri.lastPathSegment) ?: return "untitled"
+        val candidate = raw.substringAfterLast('/').substringAfterLast(':')
+        return if (candidate.isNotBlank() && (candidate.contains('.') || !candidate.all { it.isDigit() }))
+            candidate else "untitled"
     }
 
     private fun updateToolbarTitle() {
