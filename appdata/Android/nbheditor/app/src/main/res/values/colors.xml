@@ -31,16 +31,18 @@
 
     <!-- Glass mode colors (used programmatically when glass mode is active) -->
     <color name="glass_scene_bg">#FFF0F4FF</color>
-    <color name="glass_editor_surface">#99FFFFFF</color>
-    <color name="glass_line_numbers_bg">#88FFFFFF</color>
-    <color name="glass_editor_text">#FF000000</color>
-    <color name="glass_editor_hint">#CC333355</color>
-    <color name="glass_line_number_text">#CC000022</color>
-    <color name="glass_toolbar_bg">#99FFFFFF</color>
-    <color name="glass_divider">#44000000</color>
-    <color name="glass_chat_ai_bubble">#AAFFFFFF</color>
-    <color name="glass_chat_ai_text">#FF000000</color>
-    <color name="glass_input_bg">#AAFFFFFF</color>
-    <color name="glass_border">#55FFFFFF</color>
-    <color name="glass_tint">#DDFFFFFF</color>
+    <color name="glass_editor_surface">#BBFFFFFF</color>
+    <color name="glass_line_numbers_bg">#99FFFFFF</color>
+    <color name="glass_editor_text">#FF0A0A1A</color>
+    <color name="glass_editor_hint">#99334466</color>
+    <color name="glass_line_number_text">#AA1E1E3E</color>
+    <color name="glass_toolbar_bg">#CCFFFFFF</color>
+    <color name="glass_divider">#33000044</color>
+    <color name="glass_chat_ai_bubble">#DDFFFFFF</color>
+    <color name="glass_chat_ai_text">#FF0A0A1A</color>
+    <color name="glass_input_bg">#CCFFFFFF</color>
+    <color name="glass_border">#66AABBFF</color>
+    <color name="glass_tint">#EEFFFFFF</color>
+    <color name="glass_accent_tint">#221E66F5</color>
+    <color name="glass_highlight">#331E66F5</color>
 </resources>
