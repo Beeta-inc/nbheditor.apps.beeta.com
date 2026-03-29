@@ -11,13 +11,12 @@
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
         android:pathData="M19,3H5a2,2 0,0 0,-2 2v14a2,2 0,0 0,2 2h14a2,2 0,0 0,2 -2V5a2,2 0,0 0,-2 -2z" />
-    <circle
+    <!-- Circle at (8.5, 8.5) r=1.5 as path -->
+    <path
         android:fillColor="@android:color/transparent"
         android:strokeColor="#FFFFFFFF"
         android:strokeWidth="2"
-        android:cx="8.5"
-        android:cy="8.5"
-        android:r="1.5" />
+        android:pathData="M8.5,7 a1.5,1.5 0,1 1,-0.001 0 Z" />
     <path
         android:fillColor="@android:color/transparent"
         android:strokeColor="#FFFFFFFF"

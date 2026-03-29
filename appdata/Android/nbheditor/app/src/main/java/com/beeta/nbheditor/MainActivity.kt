@@ -221,6 +221,7 @@ open class MainActivity : AppCompatActivity() {
         setupAiChat()
         setupBottomNav()
         checkForRecovery()
+        handleOpenIntent(intent)  // handle "Open with" launch
 
         if (isGlassMode) {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
@@ -236,8 +237,10 @@ open class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        speechRecognizer?.destroy()
-        if (isGlassMode) GlassTextAdapter.clear()
+        isListening = false
+        speechRecognizer?.apply { cancel(); destroy() }
+        speechRecognizer = null
+        if (isGlassMode) GlassTextAdapter.stop()
     }
 
     private var isGlassMode = false
@@ -280,15 +283,9 @@ open class MainActivity : AppCompatActivity() {
         val glassEditorSurface = r.getColor(R.color.glass_editor_surface, t)
         val glassLineNumBg     = r.getColor(R.color.glass_line_numbers_bg, t)
         val glassLineNumText   = r.getColor(R.color.glass_line_number_text, t)
-        val glassEditorText    = r.getColor(R.color.glass_editor_text, t)
         val glassEditorHint    = r.getColor(R.color.glass_editor_hint, t)
         val glassToolbarBg     = r.getColor(R.color.glass_toolbar_bg, t)
         val glassDivider       = r.getColor(R.color.glass_divider, t)
-        val glassBorder        = r.getColor(R.color.glass_border, t)
-        val accentPrimary      = r.getColor(R.color.accent_primary, t)
-
-        // Warm up wallpaper sampler on a background thread
-        Thread { GlassTextAdapter.warmUp(this) }.start()
 
         // Root — transparent so blur shows through
         binding.activityContainer.setBackgroundColor(Color.TRANSPARENT)
@@ -312,9 +309,7 @@ open class MainActivity : AppCompatActivity() {
         editorBinding.root.setBackgroundColor(Color.TRANSPARENT)
         editorBinding.lineNumbersScroll.setBackgroundColor(glassLineNumBg)
         editorBinding.textArea.setBackgroundColor(glassEditorSurface)
-        editorBinding.textArea.setTextColor(glassEditorText)
         editorBinding.textArea.setHintTextColor(glassEditorHint)
-        editorBinding.textArea.setShadowLayer(2f, 0f, 1f, adjustAlpha(0xFFFFFFFF.toInt(), 0.15f))
         editorBinding.aiSuggestionContainer.background =
             ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
         editorBinding.editorToolbar.background =
@@ -334,72 +329,61 @@ open class MainActivity : AppCompatActivity() {
         aiChatBinding.emptyState.setBackgroundColor(Color.TRANSPARENT)
         aiChatBinding.chatRecyclerView.setBackgroundColor(Color.TRANSPARENT)
 
-        // Apply adaptive text + icon colors after layout is ready
-        binding.root.viewTreeObserver.addOnGlobalLayoutListener(object :
-            android.view.ViewTreeObserver.OnGlobalLayoutListener {
-            override fun onGlobalLayout() {
-                binding.root.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                applyAdaptiveGlassUI()
-            }
-        })
+        // Start real-time adaptive color loop after first layout pass
+        binding.root.post { startAdaptiveColorLoop() }
     }
 
-    private fun applyAdaptiveGlassUI() {
-        // Toolbar title — adaptive + bold + shadow
-        binding.appBarMain.toolbarTitle?.let { tv ->
-            GlassTextAdapter.applyTo(tv, extraBold = true)
-        }
+    private fun startAdaptiveColorLoop() {
+        GlassTextAdapter.start(this)
 
-        // Bottom nav icon tint — adaptive
-        val navView = binding.appBarMain.contentMain.bottomNavView
-        val navAdaptive = GlassTextAdapter.adaptiveColor(navView)
-        val navShadow   = GlassTextAdapter.shadowColor(navView)
-        val navTint = android.content.res.ColorStateList.valueOf(navAdaptive)
-        navView.itemIconTintList = navTint
-        navView.itemTextColor   = navTint
+        // Toolbar title
+        binding.appBarMain.toolbarTitle?.let { GlassTextAdapter.watch(it, bold = true) }
 
-        // Drawer hamburger icon
-        val drawerToggleColor = GlassTextAdapter.adaptiveColor(binding.appBarMain.toolbar)
-        binding.appBarMain.toolbar.navigationIcon?.setTint(drawerToggleColor)
-        binding.appBarMain.toolbar.overflowIcon?.setTint(drawerToggleColor)
-
-        // Toolbar action icons (save, AI fix)
-        binding.appBarMain.toolbar.menu?.let { menu ->
-            for (i in 0 until menu.size()) {
-                menu.getItem(i).icon?.setTint(drawerToggleColor)
+        // Toolbar nav/overflow/action icons
+        GlassTextAdapter.watch(binding.appBarMain.toolbar) { fg, _ ->
+            binding.appBarMain.toolbar.navigationIcon?.setTint(fg)
+            binding.appBarMain.toolbar.overflowIcon?.setTint(fg)
+            binding.appBarMain.toolbar.menu?.let { menu ->
+                for (i in 0 until menu.size()) menu.getItem(i).icon?.setTint(fg)
             }
         }
 
-        // Nav drawer items
-        val drawerAdaptive = GlassTextAdapter.adaptiveColor(binding.navView)
-        val drawerTint = android.content.res.ColorStateList.valueOf(drawerAdaptive)
-        binding.navView.itemIconTintList = drawerTint
-        binding.navView.itemTextColor    = drawerTint
-
-        // Editor toolbar buttons
-        val toolbarAdaptive = GlassTextAdapter.adaptiveColor(editorBinding.editorToolbar)
-        val toolbarShadow   = GlassTextAdapter.shadowColor(editorBinding.editorToolbar)
-        GlassTextAdapter.applyTo(editorBinding.editorVoiceButton)
-        GlassTextAdapter.applyTo(editorBinding.insertImageButton)
-        listOf(editorBinding.tabKey, editorBinding.braceKey, editorBinding.parenKey,
-               editorBinding.bracketKey, editorBinding.angleKey).forEach { tv ->
-            tv.setTextColor(toolbarAdaptive)
-            tv.setShadowLayer(4f, 0f, 1f, toolbarShadow)
-            tv.paintFlags = tv.paintFlags or android.graphics.Paint.FAKE_BOLD_TEXT_FLAG
+        // Bottom nav
+        val navView = binding.appBarMain.contentMain.bottomNavView
+        GlassTextAdapter.watch(navView) { fg, _ ->
+            val tint = android.content.res.ColorStateList.valueOf(fg)
+            navView.itemIconTintList = tint
+            navView.itemTextColor = tint
         }
 
-        // AI chat header
-        val chatHeaderAdaptive = GlassTextAdapter.adaptiveColor(aiChatBinding.chatHeader)
-        val chatHeaderShadow   = GlassTextAdapter.shadowColor(aiChatBinding.chatHeader)
-        GlassTextAdapter.applyTo(aiChatBinding.voiceButton)
+        // Nav drawer
+        GlassTextAdapter.watch(binding.navView) { fg, _ ->
+            val tint = android.content.res.ColorStateList.valueOf(fg)
+            binding.navView.itemIconTintList = tint
+            binding.navView.itemTextColor = tint
+        }
 
-        // Editor text area — adaptive text color with strong shadow for readability
-        val editorAdaptive = GlassTextAdapter.adaptiveColor(editorBinding.textArea)
-        val editorShadow   = GlassTextAdapter.shadowColor(editorBinding.textArea)
-        editorBinding.textArea.setTextColor(editorAdaptive)
-        editorBinding.textArea.setShadowLayer(8f, 0f, 2f, editorShadow)
+        // Editor toolbar keys
+        listOf(editorBinding.tabKey, editorBinding.braceKey, editorBinding.parenKey,
+               editorBinding.bracketKey, editorBinding.angleKey).forEach { tv ->
+            tv.paintFlags = tv.paintFlags or android.graphics.Paint.FAKE_BOLD_TEXT_FLAG
+            GlassTextAdapter.watch(tv, bold = false)
+        }
+
+        // Editor toolbar icon buttons
+        GlassTextAdapter.watch(editorBinding.editorVoiceButton)
+        GlassTextAdapter.watch(editorBinding.insertImageButton)
+
+        // AI chat mic button
+        GlassTextAdapter.watch(aiChatBinding.voiceButton)
+
+        // Editor text area — most important: adapts as user scrolls over different bg regions
         editorBinding.textArea.paintFlags =
             editorBinding.textArea.paintFlags or android.graphics.Paint.FAKE_BOLD_TEXT_FLAG
+        GlassTextAdapter.watch(editorBinding.textArea) { fg, sh ->
+            editorBinding.textArea.setTextColor(fg)
+            editorBinding.textArea.setShadowLayer(8f, 0f, 2f, sh)
+        }
     }
 
     private fun adjustAlpha(color: Int, factor: Float): Int {
@@ -448,13 +432,30 @@ open class MainActivity : AppCompatActivity() {
 
     // ── Voice-to-text ─────────────────────────────────────────────────────────
 
+    private var isListening = false
+
     private fun setupVoiceButtons() {
         editorBinding.editorVoiceButton.setOnClickListener {
-            startVoiceInput(editorBinding.textArea)
+            if (isListening) stopVoiceInput() else startVoiceInput(editorBinding.textArea)
         }
         aiChatBinding.voiceButton.setOnClickListener {
-            startVoiceInput(aiChatBinding.queryEditText)
+            if (isListening) stopVoiceInput() else startVoiceInput(aiChatBinding.queryEditText)
         }
+    }
+
+    private fun stopVoiceInput() {
+        isListening = false
+        speechRecognizer?.stopListening()
+        setMicActive(false)
+    }
+
+    private fun setMicActive(active: Boolean) {
+        val tint = if (active)
+            resources.getColor(R.color.accent_peach, theme)
+        else
+            resources.getColor(R.color.accent_primary, theme)
+        editorBinding.editorVoiceButton.setColorFilter(tint)
+        aiChatBinding.voiceButton.setColorFilter(tint)
     }
 
     private fun startVoiceInput(target: EditText) {
@@ -463,35 +464,83 @@ open class MainActivity : AppCompatActivity() {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), 101)
             return
         }
+        if (isListening) return
         speechTarget = target
-        speechRecognizer?.destroy()
-        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
-            setRecognitionListener(object : RecognitionListener {
-                override fun onResults(results: android.os.Bundle) {
-                    val text = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                        ?.firstOrNull() ?: return
-                    val et = speechTarget ?: return
-                    val pos = et.selectionStart.coerceAtLeast(0)
-                    et.text.insert(pos, text)
-                }
-                override fun onError(error: Int) {
-                    Toast.makeText(this@MainActivity, "Voice error: $error", Toast.LENGTH_SHORT).show()
-                }
-                override fun onReadyForSpeech(p: android.os.Bundle?) {}
-                override fun onBeginningOfSpeech() {}
-                override fun onRmsChanged(v: Float) {}
-                override fun onBufferReceived(b: ByteArray?) {}
-                override fun onEndOfSpeech() {}
-                override fun onPartialResults(p: android.os.Bundle?) {}
-                override fun onEvent(t: Int, p: android.os.Bundle?) {}
-            })
+
+        // Fully destroy previous instance before creating a new one
+        speechRecognizer?.apply {
+            cancel()
+            destroy()
         }
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-        }
-        speechRecognizer?.startListening(intent)
-        Toast.makeText(this, "Listening...", Toast.LENGTH_SHORT).show()
+        speechRecognizer = null
+
+        // Small delay so the OS fully releases the mic from the previous session
+        handler.postDelayed({
+            if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+                Toast.makeText(this, "Speech recognition not available", Toast.LENGTH_SHORT).show()
+                return@postDelayed
+            }
+            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
+                setRecognitionListener(object : RecognitionListener {
+                    override fun onReadyForSpeech(params: android.os.Bundle?) {
+                        isListening = true
+                        setMicActive(true)
+                    }
+                    override fun onBeginningOfSpeech() {}
+                    override fun onRmsChanged(rmsdB: Float) {}
+                    override fun onBufferReceived(buffer: ByteArray?) {}
+                    override fun onEndOfSpeech() {
+                        isListening = false
+                        setMicActive(false)
+                    }
+                    override fun onResults(results: android.os.Bundle) {
+                        isListening = false
+                        setMicActive(false)
+                        val text = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                            ?.firstOrNull()?.trim() ?: return
+                        val et = speechTarget ?: return
+                        val pos = et.selectionStart.coerceAtLeast(0)
+                        et.text.insert(pos, text)
+                    }
+                    override fun onPartialResults(partial: android.os.Bundle?) {
+                        // Show partial results live in the target field
+                        val text = partial
+                            ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                            ?.firstOrNull()?.trim() ?: return
+                        // Don't insert partials — just show as hint via tag
+                        speechTarget?.hint = text
+                    }
+                    override fun onError(error: Int) {
+                        isListening = false
+                        setMicActive(false)
+                        speechTarget?.hint = ""
+                        val msg = when (error) {
+                            SpeechRecognizer.ERROR_NO_MATCH       -> "No speech detected — try again"
+                            SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Listening timed out — try again"
+                            SpeechRecognizer.ERROR_AUDIO          -> "Audio error — check mic"
+                            SpeechRecognizer.ERROR_NETWORK        -> "Network error"
+                            SpeechRecognizer.ERROR_CLIENT         -> "Mic busy — try again"
+                            else -> "Voice error ($error)"
+                        }
+                        Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
+                    }
+                    override fun onEvent(eventType: Int, params: android.os.Bundle?) {}
+                })
+            }
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                // Give the user 5 s of silence before giving up
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 1000L)
+                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+            }
+            speechRecognizer?.startListening(intent)
+            Toast.makeText(this, "🎙 Listening...", Toast.LENGTH_SHORT).show()
+        }, 150L)
     }
 
     // ── Image insertion in editor ─────────────────────────────────────────────
@@ -1045,6 +1094,34 @@ open class MainActivity : AppCompatActivity() {
             else -> return false
         }
         return true
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleOpenIntent(intent)
+    }
+
+    private fun handleOpenIntent(intent: Intent?) {
+        if (intent?.action != Intent.ACTION_VIEW && intent?.action != Intent.ACTION_EDIT) return
+        val uri = intent.data ?: return
+        try {
+            // Request persistent permission if it's a content URI
+            if (uri.scheme == "content") {
+                try {
+                    contentResolver.takePersistableUriPermission(
+                        uri,
+                        Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+                    )
+                } catch (_: Exception) {}
+            }
+            openFileFromUri(uri)
+            // Switch to editor tab
+            binding.appBarMain.contentMain.bottomNavView.selectedItemId = R.id.nav_editor
+            editorBinding.root.visibility = View.VISIBLE
+            aiChatBinding.root.visibility = View.GONE
+        } catch (e: Exception) {
+            Toast.makeText(this, "Cannot open file", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun checkForRecovery() {
