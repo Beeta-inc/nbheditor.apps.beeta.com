@@ -29,23 +29,23 @@
     <color name="input_bg">#FFCCD0DA</color>
     <color name="divider">#FFBCC0CC</color>
 
-    <!-- Glass mode colors — light frosted glass (used programmatically) -->
-    <color name="glass_scene_bg">#FFF2F5FF</color>
-    <color name="glass_editor_surface">#C8FFFFFF</color>
-    <color name="glass_line_numbers_bg">#A0EEF0FF</color>
-    <color name="glass_editor_text">#FF080818</color>
-    <color name="glass_editor_hint">#88223355</color>
-    <color name="glass_line_number_text">#99182040</color>
-    <color name="glass_toolbar_bg">#D8FFFFFF</color>
-    <color name="glass_divider">#44001166</color>
-    <color name="glass_chat_ai_bubble">#E0FFFFFF</color>
-    <color name="glass_chat_ai_text">#FF080818</color>
-    <color name="glass_input_bg">#D0FFFFFF</color>
-    <color name="glass_border">#881E66F5</color>
-    <color name="glass_border_subtle">#441E66F5</color>
-    <color name="glass_tint">#F0FFFFFF</color>
-    <color name="glass_accent_tint">#281E66F5</color>
-    <color name="glass_highlight">#3C1E66F5</color>
-    <color name="glass_gradient_top">#18AABBFF</color>
-    <color name="glass_gradient_bottom">#0C1E66F5</color>
+    <!-- Glass mode colors — Apple-style light frosted glass -->
+    <color name="glass_scene_bg">#FFF0F4FF</color>
+    <color name="glass_editor_surface">#05FFFFFF</color>
+    <color name="glass_line_numbers_bg">#03FFFFFF</color>
+    <color name="glass_editor_text">#FF0A0A1A</color>
+    <color name="glass_editor_hint">#55223355</color>
+    <color name="glass_line_number_text">#77223355</color>
+    <color name="glass_toolbar_bg">#05FFFFFF</color>
+    <color name="glass_divider">#0A000000</color>
+    <color name="glass_chat_ai_bubble">#05FFFFFF</color>
+    <color name="glass_chat_ai_text">#FF0A0A1A</color>
+    <color name="glass_input_bg">#05FFFFFF</color>
+    <color name="glass_border">#0DFFFFFF</color>
+    <color name="glass_border_subtle">#08FFFFFF</color>
+    <color name="glass_tint">#05FFFFFF</color>
+    <color name="glass_accent_tint">#081E66F5</color>
+    <color name="glass_highlight">#0F1E66F5</color>
+    <color name="glass_gradient_top">#00FFFFFF</color>
+    <color name="glass_gradient_bottom">#00FFFFFF</color>
 </resources>

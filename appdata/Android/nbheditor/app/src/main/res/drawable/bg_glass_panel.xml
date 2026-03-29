@@ -1,35 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Gradient fill -->
     <item>
         <shape android:shape="rectangle">
-            <gradient
-                android:type="linear"
-                android:angle="135"
-                android:startColor="@color/glass_gradient_top"
-                android:endColor="@color/glass_gradient_bottom" />
-            <corners android:radius="16dp" />
+            <solid android:color="#05FFFFFF" />
+            <corners android:radius="14dp" />
         </shape>
     </item>
-    <!-- Frosted tint -->
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="@color/glass_tint" />
-            <corners android:radius="16dp" />
-        </shape>
-    </item>
-    <!-- Outer border -->
-    <item>
-        <shape android:shape="rectangle">
-            <stroke android:width="1dp" android:color="@color/glass_border" />
-            <corners android:radius="16dp" />
-        </shape>
-    </item>
-    <!-- Inner subtle border -->
-    <item android:top="1dp" android:left="1dp" android:right="1dp" android:bottom="1dp">
-        <shape android:shape="rectangle">
-            <stroke android:width="1dp" android:color="@color/glass_border_subtle" />
-            <corners android:radius="15dp" />
+            <stroke android:width="0.5dp" android:color="#0DFFFFFF" />
+            <corners android:radius="14dp" />
         </shape>
     </item>
 </layer-list>

@@ -278,58 +278,50 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun applyGlassColors() {
-        val r = resources
-        val t = theme
-        val glassEditorSurface = r.getColor(R.color.glass_editor_surface, t)
-        val glassLineNumBg     = r.getColor(R.color.glass_line_numbers_bg, t)
-        val glassLineNumText   = r.getColor(R.color.glass_line_number_text, t)
-        val glassEditorHint    = r.getColor(R.color.glass_editor_hint, t)
-        val glassToolbarBg     = r.getColor(R.color.glass_toolbar_bg, t)
-        val glassDivider       = r.getColor(R.color.glass_divider, t)
+        // ── Everything transparent so window blur shows through ───────────────
+        listOf(
+            binding.activityContainer,
+            binding.drawerLayout,
+            binding.appBarMain.contentMain.fragmentContainer,
+            editorBinding.contentPane,
+            editorBinding.root,
+            aiChatBinding.root,
+            aiChatBinding.emptyState,
+            aiChatBinding.chatRecyclerView
+        ).forEach { it.setBackgroundColor(Color.TRANSPARENT) }
 
-        // Root — transparent so blur shows through
-        binding.activityContainer.setBackgroundColor(Color.TRANSPARENT)
-        binding.drawerLayout.setBackgroundColor(Color.TRANSPARENT)
+        val glassDivider = resources.getColor(R.color.glass_divider, theme)
+        val glassLineNumBg = resources.getColor(R.color.glass_line_numbers_bg, theme)
+        val glassEditorSurface = resources.getColor(R.color.glass_editor_surface, theme)
+        val glassEditorHint = resources.getColor(R.color.glass_editor_hint, theme)
 
-        // Toolbar — frosted bar with bottom border
-        binding.appBarMain.toolbar.background = ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
-
-        // Bottom nav
+        // ── Bars: ultra-thin glass drawable only ──────────────────────────────
+        val glassBar = ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
+        binding.appBarMain.toolbar.background = glassBar
         binding.appBarMain.contentMain.bottomNavView.background =
-            ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
-
-        // Nav drawer
-        binding.navView.setBackgroundColor(glassToolbarBg)
-
-        // Fragment container — transparent
-        binding.appBarMain.contentMain.fragmentContainer.setBackgroundColor(Color.TRANSPARENT)
-
-        // Editor
-        editorBinding.contentPane.setBackgroundColor(Color.TRANSPARENT)
-        editorBinding.root.setBackgroundColor(Color.TRANSPARENT)
-        editorBinding.lineNumbersScroll.setBackgroundColor(glassLineNumBg)
-        editorBinding.textArea.setBackgroundColor(glassEditorSurface)
-        editorBinding.textArea.setHintTextColor(glassEditorHint)
-        editorBinding.aiSuggestionContainer.background =
             ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
         editorBinding.editorToolbar.background =
             ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
+        aiChatBinding.chatHeader.background =
+            ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
+        aiChatBinding.inputBar.background =
+            ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
+        editorBinding.aiSuggestionContainer.background =
+            ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
 
-        // Line number text colors
-        for (i in 0 until editorBinding.lineNumbersVBox.childCount) {
-            (editorBinding.lineNumbersVBox.getChildAt(i) as? TextView)?.setTextColor(glassLineNumText)
-        }
+        // ── Nav drawer: very subtle tint ──────────────────────────────────────
+        binding.navView.setBackgroundColor(0x08000000)
 
-        // AI Chat
-        aiChatBinding.root.setBackgroundColor(Color.TRANSPARENT)
-        aiChatBinding.chatHeader.background = ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
+        // ── Dividers: hairline ────────────────────────────────────────────────
         aiChatBinding.headerDivider.setBackgroundColor(glassDivider)
         aiChatBinding.inputDivider.setBackgroundColor(glassDivider)
-        aiChatBinding.inputBar.background = ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
-        aiChatBinding.emptyState.setBackgroundColor(Color.TRANSPARENT)
-        aiChatBinding.chatRecyclerView.setBackgroundColor(Color.TRANSPARENT)
 
-        // Start real-time adaptive color loop after first layout pass
+        // ── Editor surface: nearly transparent ────────────────────────────────
+        editorBinding.lineNumbersScroll.setBackgroundColor(glassLineNumBg)
+        editorBinding.textArea.setBackgroundColor(glassEditorSurface)
+        editorBinding.textArea.setHintTextColor(glassEditorHint)
+
+        // ── Start real-time adaptive text/icon color loop ─────────────────────
         binding.root.post { startAdaptiveColorLoop() }
     }
 
