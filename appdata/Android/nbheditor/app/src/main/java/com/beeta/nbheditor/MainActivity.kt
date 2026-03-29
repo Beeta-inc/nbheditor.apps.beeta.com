@@ -564,26 +564,60 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun insertImageIntoEditor(uri: Uri) {
-        try {
-            val stream = contentResolver.openInputStream(uri) ?: return
-            val bmp = BitmapFactory.decodeStream(stream)
-            stream.close()
-            val maxW = editorBinding.textArea.width.takeIf { it > 0 } ?: 800
-            val scaled = if (bmp.width > maxW) {
-                val ratio = maxW.toFloat() / bmp.width
-                Bitmap.createScaledBitmap(bmp, maxW, (bmp.height * ratio).toInt(), true)
-            } else bmp
-            val drawable = BitmapDrawable(resources, scaled).apply {
-                setBounds(0, 0, scaled.width, scaled.height)
+        lifecycleScope.launch {
+            try {
+                val drawable = withContext(Dispatchers.IO) {
+                    val stream = contentResolver.openInputStream(uri)
+                        ?: return@withContext null
+                    val opts = android.graphics.BitmapFactory.Options().apply {
+                        inJustDecodeBounds = true
+                    }
+                    BitmapFactory.decodeStream(stream, null, opts)
+                    stream.close()
+
+                    // Target width: 480dp in pixels
+                    val density = resources.displayMetrics.density
+                    val targetPx = (480 * density).toInt()
+                    val sampleSize = (opts.outWidth / targetPx).coerceAtLeast(1)
+                        .let { Integer.highestOneBit(it) } // round down to power of 2
+
+                    val stream2 = contentResolver.openInputStream(uri)
+                        ?: return@withContext null
+                    val finalOpts = android.graphics.BitmapFactory.Options().apply {
+                        inSampleSize = sampleSize.coerceAtLeast(1)
+                    }
+                    val bmp = BitmapFactory.decodeStream(stream2, null, finalOpts)
+                    stream2.close()
+                    bmp ?: return@withContext null
+
+                    // Scale to exact target width maintaining aspect ratio
+                    val scaled = if (bmp.width > targetPx) {
+                        val h = (bmp.height * targetPx.toFloat() / bmp.width).toInt()
+                        Bitmap.createScaledBitmap(bmp, targetPx, h, true)
+                            .also { if (it !== bmp) bmp.recycle() }
+                    } else bmp
+
+                    BitmapDrawable(resources, scaled).apply {
+                        setBounds(0, 0, scaled.width, scaled.height)
+                    }
+                }
+
+                if (drawable == null) {
+                    Toast.makeText(this@MainActivity, "Could not load image", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+
+                val span = ImageSpan(drawable, ImageSpan.ALIGN_BOTTOM)
+                val ss = SpannableString("\n ") // newline before + space as image anchor
+                ss.setSpan(span, 1, 2, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                val et = editorBinding.textArea
+                val pos = et.selectionStart.coerceAtLeast(0)
+                et.text.insert(pos, ss)
+                et.text.insert(pos + 2, "\n") // newline after
+                Toast.makeText(this@MainActivity, "Image inserted", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(this@MainActivity, "Failed to insert image", Toast.LENGTH_SHORT).show()
             }
-            val span = ImageSpan(drawable, ImageSpan.ALIGN_BASELINE)
-            val ss = SpannableString(" ")
-            ss.setSpan(span, 0, 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            val et = editorBinding.textArea
-            val pos = et.selectionStart.coerceAtLeast(0)
-            et.text.insert(pos, ss)
-        } catch (e: Exception) {
-            Toast.makeText(this, "Failed to insert image", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -730,7 +764,65 @@ open class MainActivity : AppCompatActivity() {
             editorBinding.lineNumbersScroll.scrollY = scrollY
         }
 
+        editorBinding.textArea.setOnLongClickListener { v ->
+            val et = v as android.widget.EditText
+            val offset = getOffsetForPosition(et, lastTouchX, lastTouchY)
+            if (offset >= 0) {
+                val spans = et.text.getSpans(offset, offset + 1, android.text.style.ImageSpan::class.java)
+                if (spans.isNotEmpty()) {
+                    openImageEditor(et, spans[0])
+                    return@setOnLongClickListener true
+                }
+            }
+            false
+        }
+
+        editorBinding.textArea.setOnTouchListener { v, event ->
+            if (event.action == android.view.MotionEvent.ACTION_DOWN ||
+                event.action == android.view.MotionEvent.ACTION_MOVE) {
+                lastTouchX = event.x
+                lastTouchY = event.y
+            }
+            false // don't consume — let EditText handle it
+        }
+
         updateLineNumbers()
+    }
+
+    private var lastTouchX = 0f
+    private var lastTouchY = 0f
+
+    private fun getOffsetForPosition(et: android.widget.EditText, x: Float, y: Float): Int {
+        val layout = et.layout ?: return -1
+        val line = layout.getLineForVertical((y + et.scrollY - et.paddingTop).toInt())
+        return layout.getOffsetForHorizontal(line, x - et.paddingLeft + et.scrollX)
+    }
+
+    private fun openImageEditor(et: android.widget.EditText, span: android.text.style.ImageSpan) {
+        val drawable = span.drawable as? android.graphics.drawable.BitmapDrawable ?: return
+        val bmp = drawable.bitmap ?: return
+        val spanStart = et.text.getSpanStart(span)
+        val spanEnd   = et.text.getSpanEnd(span)
+
+        ImageEditBottomSheet(bmp) { edited, caption ->
+            lifecycleScope.launch(Dispatchers.IO) {
+                val newDrawable = android.graphics.drawable.BitmapDrawable(resources, edited).apply {
+                    setBounds(0, 0, edited.width, edited.height)
+                }
+                val newSpan = android.text.style.ImageSpan(newDrawable, android.text.style.ImageSpan.ALIGN_BOTTOM)
+                withContext(Dispatchers.Main) {
+                    // Replace old span
+                    val ss = android.text.SpannableString(" ")
+                    ss.setSpan(newSpan, 0, 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    et.text.replace(spanStart, spanEnd, ss)
+                    // Insert caption below if provided
+                    if (caption.isNotEmpty()) {
+                        val insertAt = (spanStart + 1).coerceAtMost(et.text.length)
+                        et.text.insert(insertAt, "\n_${caption}_\n")
+                    }
+                }
+            }
+        }.show(supportFragmentManager, "img_edit")
     }
 
     private fun triggerAISuggestions() {
