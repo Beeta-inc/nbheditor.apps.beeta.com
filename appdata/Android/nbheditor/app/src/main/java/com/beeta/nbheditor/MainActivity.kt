@@ -1,17 +1,27 @@
 package com.beeta.nbheditor
 
+import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import android.text.Editable
+import android.text.SpannableString
 import android.text.TextWatcher
+import android.text.style.ImageSpan
 import android.util.Log
 import android.view.Gravity
 import android.view.Menu
@@ -23,6 +33,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.isVisible
@@ -40,6 +52,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 
 open class MainActivity : AppCompatActivity() {
@@ -111,6 +124,24 @@ open class MainActivity : AppCompatActivity() {
         "application/x-kotlin", "application/x-java",
         "application/octet-stream"
     )
+
+    // Image generation data classes
+    data class ImageGenRequest(val model: String, val prompt: String)
+    data class ImageGenChoice(val message: ImageGenMessage)
+    data class ImageGenMessage(val content: List<ImageGenContent>)
+    data class ImageGenContent(val type: String, val image_url: ImageGenUrl? = null)
+    data class ImageGenUrl(val url: String)
+
+    private val FLUX_MODEL = "black-forest-labs/FLUX-1-schnell:free"
+
+    private var speechRecognizer: SpeechRecognizer? = null
+    private var speechTarget: EditText? = null // which EditText receives speech
+
+    private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            result.data?.data?.let { uri -> insertImageIntoEditor(uri) }
+        }
+    }
 
     private val openFileLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
@@ -194,11 +225,18 @@ open class MainActivity : AppCompatActivity() {
         if (isGlassMode) {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
             applyGlassColors()
-            // Run blur on background thread to avoid blocking main thread (ANR)
             window.decorView.post {
                 GlassBlurHelper.enableWindowBlur(window, this, blurRadius = 60)
             }
         }
+
+        setupVoiceButtons()
+        setupImageButton()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        speechRecognizer?.destroy()
     }
 
     private var isGlassMode = false
@@ -238,28 +276,28 @@ open class MainActivity : AppCompatActivity() {
     private fun applyGlassColors() {
         val r = resources
         val t = theme
-        val glassEditorSurface  = r.getColor(R.color.glass_editor_surface,  t)
-        val glassLineNumBg      = r.getColor(R.color.glass_line_numbers_bg,  t)
-        val glassLineNumText    = r.getColor(R.color.glass_line_number_text,  t)
-        val glassEditorText     = r.getColor(R.color.glass_editor_text,       t)
-        val glassEditorHint     = r.getColor(R.color.glass_editor_hint,       t)
-        val glassToolbarBg      = r.getColor(R.color.glass_toolbar_bg,        t)
-        val glassDivider        = r.getColor(R.color.glass_divider,           t)
-        val glassInputBg        = r.getColor(R.color.glass_input_bg,          t)
-        val glassAiBubble       = r.getColor(R.color.glass_chat_ai_bubble,    t)
-        val glassAiText         = r.getColor(R.color.glass_chat_ai_text,      t)
-        val accentPrimary       = r.getColor(R.color.accent_primary,          t)
+        val glassEditorSurface = r.getColor(R.color.glass_editor_surface, t)
+        val glassLineNumBg     = r.getColor(R.color.glass_line_numbers_bg, t)
+        val glassLineNumText   = r.getColor(R.color.glass_line_number_text, t)
+        val glassEditorText    = r.getColor(R.color.glass_editor_text, t)
+        val glassEditorHint    = r.getColor(R.color.glass_editor_hint, t)
+        val glassToolbarBg     = r.getColor(R.color.glass_toolbar_bg, t)
+        val glassDivider       = r.getColor(R.color.glass_divider, t)
+        val glassBorder        = r.getColor(R.color.glass_border, t)
+        val accentPrimary      = r.getColor(R.color.accent_primary, t)
 
-        // Root backgrounds — transparent so blur shows through
+        // Root — transparent so blur shows through
         binding.activityContainer.setBackgroundColor(Color.TRANSPARENT)
         binding.drawerLayout.setBackgroundColor(Color.TRANSPARENT)
 
-        // Toolbar
-        binding.appBarMain.toolbar.setBackgroundColor(glassToolbarBg)
+        // Toolbar — frosted bar with bottom border
+        binding.appBarMain.toolbar.background = ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
         binding.appBarMain.toolbarTitle?.setTextColor(glassEditorText)
+        binding.appBarMain.toolbarTitle?.setShadowLayer(4f, 0f, 1f, adjustAlpha(accentPrimary, 0.3f))
 
         // Bottom nav
-        binding.appBarMain.contentMain.bottomNavView.setBackgroundColor(glassToolbarBg)
+        binding.appBarMain.contentMain.bottomNavView.background =
+            ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
 
         // Nav drawer
         binding.navView.setBackgroundColor(glassToolbarBg)
@@ -274,22 +312,30 @@ open class MainActivity : AppCompatActivity() {
         editorBinding.textArea.setBackgroundColor(glassEditorSurface)
         editorBinding.textArea.setTextColor(glassEditorText)
         editorBinding.textArea.setHintTextColor(glassEditorHint)
-        editorBinding.textArea.setShadowLayer(3f, 0f, 1f, 0xFFFFFFFF.toInt())
-        editorBinding.aiSuggestionContainer.setBackgroundColor(glassToolbarBg)
+        editorBinding.textArea.setShadowLayer(2f, 0f, 1f, adjustAlpha(0xFFFFFFFF.toInt(), 0.15f))
+        editorBinding.aiSuggestionContainer.background =
+            ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
+        editorBinding.editorToolbar.background =
+            ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
 
-        // Update line number text colors
+        // Line number text colors
         for (i in 0 until editorBinding.lineNumbersVBox.childCount) {
             (editorBinding.lineNumbersVBox.getChildAt(i) as? TextView)?.setTextColor(glassLineNumText)
         }
 
         // AI Chat
         aiChatBinding.root.setBackgroundColor(Color.TRANSPARENT)
-        aiChatBinding.chatHeader.setBackgroundColor(glassToolbarBg)
+        aiChatBinding.chatHeader.background = ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
         aiChatBinding.headerDivider.setBackgroundColor(glassDivider)
         aiChatBinding.inputDivider.setBackgroundColor(glassDivider)
-        aiChatBinding.inputBar.setBackgroundColor(glassToolbarBg)
+        aiChatBinding.inputBar.background = ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
         aiChatBinding.emptyState.setBackgroundColor(Color.TRANSPARENT)
         aiChatBinding.chatRecyclerView.setBackgroundColor(Color.TRANSPARENT)
+    }
+
+    private fun adjustAlpha(color: Int, factor: Float): Int {
+        val alpha = (Color.alpha(color) * factor).toInt().coerceIn(0, 255)
+        return Color.argb(alpha, Color.red(color), Color.green(color), Color.blue(color))
     }
 
     private fun setupBottomNav() {
@@ -331,6 +377,87 @@ open class MainActivity : AppCompatActivity() {
         }
     }
 
+    // ── Voice-to-text ─────────────────────────────────────────────────────────
+
+    private fun setupVoiceButtons() {
+        editorBinding.editorVoiceButton.setOnClickListener {
+            startVoiceInput(editorBinding.textArea)
+        }
+        aiChatBinding.voiceButton.setOnClickListener {
+            startVoiceInput(aiChatBinding.queryEditText)
+        }
+    }
+
+    private fun startVoiceInput(target: EditText) {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+            != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), 101)
+            return
+        }
+        speechTarget = target
+        speechRecognizer?.destroy()
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
+            setRecognitionListener(object : RecognitionListener {
+                override fun onResults(results: android.os.Bundle) {
+                    val text = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                        ?.firstOrNull() ?: return
+                    val et = speechTarget ?: return
+                    val pos = et.selectionStart.coerceAtLeast(0)
+                    et.text.insert(pos, text)
+                }
+                override fun onError(error: Int) {
+                    Toast.makeText(this@MainActivity, "Voice error: $error", Toast.LENGTH_SHORT).show()
+                }
+                override fun onReadyForSpeech(p: android.os.Bundle?) {}
+                override fun onBeginningOfSpeech() {}
+                override fun onRmsChanged(v: Float) {}
+                override fun onBufferReceived(b: ByteArray?) {}
+                override fun onEndOfSpeech() {}
+                override fun onPartialResults(p: android.os.Bundle?) {}
+                override fun onEvent(t: Int, p: android.os.Bundle?) {}
+            })
+        }
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+        }
+        speechRecognizer?.startListening(intent)
+        Toast.makeText(this, "Listening...", Toast.LENGTH_SHORT).show()
+    }
+
+    // ── Image insertion in editor ─────────────────────────────────────────────
+
+    private fun setupImageButton() {
+        editorBinding.insertImageButton.setOnClickListener {
+            val intent = Intent(Intent.ACTION_PICK).apply { type = "image/*" }
+            imagePickerLauncher.launch(intent)
+        }
+    }
+
+    private fun insertImageIntoEditor(uri: Uri) {
+        try {
+            val stream = contentResolver.openInputStream(uri) ?: return
+            val bmp = BitmapFactory.decodeStream(stream)
+            stream.close()
+            val maxW = editorBinding.textArea.width.takeIf { it > 0 } ?: 800
+            val scaled = if (bmp.width > maxW) {
+                val ratio = maxW.toFloat() / bmp.width
+                Bitmap.createScaledBitmap(bmp, maxW, (bmp.height * ratio).toInt(), true)
+            } else bmp
+            val drawable = BitmapDrawable(resources, scaled).apply {
+                setBounds(0, 0, scaled.width, scaled.height)
+            }
+            val span = ImageSpan(drawable, ImageSpan.ALIGN_BASELINE)
+            val ss = SpannableString(" ")
+            ss.setSpan(span, 0, 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            val et = editorBinding.textArea
+            val pos = et.selectionStart.coerceAtLeast(0)
+            et.text.insert(pos, ss)
+        } catch (e: Exception) {
+            Toast.makeText(this, "Failed to insert image", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     private fun insertTextIntoEditor(text: String) {
         // Switch to editor tab
         binding.appBarMain.contentMain.bottomNavView.selectedItemId = R.id.nav_editor
@@ -356,6 +483,8 @@ open class MainActivity : AppCompatActivity() {
         val query = aiChatBinding.queryEditText.text.toString().trim()
         if (query.isBlank()) return
 
+        val isImageGen = aiChatBinding.imageGenChip.isChecked
+
         chatAdapter.addMessage(ChatMessage("user", query))
         aiChatBinding.queryEditText.text.clear()
         aiChatBinding.emptyState.visibility = View.GONE
@@ -365,18 +494,72 @@ open class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                val aiResponse = callAI(query, maxTokens = 1024)
-                aiChatBinding.typingRow.visibility = View.GONE
-                if (aiResponse != null) {
-                    chatAdapter.addMessage(ChatMessage("assistant", aiResponse))
-                    scrollChatToBottom()
+                if (isImageGen) {
+                    val base64 = callImageGen(query)
+                    aiChatBinding.typingRow.visibility = View.GONE
+                    if (base64 != null) {
+                        chatAdapter.addImageMessage(ChatAdapter.ImageMessage(query, base64))
+                        scrollChatToBottom()
+                    } else {
+                        showChatError("Image generation failed. Try again.")
+                    }
                 } else {
-                    showChatError("No response. Try again.")
+                    val aiResponse = callAI(query, maxTokens = 1024)
+                    aiChatBinding.typingRow.visibility = View.GONE
+                    if (aiResponse != null) {
+                        chatAdapter.addMessage(ChatMessage("assistant", aiResponse))
+                        scrollChatToBottom()
+                    } else {
+                        showChatError("No response. Try again.")
+                    }
                 }
             } catch (e: Exception) {
                 aiChatBinding.typingRow.visibility = View.GONE
                 showChatError("Error: ${e.message?.take(60)}")
             }
+        }
+    }
+
+    private suspend fun callImageGen(prompt: String): String? = withContext(Dispatchers.IO) {
+        try {
+            val body = gson.toJson(mapOf(
+                "model" to FLUX_MODEL,
+                "messages" to listOf(mapOf(
+                    "role" to "user",
+                    "content" to listOf(mapOf("type" to "text", "text" to prompt))
+                ))
+            )).toRequestBody("application/json".toMediaType())
+            val request = Request.Builder()
+                .url("https://openrouter.ai/api/v1/chat/completions")
+                .post(body)
+                .addHeader("Authorization", "Bearer $OPENROUTER_API_KEY")
+                .addHeader("HTTP-Referer", "https://nbheditor.apps.beeta.com")
+                .addHeader("X-Title", "NBH Editor")
+                .build()
+            client.newCall(request).execute().use { response ->
+                val rb = response.body?.string() ?: return@withContext null
+                if (!response.isSuccessful) return@withContext null
+                // Extract base64 image from response content
+                val json = org.json.JSONObject(rb)
+                val content = json.getJSONArray("choices")
+                    .getJSONObject(0)
+                    .getJSONObject("message")
+                    .optString("content", "")
+                // Content may be a URL or base64 data URI
+                if (content.startsWith("data:image")) {
+                    content.substringAfter(",")
+                } else if (content.startsWith("http")) {
+                    // Download and convert to base64
+                    val imgReq = Request.Builder().url(content).build()
+                    client.newCall(imgReq).execute().use { imgResp ->
+                        val bytes = imgResp.body?.bytes() ?: return@withContext null
+                        android.util.Base64.encodeToString(bytes, android.util.Base64.DEFAULT)
+                    }
+                } else null
+            }
+        } catch (e: Exception) {
+            Log.e("ImageGen", "Failed: ${e.message}")
+            null
         }
     }
 

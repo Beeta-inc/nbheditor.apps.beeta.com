@@ -1,11 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Gradient fill -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="linear"
+                android:angle="90"
+                android:startColor="@color/glass_gradient_top"
+                android:endColor="@color/glass_gradient_bottom" />
+        </shape>
+    </item>
+    <!-- Frosted tint -->
     <item>
         <shape android:shape="rectangle">
             <solid android:color="@color/glass_toolbar_bg" />
         </shape>
     </item>
-    <item android:top="0dp" android:bottom="1dp" android:left="-2dp" android:right="-2dp">
+    <!-- Bottom border only -->
+    <item android:top="-2dp" android:left="-2dp" android:right="-2dp">
         <shape android:shape="rectangle">
             <stroke android:width="1dp" android:color="@color/glass_border" />
         </shape>

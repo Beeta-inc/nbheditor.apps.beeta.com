@@ -29,20 +29,23 @@
     <color name="input_bg">#FFCCD0DA</color>
     <color name="divider">#FFBCC0CC</color>
 
-    <!-- Glass mode colors (used programmatically when glass mode is active) -->
-    <color name="glass_scene_bg">#FFF0F4FF</color>
-    <color name="glass_editor_surface">#BBFFFFFF</color>
-    <color name="glass_line_numbers_bg">#99FFFFFF</color>
-    <color name="glass_editor_text">#FF0A0A1A</color>
-    <color name="glass_editor_hint">#99334466</color>
-    <color name="glass_line_number_text">#AA1E1E3E</color>
-    <color name="glass_toolbar_bg">#CCFFFFFF</color>
-    <color name="glass_divider">#33000044</color>
-    <color name="glass_chat_ai_bubble">#DDFFFFFF</color>
-    <color name="glass_chat_ai_text">#FF0A0A1A</color>
-    <color name="glass_input_bg">#CCFFFFFF</color>
-    <color name="glass_border">#66AABBFF</color>
-    <color name="glass_tint">#EEFFFFFF</color>
-    <color name="glass_accent_tint">#221E66F5</color>
-    <color name="glass_highlight">#331E66F5</color>
+    <!-- Glass mode colors — light frosted glass (used programmatically) -->
+    <color name="glass_scene_bg">#FFF2F5FF</color>
+    <color name="glass_editor_surface">#C8FFFFFF</color>
+    <color name="glass_line_numbers_bg">#A0EEF0FF</color>
+    <color name="glass_editor_text">#FF080818</color>
+    <color name="glass_editor_hint">#88223355</color>
+    <color name="glass_line_number_text">#99182040</color>
+    <color name="glass_toolbar_bg">#D8FFFFFF</color>
+    <color name="glass_divider">#44001166</color>
+    <color name="glass_chat_ai_bubble">#E0FFFFFF</color>
+    <color name="glass_chat_ai_text">#FF080818</color>
+    <color name="glass_input_bg">#D0FFFFFF</color>
+    <color name="glass_border">#881E66F5</color>
+    <color name="glass_border_subtle">#441E66F5</color>
+    <color name="glass_tint">#F0FFFFFF</color>
+    <color name="glass_accent_tint">#281E66F5</color>
+    <color name="glass_highlight">#3C1E66F5</color>
+    <color name="glass_gradient_top">#18AABBFF</color>
+    <color name="glass_gradient_bottom">#0C1E66F5</color>
 </resources>

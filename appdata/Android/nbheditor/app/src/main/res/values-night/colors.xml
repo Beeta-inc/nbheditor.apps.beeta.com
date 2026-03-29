@@ -21,20 +21,23 @@
     <color name="input_bg">#FF313244</color>
     <color name="divider">#FF45475A</color>
 
-    <!-- Glass mode colors - refined frosted glass for dark wallpapers -->
-    <color name="glass_scene_bg">#FF0D0D1A</color>
-    <color name="glass_editor_surface">#33FFFFFF</color>
-    <color name="glass_line_numbers_bg">#22FFFFFF</color>
-    <color name="glass_editor_text">#FFEEF0FF</color>
-    <color name="glass_editor_hint">#88AABBFF</color>
-    <color name="glass_line_number_text">#99AABBFF</color>
-    <color name="glass_toolbar_bg">#44FFFFFF</color>
-    <color name="glass_divider">#33AABBFF</color>
-    <color name="glass_chat_ai_bubble">#33FFFFFF</color>
-    <color name="glass_chat_ai_text">#FFEEF0FF</color>
-    <color name="glass_input_bg">#33FFFFFF</color>
-    <color name="glass_border">#55AABBFF</color>
-    <color name="glass_tint">#44FFFFFF</color>
-    <color name="glass_accent_tint">#2289B4FA</color>
-    <color name="glass_highlight">#3389B4FA</color>
+    <!-- Glass mode colors — dark frosted glass for dark wallpapers -->
+    <color name="glass_scene_bg">#FF080812</color>
+    <color name="glass_editor_surface">#3CFFFFFF</color>
+    <color name="glass_line_numbers_bg">#28AABBFF</color>
+    <color name="glass_editor_text">#FFF0F2FF</color>
+    <color name="glass_editor_hint">#7089B4FA</color>
+    <color name="glass_line_number_text">#8889B4FA</color>
+    <color name="glass_toolbar_bg">#4CFFFFFF</color>
+    <color name="glass_divider">#3C89B4FA</color>
+    <color name="glass_chat_ai_bubble">#3CFFFFFF</color>
+    <color name="glass_chat_ai_text">#FFF0F2FF</color>
+    <color name="glass_input_bg">#3CFFFFFF</color>
+    <color name="glass_border">#6689B4FA</color>
+    <color name="glass_border_subtle">#3389B4FA</color>
+    <color name="glass_tint">#4CFFFFFF</color>
+    <color name="glass_accent_tint">#2C89B4FA</color>
+    <color name="glass_highlight">#3C89B4FA</color>
+    <color name="glass_gradient_top">#1C89B4FA</color>
+    <color name="glass_gradient_bottom">#0C4488CC</color>
 </resources>
