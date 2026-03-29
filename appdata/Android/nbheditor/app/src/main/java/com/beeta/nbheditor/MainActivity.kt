@@ -237,6 +237,7 @@ open class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         speechRecognizer?.destroy()
+        if (isGlassMode) GlassTextAdapter.clear()
     }
 
     private var isGlassMode = false
@@ -286,14 +287,15 @@ open class MainActivity : AppCompatActivity() {
         val glassBorder        = r.getColor(R.color.glass_border, t)
         val accentPrimary      = r.getColor(R.color.accent_primary, t)
 
+        // Warm up wallpaper sampler on a background thread
+        Thread { GlassTextAdapter.warmUp(this) }.start()
+
         // Root — transparent so blur shows through
         binding.activityContainer.setBackgroundColor(Color.TRANSPARENT)
         binding.drawerLayout.setBackgroundColor(Color.TRANSPARENT)
 
         // Toolbar — frosted bar with bottom border
         binding.appBarMain.toolbar.background = ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
-        binding.appBarMain.toolbarTitle?.setTextColor(glassEditorText)
-        binding.appBarMain.toolbarTitle?.setShadowLayer(4f, 0f, 1f, adjustAlpha(accentPrimary, 0.3f))
 
         // Bottom nav
         binding.appBarMain.contentMain.bottomNavView.background =
@@ -331,6 +333,73 @@ open class MainActivity : AppCompatActivity() {
         aiChatBinding.inputBar.background = ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
         aiChatBinding.emptyState.setBackgroundColor(Color.TRANSPARENT)
         aiChatBinding.chatRecyclerView.setBackgroundColor(Color.TRANSPARENT)
+
+        // Apply adaptive text + icon colors after layout is ready
+        binding.root.viewTreeObserver.addOnGlobalLayoutListener(object :
+            android.view.ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                binding.root.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                applyAdaptiveGlassUI()
+            }
+        })
+    }
+
+    private fun applyAdaptiveGlassUI() {
+        // Toolbar title — adaptive + bold + shadow
+        binding.appBarMain.toolbarTitle?.let { tv ->
+            GlassTextAdapter.applyTo(tv, extraBold = true)
+        }
+
+        // Bottom nav icon tint — adaptive
+        val navView = binding.appBarMain.contentMain.bottomNavView
+        val navAdaptive = GlassTextAdapter.adaptiveColor(navView)
+        val navShadow   = GlassTextAdapter.shadowColor(navView)
+        val navTint = android.content.res.ColorStateList.valueOf(navAdaptive)
+        navView.itemIconTintList = navTint
+        navView.itemTextColor   = navTint
+
+        // Drawer hamburger icon
+        val drawerToggleColor = GlassTextAdapter.adaptiveColor(binding.appBarMain.toolbar)
+        binding.appBarMain.toolbar.navigationIcon?.setTint(drawerToggleColor)
+        binding.appBarMain.toolbar.overflowIcon?.setTint(drawerToggleColor)
+
+        // Toolbar action icons (save, AI fix)
+        binding.appBarMain.toolbar.menu?.let { menu ->
+            for (i in 0 until menu.size()) {
+                menu.getItem(i).icon?.setTint(drawerToggleColor)
+            }
+        }
+
+        // Nav drawer items
+        val drawerAdaptive = GlassTextAdapter.adaptiveColor(binding.navView)
+        val drawerTint = android.content.res.ColorStateList.valueOf(drawerAdaptive)
+        binding.navView.itemIconTintList = drawerTint
+        binding.navView.itemTextColor    = drawerTint
+
+        // Editor toolbar buttons
+        val toolbarAdaptive = GlassTextAdapter.adaptiveColor(editorBinding.editorToolbar)
+        val toolbarShadow   = GlassTextAdapter.shadowColor(editorBinding.editorToolbar)
+        GlassTextAdapter.applyTo(editorBinding.editorVoiceButton)
+        GlassTextAdapter.applyTo(editorBinding.insertImageButton)
+        listOf(editorBinding.tabKey, editorBinding.braceKey, editorBinding.parenKey,
+               editorBinding.bracketKey, editorBinding.angleKey).forEach { tv ->
+            tv.setTextColor(toolbarAdaptive)
+            tv.setShadowLayer(4f, 0f, 1f, toolbarShadow)
+            tv.paintFlags = tv.paintFlags or android.graphics.Paint.FAKE_BOLD_TEXT_FLAG
+        }
+
+        // AI chat header
+        val chatHeaderAdaptive = GlassTextAdapter.adaptiveColor(aiChatBinding.chatHeader)
+        val chatHeaderShadow   = GlassTextAdapter.shadowColor(aiChatBinding.chatHeader)
+        GlassTextAdapter.applyTo(aiChatBinding.voiceButton)
+
+        // Editor text area — adaptive text color with strong shadow for readability
+        val editorAdaptive = GlassTextAdapter.adaptiveColor(editorBinding.textArea)
+        val editorShadow   = GlassTextAdapter.shadowColor(editorBinding.textArea)
+        editorBinding.textArea.setTextColor(editorAdaptive)
+        editorBinding.textArea.setShadowLayer(8f, 0f, 2f, editorShadow)
+        editorBinding.textArea.paintFlags =
+            editorBinding.textArea.paintFlags or android.graphics.Paint.FAKE_BOLD_TEXT_FLAG
     }
 
     private fun adjustAlpha(color: Int, factor: Float): Int {
@@ -803,7 +872,6 @@ open class MainActivity : AppCompatActivity() {
         val lineCount = editorBinding.textArea.lineCount.coerceAtLeast(1)
         val current = editorBinding.lineNumbersVBox.childCount
         if (current == lineCount) return
-        // Add missing lines
         if (lineCount > current) {
             for (i in (current + 1)..lineCount) {
                 val tv = TextView(this).apply {
@@ -820,12 +888,15 @@ open class MainActivity : AppCompatActivity() {
                     else
                         resources.getColor(R.color.editor_line_number_text, theme)
                     setTextColor(lineNumColor)
+                    if (isGlassMode) {
+                        setShadowLayer(4f, 0f, 1f, 0x66000000)
+                        paintFlags = paintFlags or android.graphics.Paint.FAKE_BOLD_TEXT_FLAG
+                    }
                     textSize = 12f
                 }
                 editorBinding.lineNumbersVBox.addView(tv)
             }
         } else {
-            // Remove extra lines
             editorBinding.lineNumbersVBox.removeViews(lineCount, current - lineCount)
         }
     }
@@ -865,16 +936,23 @@ open class MainActivity : AppCompatActivity() {
     private fun updateToolbarTitle() {
         val name = if (currentFileUri != null) getFileName(currentFileUri!!) else "NBH Editor"
         val dot = if (textChanged) " ●" else ""
-        binding.appBarMain.toolbarTitle?.text = "$name$dot"
-        binding.appBarMain.toolbarTitle?.setTypeface(null, android.graphics.Typeface.BOLD)
-        binding.appBarMain.toolbarTitle?.textSize = 19f
-        binding.appBarMain.toolbarTitle?.setTextColor(
-            when {
-                textChanged -> resources.getColor(R.color.accent_primary, theme)
-                isGlassMode -> resources.getColor(R.color.glass_editor_text, theme)
-                else        -> resources.getColor(R.color.editor_text, theme)
+        val tv = binding.appBarMain.toolbarTitle ?: return
+        tv.text = "$name$dot"
+        tv.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        tv.paintFlags = tv.paintFlags or android.graphics.Paint.FAKE_BOLD_TEXT_FLAG
+        tv.textSize = 19f
+        tv.letterSpacing = 0.02f
+        when {
+            isGlassMode -> { /* adaptive color applied by applyAdaptiveGlassUI */ }
+            textChanged -> {
+                tv.setTextColor(resources.getColor(R.color.accent_primary, theme))
+                tv.setShadowLayer(0f, 0f, 0f, 0)
             }
-        )
+            else -> {
+                tv.setTextColor(resources.getColor(R.color.editor_text, theme))
+                tv.setShadowLayer(0f, 0f, 0f, 0)
+            }
+        }
     }
 
     private fun openFileFromUri(uri: Uri) {

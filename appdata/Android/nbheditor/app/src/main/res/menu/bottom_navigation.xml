@@ -2,10 +2,10 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/nav_editor"
-        android:icon="@android:drawable/ic_menu_edit"
+        android:icon="@drawable/ic_editor"
         android:title="Editor" />
     <item
         android:id="@+id/nav_ai_chat"
-        android:icon="@android:drawable/ic_menu_help"
+        android:icon="@drawable/ic_ai_chat"
         android:title="Ask AI" />
 </menu>
