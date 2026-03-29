@@ -278,7 +278,7 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun applyGlassColors() {
-        // ── Everything transparent so window blur shows through ───────────────
+        // Transparent containers so window blur shows through
         listOf(
             binding.activityContainer,
             binding.drawerLayout,
@@ -290,91 +290,110 @@ open class MainActivity : AppCompatActivity() {
             aiChatBinding.chatRecyclerView
         ).forEach { it.setBackgroundColor(Color.TRANSPARENT) }
 
-        val glassDivider = resources.getColor(R.color.glass_divider, theme)
-        val glassLineNumBg = resources.getColor(R.color.glass_line_numbers_bg, theme)
-        val glassEditorSurface = resources.getColor(R.color.glass_editor_surface, theme)
-        val glassEditorHint = resources.getColor(R.color.glass_editor_hint, theme)
+        // Bars: semi-opaque dark so text/icons are always visible
+        // #CC = 80% opacity dark — enough to read, still shows blur behind
+        val barColor = 0xCC0A0A14.toInt()
+        val divColor = 0x33FFFFFF
+        val surfaceColor = 0xBB0A0A14.toInt()
 
-        // ── Bars: ultra-thin glass drawable only ──────────────────────────────
-        val glassBar = ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
-        binding.appBarMain.toolbar.background = glassBar
-        binding.appBarMain.contentMain.bottomNavView.background =
-            ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
-        editorBinding.editorToolbar.background =
-            ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
-        aiChatBinding.chatHeader.background =
-            ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
-        aiChatBinding.inputBar.background =
-            ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
-        editorBinding.aiSuggestionContainer.background =
-            ContextCompat.getDrawable(this, R.drawable.bg_glass_bar)
+        binding.appBarMain.toolbar.setBackgroundColor(barColor)
+        binding.appBarMain.contentMain.bottomNavView.setBackgroundColor(barColor)
+        editorBinding.editorToolbar.setBackgroundColor(surfaceColor)
+        aiChatBinding.chatHeader.setBackgroundColor(barColor)
+        aiChatBinding.inputBar.setBackgroundColor(barColor)
+        editorBinding.aiSuggestionContainer.setBackgroundColor(surfaceColor)
+        editorBinding.autoSaveContainer.setBackgroundColor(surfaceColor)
+        binding.navView.setBackgroundColor(0xE00A0A14.toInt())
 
-        // ── Nav drawer: very subtle tint ──────────────────────────────────────
-        binding.navView.setBackgroundColor(0x08000000)
+        // Dividers
+        aiChatBinding.headerDivider.setBackgroundColor(divColor)
+        aiChatBinding.inputDivider.setBackgroundColor(divColor)
 
-        // ── Dividers: hairline ────────────────────────────────────────────────
-        aiChatBinding.headerDivider.setBackgroundColor(glassDivider)
-        aiChatBinding.inputDivider.setBackgroundColor(glassDivider)
+        // Editor area: slightly tinted so text is readable
+        editorBinding.lineNumbersScroll.setBackgroundColor(0x99080810.toInt())
+        editorBinding.textArea.setBackgroundColor(0x66080810.toInt())
+        editorBinding.textArea.setTextColor(0xFFF0F2FF.toInt())
+        editorBinding.textArea.setHintTextColor(0x88AABBFF.toInt())
 
-        // ── Editor surface: nearly transparent ────────────────────────────────
-        editorBinding.lineNumbersScroll.setBackgroundColor(glassLineNumBg)
-        editorBinding.textArea.setBackgroundColor(glassEditorSurface)
-        editorBinding.textArea.setHintTextColor(glassEditorHint)
+        // All text/icons in bars: white, always visible
+        val white = 0xFFF0F2FF.toInt()
+        val whiteSecondary = 0xBBF0F2FF.toInt()
+        val accentBlue = resources.getColor(R.color.accent_primary, theme)
 
-        // ── Start real-time adaptive text/icon color loop ─────────────────────
+        // Toolbar title
+        binding.appBarMain.toolbarTitle?.apply {
+            setTextColor(white)
+            setShadowLayer(0f, 0f, 0f, 0)
+            typeface = android.graphics.Typeface.create(typeface, android.graphics.Typeface.BOLD)
+        }
+
+        // Toolbar hamburger + overflow + action icons
+        binding.appBarMain.toolbar.post {
+            binding.appBarMain.toolbar.navigationIcon?.setTint(white)
+            binding.appBarMain.toolbar.overflowIcon?.setTint(white)
+            binding.appBarMain.toolbar.menu?.let { menu ->
+                for (i in 0 until menu.size()) menu.getItem(i).icon?.setTint(white)
+            }
+        }
+
+        // Bottom nav: white icons/text, accent for selected
+        val navTintList = android.content.res.ColorStateList(
+            arrayOf(
+                intArrayOf(android.R.attr.state_checked),
+                intArrayOf()
+            ),
+            intArrayOf(accentBlue, whiteSecondary)
+        )
+        binding.appBarMain.contentMain.bottomNavView.itemIconTintList = navTintList
+        binding.appBarMain.contentMain.bottomNavView.itemTextColor = navTintList
+
+        // Nav drawer items
+        val drawerTintList = android.content.res.ColorStateList(
+            arrayOf(
+                intArrayOf(android.R.attr.state_checked),
+                intArrayOf()
+            ),
+            intArrayOf(accentBlue, white)
+        )
+        binding.navView.itemIconTintList = drawerTintList
+        binding.navView.itemTextColor = drawerTintList
+
+        // Editor toolbar keys
+        listOf(editorBinding.tabKey, editorBinding.braceKey, editorBinding.parenKey,
+               editorBinding.bracketKey, editorBinding.angleKey).forEach { tv ->
+            tv.setTextColor(whiteSecondary)
+            tv.paintFlags = tv.paintFlags or android.graphics.Paint.FAKE_BOLD_TEXT_FLAG
+        }
+
+        // Editor toolbar icon buttons
+        editorBinding.editorVoiceButton.setColorFilter(accentBlue)
+        editorBinding.insertImageButton.setColorFilter(
+            resources.getColor(R.color.accent_secondary, theme)
+        )
+
+        // AI chat header texts already use accent colors from XML
+        // Voice button in chat
+        aiChatBinding.voiceButton.setColorFilter(accentBlue)
+
+        // Line numbers
+        for (i in 0 until editorBinding.lineNumbersVBox.childCount) {
+            (editorBinding.lineNumbersVBox.getChildAt(i) as? TextView)
+                ?.setTextColor(0x88AABBFF.toInt())
+        }
+
+        // Editor text area: adaptive color only here (text sits on variable bg)
+        editorBinding.textArea.paintFlags =
+            editorBinding.textArea.paintFlags or android.graphics.Paint.FAKE_BOLD_TEXT_FLAG
         binding.root.post { startAdaptiveColorLoop() }
     }
 
     private fun startAdaptiveColorLoop() {
         GlassTextAdapter.start(this)
-
-        // Toolbar title
-        binding.appBarMain.toolbarTitle?.let { GlassTextAdapter.watch(it, bold = true) }
-
-        // Toolbar nav/overflow/action icons
-        GlassTextAdapter.watch(binding.appBarMain.toolbar) { fg, _ ->
-            binding.appBarMain.toolbar.navigationIcon?.setTint(fg)
-            binding.appBarMain.toolbar.overflowIcon?.setTint(fg)
-            binding.appBarMain.toolbar.menu?.let { menu ->
-                for (i in 0 until menu.size()) menu.getItem(i).icon?.setTint(fg)
-            }
-        }
-
-        // Bottom nav
-        val navView = binding.appBarMain.contentMain.bottomNavView
-        GlassTextAdapter.watch(navView) { fg, _ ->
-            val tint = android.content.res.ColorStateList.valueOf(fg)
-            navView.itemIconTintList = tint
-            navView.itemTextColor = tint
-        }
-
-        // Nav drawer
-        GlassTextAdapter.watch(binding.navView) { fg, _ ->
-            val tint = android.content.res.ColorStateList.valueOf(fg)
-            binding.navView.itemIconTintList = tint
-            binding.navView.itemTextColor = tint
-        }
-
-        // Editor toolbar keys
-        listOf(editorBinding.tabKey, editorBinding.braceKey, editorBinding.parenKey,
-               editorBinding.bracketKey, editorBinding.angleKey).forEach { tv ->
-            tv.paintFlags = tv.paintFlags or android.graphics.Paint.FAKE_BOLD_TEXT_FLAG
-            GlassTextAdapter.watch(tv, bold = false)
-        }
-
-        // Editor toolbar icon buttons
-        GlassTextAdapter.watch(editorBinding.editorVoiceButton)
-        GlassTextAdapter.watch(editorBinding.insertImageButton)
-
-        // AI chat mic button
-        GlassTextAdapter.watch(aiChatBinding.voiceButton)
-
-        // Editor text area — most important: adapts as user scrolls over different bg regions
-        editorBinding.textArea.paintFlags =
-            editorBinding.textArea.paintFlags or android.graphics.Paint.FAKE_BOLD_TEXT_FLAG
+        // Only the editor text area needs adaptive color — everything else
+        // sits on the dark semi-opaque bar and is always white
         GlassTextAdapter.watch(editorBinding.textArea) { fg, sh ->
             editorBinding.textArea.setTextColor(fg)
-            editorBinding.textArea.setShadowLayer(8f, 0f, 2f, sh)
+            editorBinding.textArea.setShadowLayer(5f, 0f, 1f, sh)
         }
     }
 
@@ -925,12 +944,11 @@ open class MainActivity : AppCompatActivity() {
                     setPadding(0, 0, 8, 0)
                     typeface = Typeface.MONOSPACE
                     val lineNumColor = if (isGlassMode)
-                        resources.getColor(R.color.glass_line_number_text, theme)
+                        0x88AABBFF.toInt()
                     else
                         resources.getColor(R.color.editor_line_number_text, theme)
                     setTextColor(lineNumColor)
                     if (isGlassMode) {
-                        setShadowLayer(4f, 0f, 1f, 0x66000000)
                         paintFlags = paintFlags or android.graphics.Paint.FAKE_BOLD_TEXT_FLAG
                     }
                     textSize = 12f
