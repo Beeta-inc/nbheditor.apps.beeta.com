@@ -10,6 +10,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.BitmapDrawable
+import android.graphics.drawable.ColorDrawable
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -221,7 +222,7 @@ open class MainActivity : AppCompatActivity() {
         setupAiChat()
         setupBottomNav()
         checkForRecovery()
-        handleOpenIntent(intent)  // handle "Open with" launch
+        handleOpenIntent(intent)
 
         if (isGlassMode) {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
@@ -233,6 +234,14 @@ open class MainActivity : AppCompatActivity() {
 
         setupVoiceButtons()
         setupImageButton()
+        registerBackHandler()
+
+        // Show home screen unless launched via "Open with"
+        if (intent?.action == Intent.ACTION_VIEW || intent?.action == Intent.ACTION_EDIT) {
+            showEditor()
+        } else {
+            showHome()
+        }
     }
 
     override fun onDestroy() {
@@ -400,6 +409,131 @@ open class MainActivity : AppCompatActivity() {
     private fun adjustAlpha(color: Int, factor: Float): Int {
         val alpha = (Color.alpha(color) * factor).toInt().coerceIn(0, 255)
         return Color.argb(alpha, Color.red(color), Color.green(color), Color.blue(color))
+    }
+
+    // ── Home screen ───────────────────────────────────────────────────────────────
+
+    private lateinit var homeBinding: com.beeta.nbheditor.databinding.FragmentHomeBinding
+    private lateinit var fileCardAdapter: FileCardAdapter
+    private var isHomeVisible = false
+
+    private fun setupHome() {
+        val homeContainer = binding.appBarMain.contentMain.homeContainer ?: return
+        homeBinding = com.beeta.nbheditor.databinding.FragmentHomeBinding.inflate(
+            layoutInflater, homeContainer, false
+        )
+        homeContainer.addView(homeBinding.root)
+
+        // Responsive grid: 2 columns up to 10 files, 3 columns for 11+
+        val spanCount = 2
+        val gridManager = androidx.recyclerview.widget.GridLayoutManager(this, spanCount)
+        fileCardAdapter = FileCardAdapter(
+            onOpen = { entry ->
+                openFileFromUri(entry.uri)
+                showEditor()
+            },
+            onLongClick = { entry ->
+                // Long click: delete from recents
+                removeFromRecents(entry.uri)
+                refreshHomeFiles()
+            }
+        )
+        homeBinding.fileGrid.layoutManager = gridManager
+        homeBinding.fileGrid.adapter = fileCardAdapter
+        homeBinding.fileGrid.addItemDecoration(
+            androidx.recyclerview.widget.DividerItemDecoration(this,
+                androidx.recyclerview.widget.DividerItemDecoration.VERTICAL).also {
+                it.setDrawable(android.graphics.drawable.ColorDrawable(Color.TRANSPARENT))
+            }
+        )
+
+        homeBinding.btnNewFile.setOnClickListener {
+            // Clear editor and go to editor with blank file
+            editorBinding.textArea.setText("")
+            currentFileUri = null
+            textChanged = false
+            prefs.edit().remove("recovery_text").remove("last_file_uri").apply()
+            updateLineNumbers()
+            updateToolbarTitle()
+            showEditor()
+        }
+    }
+
+    private fun showHome() {
+        isHomeVisible = true
+        if (!::homeBinding.isInitialized) setupHome()
+        refreshHomeFiles()
+        binding.appBarMain.contentMain.homeContainer?.visibility = View.VISIBLE
+        binding.appBarMain.contentMain.fragmentContainer?.visibility = View.GONE
+        binding.appBarMain.contentMain.bottomNavView?.visibility = View.GONE
+        binding.appBarMain.toolbarTitle?.text = "NBH Editor"
+        supportActionBar?.setDisplayHomeAsUpEnabled(false)
+    }
+
+    private fun showEditor() {
+        isHomeVisible = false
+        binding.appBarMain.contentMain.homeContainer?.visibility = View.GONE
+        binding.appBarMain.contentMain.fragmentContainer?.visibility = View.VISIBLE
+        binding.appBarMain.contentMain.bottomNavView?.visibility = View.VISIBLE
+        // Select editor tab
+        binding.appBarMain.contentMain.bottomNavView.selectedItemId = R.id.nav_editor
+        editorBinding.root.visibility = View.VISIBLE
+        aiChatBinding.root.visibility = View.GONE
+        updateToolbarTitle()
+    }
+
+    private fun refreshHomeFiles() {
+        val uriStrings = prefs.getStringSet("recent_files", emptySet()) ?: emptySet()
+        val entries = mutableListOf<FileCardAdapter.FileEntry>()
+
+        for (uriStr in uriStrings) {
+            try {
+                val uri = android.net.Uri.parse(uriStr)
+                val name = getFileName(uri)
+                // Read first 120 chars as preview
+                val preview = try {
+                    contentResolver.openInputStream(uri)?.use {
+                        BufferedReader(InputStreamReader(it)).readText()
+                            .replace(Regex("\\[img:[^\\]]+\\]"), "[image]")
+                            .take(120).trim()
+                    } ?: ""
+                } catch (e: Exception) { "" }
+                entries.add(FileCardAdapter.FileEntry(uri, name, preview))
+            } catch (e: Exception) { /* skip invalid URIs */ }
+        }
+
+        // Sort by name
+        entries.sortBy { it.name.lowercase() }
+
+        // Adjust grid columns based on count
+        val cols = when {
+            entries.size <= 2  -> 1
+            entries.size <= 10 -> 2
+            else               -> 3
+        }
+        (homeBinding.fileGrid.layoutManager as? androidx.recyclerview.widget.GridLayoutManager)
+            ?.spanCount = cols
+
+        if (entries.isEmpty()) {
+            homeBinding.emptyHomeState.visibility = View.VISIBLE
+            homeBinding.fileGrid.visibility = View.GONE
+        } else {
+            homeBinding.emptyHomeState.visibility = View.GONE
+            homeBinding.fileGrid.visibility = View.VISIBLE
+            fileCardAdapter.setFiles(entries)
+        }
+    }
+
+    private fun addToRecents(uri: Uri) {
+        val set = prefs.getStringSet("recent_files", mutableSetOf())!!.toMutableSet()
+        set.add(uri.toString())
+        prefs.edit().putStringSet("recent_files", set).apply()
+    }
+
+    private fun removeFromRecents(uri: Uri) {
+        val set = prefs.getStringSet("recent_files", mutableSetOf())!!.toMutableSet()
+        set.remove(uri.toString())
+        prefs.edit().putStringSet("recent_files", set).apply()
     }
 
     private fun setupBottomNav() {
@@ -1021,13 +1155,24 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun updateLineNumbers() {
-        val lineCount = editorBinding.textArea.lineCount.coerceAtLeast(1)
+        val et = editorBinding.textArea
+        val lineCount = et.lineCount.coerceAtLeast(1)
         val current = editorBinding.lineNumbersVBox.childCount
         if (current == lineCount) return
         if (lineCount > current) {
             for (i in (current + 1)..lineCount) {
                 val tv = TextView(this).apply {
-                    text = i.toString()
+                    // Check if this line contains only an ImageSpan — hide number if so
+                    val layout = et.layout
+                    val lineIdx = i - 1
+                    val hasImageOnly = if (layout != null && lineIdx < layout.lineCount) {
+                        val ls = layout.getLineStart(lineIdx)
+                        val le = layout.getLineEnd(lineIdx)
+                        val spans = et.text.getSpans(ls, le, android.text.style.ImageSpan::class.java)
+                        spans.isNotEmpty() && (le - ls) <= 2
+                    } else false
+
+                    text = if (hasImageOnly) "" else i.toString()
                     layoutParams = LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT
@@ -1040,9 +1185,7 @@ open class MainActivity : AppCompatActivity() {
                     else
                         resources.getColor(R.color.editor_line_number_text, theme)
                     setTextColor(lineNumColor)
-                    if (isGlassMode) {
-                        paintFlags = paintFlags or android.graphics.Paint.FAKE_BOLD_TEXT_FLAG
-                    }
+                    if (isGlassMode) paintFlags = paintFlags or android.graphics.Paint.FAKE_BOLD_TEXT_FLAG
                     textSize = 12f
                 }
                 editorBinding.lineNumbersVBox.addView(tv)
@@ -1113,13 +1256,15 @@ open class MainActivity : AppCompatActivity() {
                 editorBinding.textArea.setText(content)
                 currentFileUri = uri
                 textChanged = false
-                // Clear recovery text and save this file as the active one
                 prefs.edit()
                     .remove("recovery_text")
                     .putString("last_file_uri", uri.toString())
                     .apply()
                 updateLineNumbers()
                 updateToolbarTitle()
+                // Restore any embedded image tags back to ImageSpans
+                deserializeImagesInText()
+                addToRecents(uri)
                 Toast.makeText(this, "Opened", Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
@@ -1129,13 +1274,57 @@ open class MainActivity : AppCompatActivity() {
 
     private fun saveToFile(uri: Uri) {
         try {
+            val text = serializeSpansToText()
             contentResolver.openOutputStream(uri, "wt")?.use {
-                OutputStreamWriter(it).use { w -> w.write(editorBinding.textArea.text.toString()) }
+                OutputStreamWriter(it).use { w -> w.write(text) }
                 textChanged = false
                 updateToolbarTitle()
             }
+            addToRecents(uri)
         } catch (e: Exception) {
             Toast.makeText(this, "Failed to save", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /** Replaces ImageSpans with [img:uuid.png] tags and saves the bitmaps to cache. */
+    private fun serializeSpansToText(): String {
+        val et = editorBinding.textArea
+        val spans = et.text.getSpans(0, et.text.length, android.text.style.ImageSpan::class.java)
+        if (spans.isEmpty()) return et.text.toString()
+
+        val sb = android.text.SpannableStringBuilder(et.text)
+        for (span in spans.sortedByDescending { et.text.getSpanStart(it) }) {
+            val bmp = (span.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap ?: continue
+            val name = "img_${System.currentTimeMillis()}.png"
+            val file = java.io.File(cacheDir, name)
+            file.outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            val start = sb.getSpanStart(span)
+            val end   = sb.getSpanEnd(span)
+            if (start >= 0 && end > start) sb.replace(start, end, "[img:$name]")
+        }
+        return sb.toString()
+    }
+
+    /** Restores [img:filename] tags back to ImageSpans after loading. */
+    private fun deserializeImagesInText() {
+        val et = editorBinding.textArea
+        val raw = et.text.toString()
+        val pattern = Regex("\\[img:([^\\]]+)\\]")
+        val matches = pattern.findAll(raw).toList().reversed() // reverse to preserve indices
+        if (matches.isEmpty()) return
+
+        for (match in matches) {
+            val name = match.groupValues[1]
+            val file = java.io.File(cacheDir, name)
+            if (!file.exists()) continue
+            val bmp = BitmapFactory.decodeFile(file.absolutePath) ?: continue
+            val drawable = android.graphics.drawable.BitmapDrawable(resources, bmp).apply {
+                setBounds(0, 0, bmp.width, bmp.height)
+            }
+            val span = android.text.style.ImageSpan(drawable, android.text.style.ImageSpan.ALIGN_BOTTOM)
+            val ss = android.text.SpannableString(" ")
+            ss.setSpan(span, 0, 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            et.text.replace(match.range.first, match.range.last + 1, ss)
         }
     }
 
@@ -1201,6 +1390,23 @@ open class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         handleOpenIntent(intent)
+    }
+
+    private fun registerBackHandler() {
+        onBackPressedDispatcher.addCallback(this, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                when {
+                    binding.drawerLayout.isDrawerOpen(GravityCompat.START) ->
+                        binding.drawerLayout.closeDrawer(GravityCompat.START)
+                    !isHomeVisible -> showHome()
+                    else -> {
+                        isEnabled = false
+                        onBackPressedDispatcher.onBackPressed()
+                        isEnabled = true
+                    }
+                }
+            }
+        })
     }
 
     private fun handleOpenIntent(intent: Intent?) {
