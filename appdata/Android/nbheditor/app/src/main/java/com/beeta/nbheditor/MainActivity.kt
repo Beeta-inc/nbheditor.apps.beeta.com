@@ -628,7 +628,7 @@ open class MainActivity : AppCompatActivity() {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), 101)
             return
         }
-        if (isListening) return
+        if (isListening) { stopVoiceInput(); return }
         speechTarget = target
 
         // Fully destroy previous instance before creating a new one
@@ -654,7 +654,6 @@ open class MainActivity : AppCompatActivity() {
                     override fun onRmsChanged(rmsdB: Float) {}
                     override fun onBufferReceived(buffer: ByteArray?) {}
                     override fun onEndOfSpeech() {
-                        isListening = false
                         setMicActive(false)
                     }
                     override fun onResults(results: android.os.Bundle) {
@@ -678,12 +677,17 @@ open class MainActivity : AppCompatActivity() {
                         isListening = false
                         setMicActive(false)
                         speechTarget?.hint = ""
+                        if (error == SpeechRecognizer.ERROR_CLIENT || error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY) {
+                            speechRecognizer?.apply { cancel(); destroy() }
+                            speechRecognizer = null
+                            handler.postDelayed({ startVoiceInput(speechTarget ?: return@postDelayed) }, 400L)
+                            return
+                        }
                         val msg = when (error) {
-                            SpeechRecognizer.ERROR_NO_MATCH       -> "No speech detected — try again"
-                            SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Listening timed out — try again"
+                            SpeechRecognizer.ERROR_NO_MATCH       -> "No speech detected"
+                            SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Timed out — tap mic and speak"
                             SpeechRecognizer.ERROR_AUDIO          -> "Audio error — check mic"
                             SpeechRecognizer.ERROR_NETWORK        -> "Network error"
-                            SpeechRecognizer.ERROR_CLIENT         -> "Mic busy — try again"
                             else -> "Voice error ($error)"
                         }
                         Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
@@ -704,7 +708,7 @@ open class MainActivity : AppCompatActivity() {
             }
             speechRecognizer?.startListening(intent)
             Toast.makeText(this, "🎙 Listening...", Toast.LENGTH_SHORT).show()
-        }, 150L)
+        }, 200L)
     }
 
     // ── Image insertion in editor ─────────────────────────────────────────────
