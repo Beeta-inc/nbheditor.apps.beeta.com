@@ -1175,17 +1175,16 @@ open class MainActivity : AppCompatActivity() {
                         return@withContext
                     }
                     try {
+                        val editable = editText.text ?: throw Exception("null editable")
                         if (isSelection) {
-                            // Re-validate positions are still valid
-                            val len = editText.text.length
+                            val len = editable.length
                             val safeStart = start.coerceIn(0, len)
                             val safeEnd = end.coerceIn(safeStart, len)
-                            editText.text.replace(safeStart, safeEnd, result)
+                            editable.replace(safeStart, safeEnd, result)
                         } else {
-                            // Preserve cursor position after full-text replace
                             val cursorPos = editText.selectionStart
-                            editText.text.replace(0, editText.text.length, result)
-                            editText.setSelection(cursorPos.coerceIn(0, editText.text.length))
+                            editable.replace(0, editable.length, result)
+                            editText.setSelection(cursorPos.coerceIn(0, editable.length))
                         }
                         Toast.makeText(this@MainActivity, "✓ Improved", Toast.LENGTH_SHORT).show()
                     } catch (e: Exception) {
@@ -1218,7 +1217,7 @@ open class MainActivity : AppCompatActivity() {
                     val hasImageOnly = if (layout != null && lineIdx < layout.lineCount) {
                         val ls = layout.getLineStart(lineIdx)
                         val le = layout.getLineEnd(lineIdx)
-                        val spans = et.text.getSpans(ls, le, android.text.style.ImageSpan::class.java)
+                        val spans = et.text?.getSpans(ls, le, android.text.style.ImageSpan::class.java) ?: emptyArray()
                         spans.isNotEmpty() && (le - ls) <= 2
                     } else false
 
