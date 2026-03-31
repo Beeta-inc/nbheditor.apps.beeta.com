@@ -86,7 +86,7 @@ open class MainActivity : AppCompatActivity() {
     // Priority: OpenRouter free models (1→6) then Google Gemini as final fallback
     // Each model is skipped on 429 rate-limit and the next one is tried.
 
-    private val OPENROUTER_API_KEY = ""
+    private val OPENROUTER_API_KEY = "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"
 
     // 6 free OpenRouter models tried in order
     private val OR_MODELS = listOf(
@@ -133,7 +133,7 @@ open class MainActivity : AppCompatActivity() {
     data class ImageGenContent(val type: String, val image_url: ImageGenUrl? = null)
     data class ImageGenUrl(val url: String)
 
-    private val FLUX_MODEL = "black-forest-labs/FLUX-1-schnell:free"
+    private val FLUX_MODEL = "black-forest-labs/flux-1-schnell"
 
     private var speechRecognizer: SpeechRecognizer? = null
     private var speechTarget: EditText? = null // which EditText receives speech
@@ -621,7 +621,10 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun setupAiChat() {
-        chatAdapter = ChatAdapter { text -> insertTextIntoEditor(text) }
+        chatAdapter = ChatAdapter(
+            onInsert = { text -> insertTextIntoEditor(text) },
+            onInsertImage = { base64 -> insertBase64ImageIntoEditor(base64) }
+        )
         aiChatBinding.chatRecyclerView.layoutManager = LinearLayoutManager(this).apply {
             stackFromEnd = true
         }
@@ -765,57 +768,45 @@ open class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun insertBase64ImageIntoEditor(base64: String) {
+        lifecycleScope.launch {
+            try {
+                val bitmap = withContext(Dispatchers.IO) {
+                    val bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
+                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                } ?: run {
+                    Toast.makeText(this@MainActivity, "Could not decode image", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                // Switch to editor
+                binding.appBarMain.contentMain.bottomNavView.selectedItemId = R.id.nav_editor
+                editorBinding.root.visibility = View.VISIBLE
+                aiChatBinding.root.visibility = View.GONE
+                binding.appBarMain.toolbarTitle?.text = "NBH Editor"
+
+                val richEdit = editorBinding.textArea as? RichEditText ?: return@launch
+                val cursor = richEdit.selectionStart.coerceAtLeast(0)
+                richEdit.insertImageAtCursor(bitmap, cursor)
+                Toast.makeText(this@MainActivity, "✓ Image inserted into editor", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(this@MainActivity, "Failed to insert image", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     private fun insertImageIntoEditor(uri: Uri) {
         lifecycleScope.launch {
             try {
-                val drawable = withContext(Dispatchers.IO) {
-                    val stream = contentResolver.openInputStream(uri)
-                        ?: return@withContext null
-                    val opts = android.graphics.BitmapFactory.Options().apply {
-                        inJustDecodeBounds = true
-                    }
-                    BitmapFactory.decodeStream(stream, null, opts)
-                    stream.close()
-
-                    // Target width: 480dp in pixels
-                    val density = resources.displayMetrics.density
-                    val targetPx = (480 * density).toInt()
-                    val sampleSize = (opts.outWidth / targetPx).coerceAtLeast(1)
-                        .let { Integer.highestOneBit(it) } // round down to power of 2
-
-                    val stream2 = contentResolver.openInputStream(uri)
-                        ?: return@withContext null
-                    val finalOpts = android.graphics.BitmapFactory.Options().apply {
-                        inSampleSize = sampleSize.coerceAtLeast(1)
-                    }
-                    val bmp = BitmapFactory.decodeStream(stream2, null, finalOpts)
-                    stream2.close()
-                    bmp ?: return@withContext null
-
-                    // Scale to exact target width maintaining aspect ratio
-                    val scaled = if (bmp.width > targetPx) {
-                        val h = (bmp.height * targetPx.toFloat() / bmp.width).toInt()
-                        Bitmap.createScaledBitmap(bmp, targetPx, h, true)
-                            .also { if (it !== bmp) bmp.recycle() }
-                    } else bmp
-
-                    BitmapDrawable(resources, scaled).apply {
-                        setBounds(0, 0, scaled.width, scaled.height)
-                    }
-                }
-
-                if (drawable == null) {
+                val bitmap = withContext(Dispatchers.IO) {
+                    val stream = contentResolver.openInputStream(uri) ?: return@withContext null
+                    BitmapFactory.decodeStream(stream).also { stream.close() }
+                } ?: run {
                     Toast.makeText(this@MainActivity, "Could not load image", Toast.LENGTH_SHORT).show()
                     return@launch
                 }
-
-                val span = ImageSpan(drawable, ImageSpan.ALIGN_BOTTOM)
-                val ss = SpannableString("\n ") // newline before + space as image anchor
-                ss.setSpan(span, 1, 2, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-                val et = editorBinding.textArea
-                val pos = et.selectionStart.coerceAtLeast(0)
-                et.text.insert(pos, ss)
-                et.text.insert(pos + 2, "\n") // newline after
+                val richEdit = editorBinding.textArea as? RichEditText ?: return@launch
+                val cursor = richEdit.selectionStart.coerceAtLeast(0)
+                richEdit.insertImageAtCursor(bitmap, cursor)
                 Toast.makeText(this@MainActivity, "Image inserted", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 Toast.makeText(this@MainActivity, "Failed to insert image", Toast.LENGTH_SHORT).show()
@@ -848,7 +839,9 @@ open class MainActivity : AppCompatActivity() {
         val query = aiChatBinding.queryEditText.text.toString().trim()
         if (query.isBlank()) return
 
-        val isImageGen = aiChatBinding.imageGenChip.isChecked
+        // Auto-detect image request even if chip is off
+        val imageKeywords = listOf("make image", "generate image", "create image", "draw", "make a picture", "generate a picture", "show image", "make photo", "create photo")
+        val isImageRequest = aiChatBinding.imageGenChip.isChecked || imageKeywords.any { query.lowercase().contains(it) }
 
         chatAdapter.addMessage(ChatMessage("user", query))
         aiChatBinding.queryEditText.text.clear()
@@ -859,7 +852,7 @@ open class MainActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             try {
-                if (isImageGen) {
+                if (isImageRequest) {
                     val base64 = callImageGen(query)
                     aiChatBinding.typingRow.visibility = View.GONE
                     if (base64 != null) {
@@ -885,45 +878,34 @@ open class MainActivity : AppCompatActivity() {
         }
     }
 
+    private val HF_API_KEY = "////////q/q/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"
+
     private suspend fun callImageGen(prompt: String): String? = withContext(Dispatchers.IO) {
         try {
-            val body = gson.toJson(mapOf(
-                "model" to FLUX_MODEL,
-                "messages" to listOf(mapOf(
-                    "role" to "user",
-                    "content" to listOf(mapOf("type" to "text", "text" to prompt))
-                ))
-            )).toRequestBody("application/json".toMediaType())
+            val body = gson.toJson(mapOf("inputs" to prompt))
+                .toRequestBody("application/json".toMediaType())
             val request = Request.Builder()
-                .url("https://openrouter.ai/api/v1/chat/completions")
+                .url("https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-schnell")
                 .post(body)
-                .addHeader("Authorization", "Bearer $OPENROUTER_API_KEY")
-                .addHeader("HTTP-Referer", "https://nbheditor.apps.beeta.com")
-                .addHeader("X-Title", "NBH Editor")
+                .addHeader("Authorization", "Bearer $HF_API_KEY")
                 .build()
-            client.newCall(request).execute().use { response ->
-                val rb = response.body?.string() ?: return@withContext null
-                if (!response.isSuccessful) return@withContext null
-                // Extract base64 image from response content
-                val json = org.json.JSONObject(rb)
-                val content = json.getJSONArray("choices")
-                    .getJSONObject(0)
-                    .getJSONObject("message")
-                    .optString("content", "")
-                // Content may be a URL or base64 data URI
-                if (content.startsWith("data:image")) {
-                    content.substringAfter(",")
-                } else if (content.startsWith("http")) {
-                    // Download and convert to base64
-                    val imgReq = Request.Builder().url(content).build()
-                    client.newCall(imgReq).execute().use { imgResp ->
-                        val bytes = imgResp.body?.bytes() ?: return@withContext null
-                        android.util.Base64.encodeToString(bytes, android.util.Base64.DEFAULT)
-                    }
-                } else null
+            val hfClient = okhttp3.OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(120, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
+                .build()
+            hfClient.newCall(request).execute().use { response ->
+                Log.d("ImageGen", "HF code=${response.code} type=${response.body?.contentType()}")
+                if (!response.isSuccessful) {
+                    Log.e("ImageGen", "HF error: ${response.body?.string()?.take(200)}")
+                    return@withContext null
+                }
+                val bytes = response.body?.bytes() ?: return@withContext null
+                if (bytes.size < 100) return@withContext null
+                android.util.Base64.encodeToString(bytes, android.util.Base64.DEFAULT)
             }
         } catch (e: Exception) {
-            Log.e("ImageGen", "Failed: ${e.message}")
+            Log.e("ImageGen", "Error: ${e.message}")
             null
         }
     }
@@ -1151,7 +1133,7 @@ open class MainActivity : AppCompatActivity() {
 
     private fun applySuggestion(suggestion: String) {
         val pos = editorBinding.textArea.selectionStart.coerceAtLeast(0)
-        editorBinding.textArea.text.insert(pos, suggestion)
+        editorBinding.textArea.text?.insert(pos, suggestion)
         editorBinding.aiSuggestionContainer.isVisible = false
     }
 
@@ -1164,8 +1146,8 @@ open class MainActivity : AppCompatActivity() {
         val start = editText.selectionStart.coerceAtLeast(0)
         val end = editText.selectionEnd.coerceAtLeast(0)
         val isSelection = start < end
-        val selectedText = if (isSelection) editText.text.substring(start, end)
-                           else editText.text.toString()
+        val selectedText = if (isSelection) editText.text?.substring(start, end) ?: ""
+                           else editText.text?.toString() ?: ""
 
         if (selectedText.isBlank()) {
             Toast.makeText(this, "Nothing to improve", Toast.LENGTH_SHORT).show()
@@ -1364,11 +1346,12 @@ open class MainActivity : AppCompatActivity() {
     /** Replaces ImageSpans with [img:uuid.png] tags and saves the bitmaps to cache. */
     private fun serializeSpansToText(): String {
         val et = editorBinding.textArea
-        val spans = et.text.getSpans(0, et.text.length, android.text.style.ImageSpan::class.java)
-        if (spans.isEmpty()) return et.text.toString()
+        val editable = et.text ?: return et.text.toString()
+        val spans = editable.getSpans(0, editable.length, android.text.style.ImageSpan::class.java)
+        if (spans.isEmpty()) return editable.toString()
 
-        val sb = android.text.SpannableStringBuilder(et.text)
-        for (span in spans.sortedByDescending { et.text.getSpanStart(it) }) {
+        val sb = android.text.SpannableStringBuilder(editable)
+        for (span in spans.sortedByDescending { editable.getSpanStart(it) }) {
             val bmp = (span.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap ?: continue
             val name = "img_${System.currentTimeMillis()}.png"
             val file = java.io.File(cacheDir, name)
@@ -1399,7 +1382,7 @@ open class MainActivity : AppCompatActivity() {
             val span = android.text.style.ImageSpan(drawable, android.text.style.ImageSpan.ALIGN_BOTTOM)
             val ss = android.text.SpannableString(" ")
             ss.setSpan(span, 0, 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            et.text.replace(match.range.first, match.range.last + 1, ss)
+            et.text?.replace(match.range.first, match.range.last + 1, ss)
         }
     }
 
@@ -1512,7 +1495,7 @@ open class MainActivity : AppCompatActivity() {
         val recovered = prefs.getString("recovery_text", null)
         val savedUri = prefs.getString("last_file_uri", null)
         
-        if (!recovered.isNullOrBlank() && editorBinding.textArea.text.isBlank() && savedUri == null) {
+        if (!recovered.isNullOrBlank() && editorBinding.textArea.text?.isBlank() == true && savedUri == null) {
             editorBinding.textArea.setText(recovered)
             updateLineNumbers()
             Toast.makeText(this, "Recovered unsaved text", Toast.LENGTH_SHORT).show()

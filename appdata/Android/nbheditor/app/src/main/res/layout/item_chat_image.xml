@@ -57,4 +57,18 @@
 
     </com.google.android.material.card.MaterialCardView>
 
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/insertImageBtn"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="wrap_content"
+        android:layout_height="32dp"
+        android:layout_marginTop="4dp"
+        android:text="Insert into Editor"
+        android:textSize="11sp"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        app:strokeColor="@color/divider"
+        app:strokeWidth="1dp"
+        android:textColor="@color/editor_line_number_text" />
+
 </LinearLayout>

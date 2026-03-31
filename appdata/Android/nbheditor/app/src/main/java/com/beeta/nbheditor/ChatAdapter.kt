@@ -23,7 +23,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 
 class ChatAdapter(
-    private val onInsert: (String) -> Unit
+    private val onInsert: (String) -> Unit,
+    private val onInsertImage: ((String) -> Unit)? = null
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
@@ -61,7 +62,7 @@ class ChatAdapter(
         val inflater = LayoutInflater.from(parent.context)
         return when (viewType) {
             TYPE_USER -> UserViewHolder(inflater.inflate(R.layout.item_chat_user, parent, false))
-            TYPE_IMAGE -> ImageViewHolder(inflater.inflate(R.layout.item_chat_image, parent, false))
+            TYPE_IMAGE -> ImageViewHolder(inflater.inflate(R.layout.item_chat_image, parent, false), onInsertImage)
             else -> AiViewHolder(inflater.inflate(R.layout.item_chat_ai, parent, false), onInsert)
         }
     }
@@ -85,9 +86,10 @@ class ChatAdapter(
 
     // ── Image ViewHolder ──────────────────────────────────────────────────────
 
-    class ImageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+    class ImageViewHolder(itemView: View, private val onInsertImage: ((String) -> Unit)? = null) : RecyclerView.ViewHolder(itemView) {
         private val imageView: ImageView = itemView.findViewById(R.id.generatedImage)
         private val promptLabel: TextView = itemView.findViewById(R.id.imagePromptLabel)
+        private val insertBtn: com.google.android.material.button.MaterialButton? = itemView.findViewById(R.id.insertImageBtn)
         fun bind(msg: ImageMessage) {
             promptLabel.text = msg.prompt
             try {
@@ -96,6 +98,7 @@ class ChatAdapter(
             } catch (_: Exception) {
                 imageView.setImageResource(android.R.drawable.ic_menu_gallery)
             }
+            insertBtn?.setOnClickListener { onInsertImage?.invoke(msg.base64) }
         }
     }
 
