@@ -3,6 +3,7 @@ package com.beeta.nbheditor
 import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.beeta.nbheditor.databinding.ItemFileCardBinding
 import java.text.SimpleDateFormat
@@ -21,17 +22,11 @@ class FileCardAdapter(
     )
 
     private val items = mutableListOf<FileEntry>()
+    var isGlassMode = false
 
-    // Accent colors cycling per card — Catppuccin palette
     private val accents = listOf(
-        "#FF89B4FA", // blue
-        "#FFA6E3A1", // green
-        "#FFCBA6F7", // purple
-        "#FFFAB387", // peach
-        "#FF89DCEB", // sky
-        "#FFF38BA8", // pink
-        "#FFE6C384", // yellow
-        "#FF94E2D5"  // teal
+        "#FF89B4FA", "#FFA6E3A1", "#FFCBA6F7", "#FFFAB387",
+        "#FF89DCEB", "#FFF38BA8", "#FFE6C384", "#FF94E2D5"
     )
 
     fun setFiles(files: List<FileEntry>) {
@@ -48,18 +43,48 @@ class FileCardAdapter(
 
     inner class VH(private val b: ItemFileCardBinding) : RecyclerView.ViewHolder(b.root) {
         fun bind(entry: FileEntry, pos: Int) {
+            val ctx = b.root.context
             b.fileName.text = entry.name
             b.filePreview.text = entry.preview.ifBlank { "Empty file" }
             b.fileDate.text = if (entry.lastModified > 0)
-                SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(entry.lastModified))
+                SimpleDateFormat("MMM d, yyyy · HH:mm", Locale.getDefault()).format(Date(entry.lastModified))
             else ""
 
-            // Cycle accent color
-            val color = Color.parseColor(accents[pos % accents.size])
-            b.accentBar.setBackgroundColor(color)
-            b.fileCard.strokeColor = android.content.res.ColorStateList.valueOf(
-                android.graphics.Color.argb(80, android.graphics.Color.red(color), android.graphics.Color.green(color), android.graphics.Color.blue(color))
-            ).defaultColor
+            b.fileTypeIcon?.text = when (entry.name.substringAfterLast('.').lowercase()) {
+                "kt", "java" -> "☕"
+                "py" -> "🐍"
+                "js", "ts" -> "📜"
+                "html", "xml" -> "🌐"
+                "json" -> "{ }"
+                "md" -> "📝"
+                "sh", "bash" -> "⚙"
+                "cpp", "c", "h" -> "⚡"
+                else -> "📄"
+            }
+
+            val accentColor = Color.parseColor(accents[pos % accents.size])
+            b.accentBar.setBackgroundColor(accentColor)
+
+            if (isGlassMode) {
+                // Glass card: semi-transparent dark background, white bold text
+                b.root.setCardBackgroundColor(
+                    ContextCompat.getColor(ctx, R.color.glass_editor_surface)
+                )
+                b.root.strokeColor = ContextCompat.getColor(ctx, R.color.glass_border)
+                b.fileName.setTextColor(Color.BLACK)
+                b.fileName.textSize = 15f
+                b.fileDate.setTextColor(Color.parseColor("#CC000000"))
+                b.filePreview.setTextColor(Color.parseColor("#AA000000"))
+            } else {
+                b.root.setCardBackgroundColor(
+                    ContextCompat.getColor(ctx, R.color.editor_surface)
+                )
+                b.root.strokeColor = ContextCompat.getColor(ctx, R.color.divider)
+                b.fileName.setTextColor(ContextCompat.getColor(ctx, R.color.editor_text))
+                b.fileName.textSize = 15f
+                b.fileDate.setTextColor(ContextCompat.getColor(ctx, R.color.editor_line_number_text))
+                b.filePreview.setTextColor(ContextCompat.getColor(ctx, R.color.editor_hint))
+            }
 
             b.root.setOnClickListener { onOpen(entry) }
             b.root.setOnLongClickListener { onLongClick(entry); true }

@@ -454,7 +454,6 @@ open class MainActivity : AppCompatActivity() {
         )
 
         homeBinding.btnNewFile.setOnClickListener {
-            // Clear editor and go to editor with blank file
             editorBinding.textArea.setText("")
             currentFileUri = null
             textChanged = false
@@ -462,6 +461,52 @@ open class MainActivity : AppCompatActivity() {
             updateLineNumbers()
             updateToolbarTitle()
             showEditor()
+        }
+
+        // Glass toggle
+        val glassOn = isGlassMode
+        fileCardAdapter.isGlassMode = glassOn
+        applyHomeGlass(glassOn)
+        homeBinding.btnGlassToggle.text = if (glassOn) "✦ Glass ON" else "Glass"
+        homeBinding.btnGlassToggle.setOnClickListener {
+            val newGlass = !fileCardAdapter.isGlassMode
+            fileCardAdapter.isGlassMode = newGlass
+            fileCardAdapter.notifyDataSetChanged()
+            applyHomeGlass(newGlass)
+            homeBinding.btnGlassToggle.text = if (newGlass) "✦ Glass ON" else "Glass"
+        }
+    }
+
+    private fun applyHomeGlass(glass: Boolean) {
+        if (!::homeBinding.isInitialized) return
+        val transparent = android.graphics.Color.TRANSPARENT
+        val surfaceColor = resources.getColor(R.color.editor_surface, theme)
+        val bgColor = resources.getColor(R.color.editor_bg, theme)
+        val glassPanel = resources.getColor(R.color.glass_editor_surface, theme)
+        val glassText = resources.getColor(R.color.glass_editor_text, theme)
+        val editorText = resources.getColor(R.color.editor_text, theme)
+        val editorHint = resources.getColor(R.color.editor_hint, theme)
+
+        if (glass) {
+            homeBinding.homeRoot.setBackgroundColor(transparent)
+            homeBinding.homeHeader.setBackgroundColor(glassPanel)
+            homeBinding.searchCard.setCardBackgroundColor(glassPanel)
+            homeBinding.homeTitle.setTextColor(android.graphics.Color.BLACK)
+            homeBinding.homeTitle.setShadowLayer(3f, 0f, 1f, android.graphics.Color.parseColor("#44FFFFFF"))
+            homeBinding.fileCountLabel.setTextColor(resources.getColor(R.color.accent_primary, theme))
+            homeBinding.sortLabel.setTextColor(android.graphics.Color.BLACK)
+            homeBinding.searchBar.setTextColor(android.graphics.Color.BLACK)
+            homeBinding.searchBar.setHintTextColor(android.graphics.Color.parseColor("#88000000"))
+        } else {
+            homeBinding.homeRoot.setBackgroundColor(bgColor)
+            homeBinding.homeHeader.setBackgroundColor(surfaceColor)
+            homeBinding.searchCard.setCardBackgroundColor(surfaceColor)
+            homeBinding.homeTitle.setTextColor(editorText)
+            homeBinding.homeTitle.setShadowLayer(0f, 0f, 0f, 0)
+            homeBinding.fileCountLabel.setTextColor(resources.getColor(R.color.accent_primary, theme))
+            homeBinding.sortLabel.setTextColor(resources.getColor(R.color.editor_line_number_text, theme))
+            homeBinding.searchBar.setTextColor(editorText)
+            homeBinding.searchBar.setHintTextColor(editorHint)
         }
     }
 

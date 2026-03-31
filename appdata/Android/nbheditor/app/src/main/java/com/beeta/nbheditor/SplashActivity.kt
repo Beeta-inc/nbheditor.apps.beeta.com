@@ -14,7 +14,10 @@ class SplashActivity : AppCompatActivity() {
         setContentView(R.layout.activity_splash)
         Handler(Looper.getMainLooper()).postDelayed({
             val prefs = getSharedPreferences("nbheditor_prefs", MODE_PRIVATE)
-            val target = if (prefs.getBoolean("glass_mode", false))
+            // Glass is default on first launch — user can switch in drawer
+            val glassDefault = !prefs.contains("glass_mode")
+            if (glassDefault) prefs.edit().putBoolean("glass_mode", true).apply()
+            val target = if (prefs.getBoolean("glass_mode", true))
                 GlassMainActivity::class.java else MainActivity::class.java
             startActivity(Intent(this, target))
             finish()
