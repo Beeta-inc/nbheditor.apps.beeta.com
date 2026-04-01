@@ -67,6 +67,10 @@ open class MainActivity : AppCompatActivity() {
     private var textChanged = false
     private var isTyping = false
     private var aiEnabled = true
+    
+    // Undo stack
+    private val undoStack = mutableListOf<String>()
+    private var isUndoing = false
 
     private val handler = Handler(Looper.getMainLooper())
     private val typingDelayRunnable = Runnable {
@@ -372,13 +376,6 @@ open class MainActivity : AppCompatActivity() {
         )
         binding.navView.itemIconTintList = drawerTintList
         binding.navView.itemTextColor = drawerTintList
-
-        // Editor toolbar keys
-        listOf(editorBinding.tabKey, editorBinding.braceKey, editorBinding.parenKey,
-               editorBinding.bracketKey, editorBinding.angleKey).forEach { tv ->
-            tv.setTextColor(whiteSecondary)
-            tv.paintFlags = tv.paintFlags or android.graphics.Paint.FAKE_BOLD_TEXT_FLAG
-        }
 
         // Editor toolbar icon buttons
         editorBinding.editorVoiceButton.setColorFilter(accentBlue)
@@ -930,8 +927,17 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun setupEditor() {
+        editorBinding.undoButton.setOnClickListener {
+            performUndo()
+        }
+        
         editorBinding.textArea.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+                if (!isUndoing && s != null) {
+                    undoStack.add(s.toString())
+                    if (undoStack.size > 50) undoStack.removeAt(0)
+                }
+            }
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 textChanged = true
                 isTyping = true
@@ -962,8 +968,30 @@ open class MainActivity : AppCompatActivity() {
         }
 
         editorBinding.textArea.setOnTouchListener { v, event ->
-            if (event.action == android.view.MotionEvent.ACTION_DOWN ||
-                event.action == android.view.MotionEvent.ACTION_MOVE) {
+            if (event.action == android.view.MotionEvent.ACTION_DOWN) {
+                lastTouchX = event.x
+                lastTouchY = event.y
+                
+                // Check for double-tap on image
+                val currentTime = System.currentTimeMillis()
+                if (currentTime - lastTapTime < 300 && 
+                    Math.abs(event.x - lastTapX) < 50 && 
+                    Math.abs(event.y - lastTapY) < 50) {
+                    val et = v as android.widget.EditText
+                    val offset = getOffsetForPosition(et, event.x, event.y)
+                    if (offset >= 0) {
+                        val spans = et.text.getSpans(offset, offset + 1, android.text.style.ImageSpan::class.java)
+                        if (spans.isNotEmpty()) {
+                            openImageEditor(et, spans[0])
+                            return@setOnTouchListener true
+                        }
+                    }
+                }
+                lastTapTime = currentTime
+                lastTapX = event.x
+                lastTapY = event.y
+            }
+            if (event.action == android.view.MotionEvent.ACTION_MOVE) {
                 lastTouchX = event.x
                 lastTouchY = event.y
             }
@@ -985,6 +1013,9 @@ open class MainActivity : AppCompatActivity() {
     private var dragSpanStart = -1
     private var dragSpanEnd = -1
     private var dragThumb: android.widget.ImageView? = null
+    private var lastTapTime = 0L
+    private var lastTapX = 0f
+    private var lastTapY = 0f
 
     private fun startImageDrag(et: android.widget.EditText, span: android.text.style.ImageSpan) {
         val drawable = span.drawable as? android.graphics.drawable.BitmapDrawable ?: return
@@ -992,6 +1023,11 @@ open class MainActivity : AppCompatActivity() {
         dragSpanStart = et.text.getSpanStart(span)
         dragSpanEnd = et.text.getSpanEnd(span)
         isDraggingImage = true
+
+        // Temporarily replace the image span with a placeholder to prevent overlap
+        val placeholder = "◆"
+        et.text.replace(dragSpanStart, dragSpanEnd, placeholder)
+        dragSpanEnd = dragSpanStart + placeholder.length
 
         // Show floating thumbnail following the finger
         val thumb = android.widget.ImageView(this).apply {
@@ -1040,19 +1076,31 @@ open class MainActivity : AppCompatActivity() {
                     val newOffset = getOffsetForPosition(et, event.x, event.y)
                         .coerceIn(0, et.text.length)
 
-                    // Remove span from old position
+                    // Create new image span
                     val ss = android.text.SpannableString(" ")
                     ss.setSpan(
                         android.text.style.ImageSpan(span.drawable, android.text.style.ImageSpan.ALIGN_BOTTOM),
                         0, 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
                     )
-                    // Delete old, insert at new
+                    // Delete placeholder from old position
                     val safeStart = dragSpanStart.coerceIn(0, et.text.length)
                     val safeEnd = dragSpanEnd.coerceIn(safeStart, et.text.length)
                     et.text.delete(safeStart, safeEnd)
+                    // Insert at new position
                     val insertAt = if (newOffset > safeStart) (newOffset - (safeEnd - safeStart)).coerceAtLeast(0)
                                    else newOffset
                     et.text.insert(insertAt.coerceIn(0, et.text.length), ss)
+                } else {
+                    // Cancelled - restore the image at original position
+                    val span = dragSpan ?: return
+                    val ss = android.text.SpannableString(" ")
+                    ss.setSpan(
+                        android.text.style.ImageSpan(span.drawable, android.text.style.ImageSpan.ALIGN_BOTTOM),
+                        0, 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                    val safeStart = dragSpanStart.coerceIn(0, et.text.length)
+                    val safeEnd = dragSpanEnd.coerceIn(safeStart, et.text.length)
+                    et.text.replace(safeStart, safeEnd, ss)
                 }
                 dragSpan = null
                 dragSpanStart = -1
@@ -1065,6 +1113,19 @@ open class MainActivity : AppCompatActivity() {
         val layout = et.layout ?: return -1
         val line = layout.getLineForVertical((y + et.scrollY - et.paddingTop).toInt())
         return layout.getOffsetForHorizontal(line, x - et.paddingLeft + et.scrollX)
+    }
+    
+    private fun performUndo() {
+        if (undoStack.isEmpty()) {
+            Toast.makeText(this, "Nothing to undo", Toast.LENGTH_SHORT).show()
+            return
+        }
+        isUndoing = true
+        val previousText = undoStack.removeAt(undoStack.size - 1)
+        editorBinding.textArea.setText(previousText)
+        editorBinding.textArea.setSelection(previousText.length.coerceAtMost(previousText.length))
+        isUndoing = false
+        Toast.makeText(this, "Undo", Toast.LENGTH_SHORT).show()
     }
 
     private fun openImageEditor(et: android.widget.EditText, span: android.text.style.ImageSpan) {

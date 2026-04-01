@@ -26,17 +26,16 @@ class RichEditText @JvmOverloads constructor(
 ) : AppCompatEditText(context, attrs, defStyle) {
 
     /**
-     * Inserts a bitmap at the given cursor position with text wrapping.
-     * The image is placed inline and text flows to the right of it.
+     * Inserts a bitmap at the given cursor position.
+     * Image is scaled down and placed inline with text.
      */
     fun insertImageAtCursor(bitmap: Bitmap, cursorPos: Int) {
         val density = resources.displayMetrics.density
 
-        // Max image width: 40% of editor width, min 120dp
-        val maxWidthPx = (width * 0.40f).toInt().coerceAtLeast((120 * density).toInt())
-        val maxHeightPx = (200 * density).toInt()
+        // Scale to max 120dp width
+        val maxWidthPx = (120 * density).toInt()
+        val maxHeightPx = (120 * density).toInt()
 
-        // Scale bitmap maintaining aspect ratio
         val scaledBitmap = scaleBitmap(bitmap, maxWidthPx, maxHeightPx)
         val imgW = scaledBitmap.width
         val imgH = scaledBitmap.height
@@ -48,33 +47,21 @@ class RichEditText @JvmOverloads constructor(
         val sb = text as? SpannableStringBuilder ?: SpannableStringBuilder(text)
         val pos = cursorPos.coerceIn(0, sb.length)
 
-        // Insert: newline + image anchor char + newline
-        val imgChar = "\uFFFC" // object replacement character — standard image anchor
-        val insertStr = if (pos > 0 && sb.isNotEmpty() && sb[pos - 1] != '\n') "\n$imgChar\n" else "$imgChar\n"
-        val imgOffset = if (insertStr.startsWith("\n")) 1 else 0
-
+        // Insert on new line with newlines around it
+        val prefix = if (pos > 0 && sb.isNotEmpty() && sb[pos - 1] != '\n') "\n" else ""
+        val imgChar = "\uFFFC"
+        val suffix = "\n"
+        val insertStr = "$prefix$imgChar$suffix"
+        
         sb.insert(pos, insertStr)
-        val imgStart = pos + imgOffset
-        val imgEnd = imgStart + 1
+        val imgPos = pos + prefix.length
 
         // Attach ImageSpan
         sb.setSpan(
             ImageSpan(drawable, ImageSpan.ALIGN_BOTTOM),
-            imgStart, imgEnd,
+            imgPos, imgPos + 1,
             Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
         )
-
-        // LeadingMarginSpan on the line AFTER the image so text wraps beside it
-        // Apply to the character right after the image up to end of paragraph
-        val afterImg = imgEnd
-        val paraEnd = findParagraphEnd(sb, afterImg)
-        if (afterImg < paraEnd) {
-            sb.setSpan(
-                LeadingMarginSpan.Standard(imgW + (8 * density).toInt(), 0),
-                afterImg, paraEnd,
-                Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
-        }
 
         setText(sb)
         setSelection((pos + insertStr.length).coerceAtMost(text?.length ?: 0))
@@ -90,7 +77,14 @@ class RichEditText @JvmOverloads constructor(
         else src
     }
 
-    private fun findParagraphEnd(sb: CharSequence, from: Int): Int {
+    private fun findLineStart(sb: CharSequence, from: Int): Int {
+        for (i in (from - 1) downTo 0) {
+            if (sb[i] == '\n') return i + 1
+        }
+        return 0
+    }
+
+    private fun findLineEnd(sb: CharSequence, from: Int): Int {
         for (i in from until sb.length) {
             if (sb[i] == '\n') return i
         }
