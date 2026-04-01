@@ -878,7 +878,7 @@ open class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val HF_API_KEY = "////////q/q/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"
+    private val HF_API_KEY = ""
 
     private suspend fun callImageGen(prompt: String): String? = withContext(Dispatchers.IO) {
         try {
