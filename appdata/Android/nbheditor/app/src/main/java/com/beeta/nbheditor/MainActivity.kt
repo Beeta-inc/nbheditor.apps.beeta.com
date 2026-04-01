@@ -954,7 +954,7 @@ open class MainActivity : AppCompatActivity() {
             if (offset >= 0) {
                 val spans = et.text.getSpans(offset, offset + 1, android.text.style.ImageSpan::class.java)
                 if (spans.isNotEmpty()) {
-                    openImageEditor(et, spans[0])
+                    startImageDrag(et, spans[0])
                     return@setOnLongClickListener true
                 }
             }
@@ -967,7 +967,12 @@ open class MainActivity : AppCompatActivity() {
                 lastTouchX = event.x
                 lastTouchY = event.y
             }
-            false // don't consume — let EditText handle it
+            // If dragging an image, handle move and release
+            if (isDraggingImage) {
+                handleImageDragTouch(v as android.widget.EditText, event)
+                return@setOnTouchListener true
+            }
+            false
         }
 
         updateLineNumbers()
@@ -975,6 +980,86 @@ open class MainActivity : AppCompatActivity() {
 
     private var lastTouchX = 0f
     private var lastTouchY = 0f
+    private var isDraggingImage = false
+    private var dragSpan: android.text.style.ImageSpan? = null
+    private var dragSpanStart = -1
+    private var dragSpanEnd = -1
+    private var dragThumb: android.widget.ImageView? = null
+
+    private fun startImageDrag(et: android.widget.EditText, span: android.text.style.ImageSpan) {
+        val drawable = span.drawable as? android.graphics.drawable.BitmapDrawable ?: return
+        dragSpan = span
+        dragSpanStart = et.text.getSpanStart(span)
+        dragSpanEnd = et.text.getSpanEnd(span)
+        isDraggingImage = true
+
+        // Show floating thumbnail following the finger
+        val thumb = android.widget.ImageView(this).apply {
+            setImageBitmap(drawable.bitmap)
+            alpha = 0.85f
+            scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+        }
+        val size = (resources.displayMetrics.density * 80).toInt()
+        val params = android.widget.FrameLayout.LayoutParams(size, size).apply {
+            leftMargin = lastTouchX.toInt() - size / 2
+            topMargin = lastTouchY.toInt() - size / 2
+        }
+        val overlay = editorBinding.overlayView.parent as? android.view.ViewGroup ?: return
+        overlay.addView(thumb, params)
+        dragThumb = thumb
+
+        android.os.Vibrator::class.java.let {
+            @Suppress("DEPRECATION")
+            (getSystemService(android.content.Context.VIBRATOR_SERVICE) as? android.os.Vibrator)?.vibrate(40)
+        }
+        Toast.makeText(this, "Drag to move image", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun handleImageDragTouch(et: android.widget.EditText, event: android.view.MotionEvent) {
+        val size = (resources.displayMetrics.density * 80).toInt()
+        when (event.action) {
+            android.view.MotionEvent.ACTION_MOVE -> {
+                lastTouchX = event.x
+                lastTouchY = event.y
+                dragThumb?.let { thumb ->
+                    val lp = thumb.layoutParams as? android.widget.FrameLayout.LayoutParams ?: return
+                    lp.leftMargin = event.rawX.toInt() - size / 2
+                    lp.topMargin = event.rawY.toInt() - size / 2
+                    thumb.layoutParams = lp
+                }
+            }
+            android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                isDraggingImage = false
+                // Remove thumbnail
+                val overlay = editorBinding.overlayView.parent as? android.view.ViewGroup
+                dragThumb?.let { overlay?.removeView(it) }
+                dragThumb = null
+
+                if (event.action == android.view.MotionEvent.ACTION_UP) {
+                    val span = dragSpan ?: return
+                    val newOffset = getOffsetForPosition(et, event.x, event.y)
+                        .coerceIn(0, et.text.length)
+
+                    // Remove span from old position
+                    val ss = android.text.SpannableString(" ")
+                    ss.setSpan(
+                        android.text.style.ImageSpan(span.drawable, android.text.style.ImageSpan.ALIGN_BOTTOM),
+                        0, 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                    // Delete old, insert at new
+                    val safeStart = dragSpanStart.coerceIn(0, et.text.length)
+                    val safeEnd = dragSpanEnd.coerceIn(safeStart, et.text.length)
+                    et.text.delete(safeStart, safeEnd)
+                    val insertAt = if (newOffset > safeStart) (newOffset - (safeEnd - safeStart)).coerceAtLeast(0)
+                                   else newOffset
+                    et.text.insert(insertAt.coerceIn(0, et.text.length), ss)
+                }
+                dragSpan = null
+                dragSpanStart = -1
+                dragSpanEnd = -1
+            }
+        }
+    }
 
     private fun getOffsetForPosition(et: android.widget.EditText, x: Float, y: Float): Int {
         val layout = et.layout ?: return -1
