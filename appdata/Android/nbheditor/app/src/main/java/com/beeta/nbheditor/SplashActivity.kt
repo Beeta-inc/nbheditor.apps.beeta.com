@@ -16,11 +16,22 @@ class SplashActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_splash)
 
+        // Schedule the daily background update check (safe to call every launch — KEEP policy)
+        UpdateCheckWorker.schedule(this)
+
+        val forceCheck = intent.getBooleanExtra(UpdateCheckWorker.EXTRA_FORCE_UPDATE_CHECK, false)
+
         lifecycleScope.launch {
-            // Run splash delay and update check in parallel
             val delayJob = launch { delay(1500) }
             val updateJob = launch(Dispatchers.IO) {
-                try { AppUpdater.checkForUpdate(this@SplashActivity) } catch (_: Exception) {}
+                try {
+                    if (forceCheck) {
+                        // User tapped the update notification — always show dialog
+                        AppUpdater.checkForUpdate(this@SplashActivity, force = true)
+                    } else {
+                        AppUpdater.checkForUpdate(this@SplashActivity)
+                    }
+                } catch (_: Exception) {}
             }
             delayJob.join()
             updateJob.join()

@@ -6,10 +6,8 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Environment
 import androidx.appcompat.app.AlertDialog
-import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -23,18 +21,20 @@ object AppUpdater {
     fun shouldCheckToday(context: Context): Boolean {
         val prefs = context.getSharedPreferences("nbheditor_prefs", Context.MODE_PRIVATE)
         val today = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())
-        val last = prefs.getString(PREFS_KEY_LAST_CHECK, "")
-        return last != today
+        return prefs.getString(PREFS_KEY_LAST_CHECK, "") != today
     }
 
     fun markCheckedToday(context: Context) {
-        val prefs = context.getSharedPreferences("nbheditor_prefs", Context.MODE_PRIVATE)
         val today = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())
-        prefs.edit().putString(PREFS_KEY_LAST_CHECK, today).apply()
+        context.getSharedPreferences("nbheditor_prefs", Context.MODE_PRIVATE)
+            .edit().putString(PREFS_KEY_LAST_CHECK, today).apply()
     }
 
-    suspend fun checkForUpdate(context: Context) {
-        if (!shouldCheckToday(context)) return
+    /**
+     * @param force skip the "already checked today" guard — used when user taps the notification
+     */
+    suspend fun checkForUpdate(context: Context, force: Boolean = false) {
+        if (!force && !shouldCheckToday(context)) return
         markCheckedToday(context)
 
         val remoteVersion = fetchText("$RAW_BASE/version.txt")?.trim() ?: return
@@ -42,7 +42,6 @@ object AppUpdater {
         val downloadLink  = fetchText("$RAW_BASE/link.txt")?.trim() ?: return
 
         val currentVersion = getCurrentVersion(context)
-
         if (!isNewerVersion(remoteVersion, currentVersion)) return
 
         val isMajor = isMajorUpdate(remoteVersion, currentVersion)
@@ -54,17 +53,10 @@ object AppUpdater {
 
     private fun getCurrentVersion(context: Context): String {
         return try {
-            val info = context.packageManager.getPackageInfo(context.packageName, 0)
-            "v${info.versionName}"
-        } catch (e: Exception) {
-            "v0.0.0"
-        }
+            "v${context.packageManager.getPackageInfo(context.packageName, 0).versionName}"
+        } catch (_: Exception) { "v0.0.0" }
     }
 
-    /**
-     * Returns true if remote > current.
-     * Versions are expected as "v2.x.x" — strips the leading 'v' then compares numerically.
-     */
     private fun isNewerVersion(remote: String, current: String): Boolean {
         val r = parseParts(remote)
         val c = parseParts(current)
@@ -75,10 +67,8 @@ object AppUpdater {
         return false
     }
 
-    /** Major update = remote major version number > current major version number */
-    private fun isMajorUpdate(remote: String, current: String): Boolean {
-        return parseParts(remote)[0] > parseParts(current)[0]
-    }
+    private fun isMajorUpdate(remote: String, current: String) =
+        parseParts(remote)[0] > parseParts(current)[0]
 
     private fun parseParts(version: String): IntArray {
         val clean = version.trimStart('v', 'V')
@@ -99,58 +89,39 @@ object AppUpdater {
     ) {
         val message = buildString {
             append("Version $version is available.\n\n")
-            if (changelog.isNotBlank()) {
-                append("What's new:\n$changelog")
-            }
-            if (isMajor) {
-                append("\n\n⚠ This is a major update and is required.")
-            }
+            if (changelog.isNotBlank()) append("What's new:\n$changelog")
+            if (isMajor) append("\n\n⚠ This is a major update and is required.")
         }
 
-        val builder = AlertDialog.Builder(context)
+        AlertDialog.Builder(context)
             .setTitle("✦ Update Available")
             .setMessage(message)
-            .setPositiveButton("Download") { _, _ ->
-                downloadApk(context, downloadLink, version)
-            }
-
-        if (!isMajor) {
-            builder.setNegativeButton("Later", null)
-        } else {
-            builder.setCancelable(false)
-        }
-
-        builder.show()
+            .setPositiveButton("Download") { _, _ -> downloadApk(context, downloadLink, version) }
+            .apply { if (!isMajor) setNegativeButton("Later", null) else setCancelable(false) }
+            .show()
     }
 
     private fun downloadApk(context: Context, url: String, version: String) {
         try {
-            val fileName = "NbhEditor-$version.apk"
             val request = DownloadManager.Request(Uri.parse(url)).apply {
                 setTitle("NBH Editor $version")
                 setDescription("Downloading update...")
                 setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName)
+                setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, "NbhEditor-$version.apk")
                 setMimeType("application/vnd.android.package-archive")
             }
-            val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
-            dm.enqueue(request)
+            (context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
             android.widget.Toast.makeText(
                 context, "Downloading update to Downloads folder...", android.widget.Toast.LENGTH_LONG
             ).show()
-        } catch (e: Exception) {
-            // Fallback: open browser
+        } catch (_: Exception) {
             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             })
         }
     }
 
-    private fun fetchText(url: String): String? {
-        return try {
-            URL(url).openStream().bufferedReader().use { it.readText() }
-        } catch (e: Exception) {
-            null
-        }
-    }
+    private fun fetchText(url: String): String? = try {
+        URL(url).openStream().bufferedReader().use { it.readText() }
+    } catch (_: Exception) { null }
 }
