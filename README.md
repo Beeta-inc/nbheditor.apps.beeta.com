@@ -20,9 +20,9 @@ Built for Linux users who value **performance** and **aesthetic UI**, with **Bee
 Choose your build:
 
 - [Linux AMD64](#)
-- [Linux x86](#)
+- [Android ARM64](#)
 - [Linux ARM64](#)
-- [Linux ARM32](#)
+
 
 ---
 
