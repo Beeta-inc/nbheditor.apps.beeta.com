@@ -142,6 +142,11 @@ open class MainActivity : AppCompatActivity() {
     private var speechRecognizer: SpeechRecognizer? = null
     private var speechTarget: EditText? = null // which EditText receives speech
 
+    // ── Chat Memory ───────────────────────────────────────────────────────────
+    private val chatHistory = mutableListOf<ChatMessage>() // in-memory conversation history
+    private var memoryEnabled = false
+    private var currentChatFile: java.io.File? = null
+
     private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let { uri -> insertImageIntoEditor(uri) }
@@ -257,8 +262,8 @@ open class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         isListening = false
-        speechRecognizer?.apply { cancel(); destroy() }
-        speechRecognizer = null
+        destroySpeechRecognizer()
+        if (memoryEnabled) saveCurrentChat()
         if (isGlassMode) GlassTextAdapter.stop()
     }
 
@@ -627,11 +632,20 @@ open class MainActivity : AppCompatActivity() {
         }
         aiChatBinding.chatRecyclerView.adapter = chatAdapter
 
+        memoryEnabled = prefs.getBoolean("memory_enabled", false)
+        val memoryAsked = prefs.getBoolean("memory_asked", false)
+        if (!memoryAsked) showMemoryOnboardingDialog()
+
         aiChatBinding.clearChatBtn.setOnClickListener {
+            if (memoryEnabled) saveCurrentChat()
             chatAdapter.clearMessages()
+            chatHistory.clear()
+            currentChatFile = null
             aiChatBinding.chatRecyclerView.visibility = View.GONE
             aiChatBinding.emptyState.visibility = View.VISIBLE
         }
+
+        aiChatBinding.historyBtn.setOnClickListener { showChatHistoryDialog() }
 
         aiChatBinding.sendButton.setOnClickListener { sendChatMessage() }
         aiChatBinding.queryEditText.setOnEditorActionListener { _, _, _ ->
@@ -639,9 +653,107 @@ open class MainActivity : AppCompatActivity() {
         }
     }
 
+    // ── Memory: onboarding dialog ─────────────────────────────────────────────
+    private fun showMemoryOnboardingDialog() {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("✦ Enable Chat Memory?")
+            .setMessage("Beeta AI can remember your conversations on this device for context.\n\nAll data stays private — stored locally only.")
+            .setPositiveButton("Enable Memory") { _, _ ->
+                memoryEnabled = true
+                prefs.edit().putBoolean("memory_enabled", true).putBoolean("memory_asked", true).apply()
+                Toast.makeText(this, "Memory enabled", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("No Thanks") { _, _ ->
+                memoryEnabled = false
+                prefs.edit().putBoolean("memory_enabled", false).putBoolean("memory_asked", true).apply()
+            }
+            .setCancelable(false)
+            .show()
+    }
+
+    // ── Memory: save current chat to file ─────────────────────────────────────
+    private fun saveCurrentChat() {
+        if (chatHistory.isEmpty()) return
+        val chatsDir = java.io.File(filesDir, "nbh_chats").also { it.mkdirs() }
+        val date = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault()).format(java.util.Date())
+        val file = currentChatFile ?: run {
+            // Count existing files for this date to get next index
+            val existing = chatsDir.listFiles { f ->
+                f.name.startsWith(date) && f.name.endsWith("nbhheditorchat")
+            }?.size ?: 0
+            val idx = String.format("%02d", existing + 1)
+            java.io.File(chatsDir, "${date}${idx}nbhheditorchat").also { currentChatFile = it }
+        }
+        try {
+            val gson = com.google.gson.Gson()
+            file.writeText(gson.toJson(chatHistory))
+        } catch (_: Exception) {}
+    }
+
+    // ── Memory: load a saved chat ─────────────────────────────────────────────
+    private fun loadChat(file: java.io.File) {
+        try {
+            val type = object : com.google.gson.reflect.TypeToken<List<ChatMessage>>() {}.type
+            val loaded: List<ChatMessage> = gson.fromJson(file.readText(), type)
+            chatHistory.clear()
+            chatHistory.addAll(loaded)
+            chatAdapter.clearMessages()
+            loaded.forEach { chatAdapter.addMessage(it) }
+            currentChatFile = file
+            aiChatBinding.chatRecyclerView.visibility = View.VISIBLE
+            aiChatBinding.emptyState.visibility = View.GONE
+            scrollChatToBottom()
+        } catch (_: Exception) {
+            Toast.makeText(this, "Failed to load chat", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // ── Memory: history dialog with delete ────────────────────────────────────
+    private fun showChatHistoryDialog() {
+        val chatsDir = java.io.File(filesDir, "nbh_chats")
+        val files = chatsDir.listFiles()?.sortedByDescending { it.lastModified() } ?: emptyList()
+        if (files.isEmpty()) {
+            Toast.makeText(this, "No saved chats", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val names = files.map { f ->
+            val n = f.name // e.g. 2025010701nbhheditorchat
+            val date = n.take(8)
+            val idx = n.drop(8).removeSuffix("nbhheditorchat")
+            "Chat #$idx  ·  ${date.substring(0,4)}-${date.substring(4,6)}-${date.substring(6,8)}"
+        }.toTypedArray()
+
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Chat History")
+            .setItems(names) { _, which -> loadChat(files[which]) }
+            .setNeutralButton("Delete All") { _, _ ->
+                files.forEach { it.delete() }
+                Toast.makeText(this, "All chats deleted", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+            .also { dialog ->
+                // Long-press on item to delete individual chat
+                (dialog as? androidx.appcompat.app.AlertDialog)
+                    ?.listView?.setOnItemLongClickListener { _, _, pos, _ ->
+                        androidx.appcompat.app.AlertDialog.Builder(this)
+                            .setMessage("Delete ${names[pos]}?")
+                            .setPositiveButton("Delete") { _, _ ->
+                                files[pos].delete()
+                                dialog.dismiss()
+                                Toast.makeText(this, "Deleted", Toast.LENGTH_SHORT).show()
+                            }
+                            .setNegativeButton("Cancel", null)
+                            .show()
+                        true
+                    }
+            }
+    }
+
     // ── Voice-to-text ─────────────────────────────────────────────────────────
 
     private var isListening = false
+    private var voiceRetryCount = 0
 
     private fun setupVoiceButtons() {
         editorBinding.editorVoiceButton.setOnClickListener {
@@ -654,8 +766,10 @@ open class MainActivity : AppCompatActivity() {
 
     private fun stopVoiceInput() {
         isListening = false
-        speechRecognizer?.stopListening()
+        voiceRetryCount = 0
+        speechRecognizer?.apply { stopListening(); cancel() }
         setMicActive(false)
+        speechTarget?.hint = ""
     }
 
     private fun setMicActive(active: Boolean) {
@@ -667,6 +781,12 @@ open class MainActivity : AppCompatActivity() {
         aiChatBinding.voiceButton.setColorFilter(tint)
     }
 
+    private fun destroySpeechRecognizer() {
+        try { speechRecognizer?.cancel() } catch (_: Exception) {}
+        try { speechRecognizer?.destroy() } catch (_: Exception) {}
+        speechRecognizer = null
+    }
+
     private fun startVoiceInput(target: EditText) {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
             != PackageManager.PERMISSION_GRANTED) {
@@ -675,85 +795,115 @@ open class MainActivity : AppCompatActivity() {
         }
         if (isListening) { stopVoiceInput(); return }
         speechTarget = target
+        voiceRetryCount = 0
+        destroySpeechRecognizer()
+        doStartListening()
+    }
 
-        // Fully destroy previous instance before creating a new one
-        speechRecognizer?.apply {
-            cancel()
-            destroy()
+    private fun doStartListening() {
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+            Toast.makeText(this, "Speech recognition not available on this device", Toast.LENGTH_LONG).show()
+            return
         }
-        speechRecognizer = null
+        // Create fresh recognizer on the main thread (required by Android)
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
+        speechRecognizer?.setRecognitionListener(object : RecognitionListener {
+            override fun onReadyForSpeech(params: android.os.Bundle?) {
+                isListening = true
+                voiceRetryCount = 0
+                setMicActive(true)
+                speechTarget?.hint = "Listening..."
+            }
+            override fun onBeginningOfSpeech() {}
+            override fun onRmsChanged(rmsdB: Float) {}
+            override fun onBufferReceived(buffer: ByteArray?) {}
+            override fun onEndOfSpeech() { setMicActive(false) }
+            override fun onResults(results: android.os.Bundle) {
+                isListening = false
+                voiceRetryCount = 0
+                setMicActive(false)
+                speechTarget?.hint = ""
+                val text = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                    ?.firstOrNull()?.trim() ?: return
+                val et = speechTarget ?: return
+                val pos = et.selectionStart.coerceAtLeast(0)
+                et.text?.insert(pos, text) ?: et.setText(text)
+            }
+            override fun onPartialResults(partial: android.os.Bundle?) {
+                val text = partial
+                    ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                    ?.firstOrNull()?.trim() ?: return
+                speechTarget?.hint = text
+            }
+            override fun onError(error: Int) {
+                isListening = false
+                setMicActive(false)
+                speechTarget?.hint = ""
+                when (error) {
+                    SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> {
+                        // Recognizer busy: destroy and retry once after delay
+                        destroySpeechRecognizer()
+                        if (voiceRetryCount < 2) {
+                            voiceRetryCount++
+                            handler.postDelayed({ doStartListening() }, 600L)
+                        } else {
+                            voiceRetryCount = 0
+                            Toast.makeText(this@MainActivity, "Mic busy — try again", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    SpeechRecognizer.ERROR_CLIENT -> {
+                        // Client error: recreate and retry once
+                        destroySpeechRecognizer()
+                        if (voiceRetryCount < 1) {
+                            voiceRetryCount++
+                            handler.postDelayed({ doStartListening() }, 400L)
+                        } else {
+                            voiceRetryCount = 0
+                            Toast.makeText(this@MainActivity, "Voice error — try again", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    SpeechRecognizer.ERROR_NO_MATCH -> {
+                        // No speech detected — silently reset, user can tap again
+                        Toast.makeText(this@MainActivity, "No speech detected", Toast.LENGTH_SHORT).show()
+                    }
+                    SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> {
+                        Toast.makeText(this@MainActivity, "Timed out — tap mic and speak", Toast.LENGTH_SHORT).show()
+                    }
+                    SpeechRecognizer.ERROR_AUDIO -> {
+                        Toast.makeText(this@MainActivity, "Audio error — check mic permissions", Toast.LENGTH_SHORT).show()
+                    }
+                    SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> {
+                        // On physical devices, some OEMs require network for the default recognizer.
+                        // Inform user clearly.
+                        Toast.makeText(this@MainActivity, "Voice needs network on this device", Toast.LENGTH_LONG).show()
+                    }
+                    SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> {
+                        Toast.makeText(this@MainActivity, "Microphone permission denied", Toast.LENGTH_SHORT).show()
+                    }
+                    else -> Toast.makeText(this@MainActivity, "Voice error ($error)", Toast.LENGTH_SHORT).show()
+                }
+            }
+            override fun onEvent(eventType: Int, params: android.os.Bundle?) {}
+        })
 
-        // Small delay so the OS fully releases the mic from the previous session
-        handler.postDelayed({
-            if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-                Toast.makeText(this, "Speech recognition not available", Toast.LENGTH_SHORT).show()
-                return@postDelayed
-            }
-            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
-                setRecognitionListener(object : RecognitionListener {
-                    override fun onReadyForSpeech(params: android.os.Bundle?) {
-                        isListening = true
-                        setMicActive(true)
-                    }
-                    override fun onBeginningOfSpeech() {}
-                    override fun onRmsChanged(rmsdB: Float) {}
-                    override fun onBufferReceived(buffer: ByteArray?) {}
-                    override fun onEndOfSpeech() {
-                        setMicActive(false)
-                    }
-                    override fun onResults(results: android.os.Bundle) {
-                        isListening = false
-                        setMicActive(false)
-                        val text = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                            ?.firstOrNull()?.trim() ?: return
-                        val et = speechTarget ?: return
-                        val pos = et.selectionStart.coerceAtLeast(0)
-                        et.text.insert(pos, text)
-                    }
-                    override fun onPartialResults(partial: android.os.Bundle?) {
-                        // Show partial results live in the target field
-                        val text = partial
-                            ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                            ?.firstOrNull()?.trim() ?: return
-                        // Don't insert partials — just show as hint via tag
-                        speechTarget?.hint = text
-                    }
-                    override fun onError(error: Int) {
-                        isListening = false
-                        setMicActive(false)
-                        speechTarget?.hint = ""
-                        if (error == SpeechRecognizer.ERROR_CLIENT || error == SpeechRecognizer.ERROR_RECOGNIZER_BUSY) {
-                            speechRecognizer?.apply { cancel(); destroy() }
-                            speechRecognizer = null
-                            handler.postDelayed({ startVoiceInput(speechTarget ?: return@postDelayed) }, 400L)
-                            return
-                        }
-                        val msg = when (error) {
-                            SpeechRecognizer.ERROR_NO_MATCH       -> "No speech detected"
-                            SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Timed out — tap mic and speak"
-                            SpeechRecognizer.ERROR_AUDIO          -> "Audio error — check mic"
-                            SpeechRecognizer.ERROR_NETWORK        -> "Network error"
-                            else -> "Voice error ($error)"
-                        }
-                        Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
-                    }
-                    override fun onEvent(eventType: Int, params: android.os.Bundle?) {}
-                })
-            }
-            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL,
-                    RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-                // Give the user 5 s of silence before giving up
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 5000L)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 1000L)
-                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
-            }
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, Locale.getDefault().toString())
+            putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, false)
+            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+            putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 4000L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
+        }
+        try {
             speechRecognizer?.startListening(intent)
             Toast.makeText(this, "🎙 Listening...", Toast.LENGTH_SHORT).show()
-        }, 200L)
+        } catch (e: Exception) {
+            Log.e("Voice", "startListening failed: ${e.message}")
+            Toast.makeText(this, "Could not start voice input", Toast.LENGTH_SHORT).show()
+        }
     }
 
     // ── Image insertion in editor ─────────────────────────────────────────────
@@ -836,11 +986,12 @@ open class MainActivity : AppCompatActivity() {
         val query = aiChatBinding.queryEditText.text.toString().trim()
         if (query.isBlank()) return
 
-        // Auto-detect image request even if chip is off
         val imageKeywords = listOf("make image", "generate image", "create image", "draw", "make a picture", "generate a picture", "show image", "make photo", "create photo")
         val isImageRequest = aiChatBinding.imageGenChip.isChecked || imageKeywords.any { query.lowercase().contains(it) }
 
-        chatAdapter.addMessage(ChatMessage("user", query))
+        val userMsg = ChatMessage("user", query)
+        chatAdapter.addMessage(userMsg)
+        if (memoryEnabled) chatHistory.add(userMsg)
         aiChatBinding.queryEditText.text.clear()
         aiChatBinding.emptyState.visibility = View.GONE
         aiChatBinding.chatRecyclerView.visibility = View.VISIBLE
@@ -859,10 +1010,15 @@ open class MainActivity : AppCompatActivity() {
                         showChatError("Image generation failed. Try again.")
                     }
                 } else {
-                    val aiResponse = callAI(query, maxTokens = 1024)
+                    val aiResponse = callAIWithHistory(query, maxTokens = 1024)
                     aiChatBinding.typingRow.visibility = View.GONE
                     if (aiResponse != null) {
-                        chatAdapter.addMessage(ChatMessage("assistant", aiResponse))
+                        val aiMsg = ChatMessage("assistant", aiResponse)
+                        chatAdapter.addMessage(aiMsg)
+                        if (memoryEnabled) {
+                            chatHistory.add(aiMsg)
+                            saveCurrentChat()
+                        }
                         scrollChatToBottom()
                     } else {
                         showChatError("No response. Try again.")
@@ -1178,6 +1334,17 @@ open class MainActivity : AppCompatActivity() {
                 if (e is CancellationException) return@launch
             }
         }
+    }
+
+    // Builds a prompt with conversation history for context-aware replies
+    private suspend fun callAIWithHistory(prompt: String, maxTokens: Int = 512): String? {
+        if (!memoryEnabled || chatHistory.size <= 1) return callAI(prompt, maxTokens)
+        // Use last 10 turns max to avoid token overflow
+        val context = chatHistory.takeLast(10).joinToString("\n") {
+            "${if (it.role == "user") "User" else "Assistant"}: ${it.content}"
+        }
+        val fullPrompt = "Previous conversation:\n$context\n\nUser: $prompt"
+        return callAI(fullPrompt, maxTokens)
     }
 
     private suspend fun callAI(prompt: String, maxTokens: Int = 512): String? {
