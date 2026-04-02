@@ -4,18 +4,32 @@
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
+    <!-- Outer body -->
     <path
-        android:fillColor="@android:color/transparent"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="2"
+        android:fillColor="#1A1E66F5"
+        android:strokeColor="#FF1E66F5"
+        android:strokeWidth="1.6"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:pathData="M19,21H5a2,2 0,0 1,-2 -2V5a2,2 0,0 1,2 -2h11l5,5v11a2,2 0,0 1,-2 2z" />
+        android:pathData="M18.5,21H5.5A1.5,1.5 0,0 1,4 19.5V4.5A1.5,1.5 0,0 1,5.5 3H15l5,5V19.5A1.5,1.5 0,0 1,18.5 21z" />
+    <!-- Bottom storage slot -->
     <path
-        android:fillColor="@android:color/transparent"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="2"
+        android:fillColor="#331E66F5"
+        android:strokeColor="#FF1E66F5"
+        android:strokeWidth="1.4"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:pathData="M17,21v-8H7v8M7,3v5h8" />
+        android:pathData="M7,13H17V20H7z" />
+    <!-- Top label area -->
+    <path
+        android:fillColor="#FF1E66F5"
+        android:strokeColor="#FF1E66F5"
+        android:strokeWidth="1"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M8,3V8H15V3" />
+    <!-- Label notch -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M13,3V7H14V3z" />
 </vector>

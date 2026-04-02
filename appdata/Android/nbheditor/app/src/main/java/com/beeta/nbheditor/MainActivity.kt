@@ -314,11 +314,10 @@ open class MainActivity : AppCompatActivity() {
             aiChatBinding.chatRecyclerView
         ).forEach { it.setBackgroundColor(Color.TRANSPARENT) }
 
-        // Bars: semi-opaque dark so text/icons are always visible
-        // #CC = 80% opacity dark — enough to read, still shows blur behind
-        val barColor = 0xCC0A0A14.toInt()
-        val divColor = 0x33FFFFFF
-        val surfaceColor = 0xBB0A0A14.toInt()
+        // Bars: heavily frosted — dark enough to always read text clearly
+        val barColor    = 0xF00A0A18.toInt()   // 94% opaque
+        val surfaceColor = 0xE80A0A18.toInt()  // 91% opaque
+        val divColor    = 0x44FFFFFF
 
         binding.appBarMain.toolbar.setBackgroundColor(barColor)
         binding.appBarMain.contentMain.bottomNavView.setBackgroundColor(barColor)
@@ -327,17 +326,17 @@ open class MainActivity : AppCompatActivity() {
         aiChatBinding.inputBar.setBackgroundColor(barColor)
         editorBinding.aiSuggestionContainer.setBackgroundColor(surfaceColor)
         editorBinding.autoSaveContainer.setBackgroundColor(surfaceColor)
-        binding.navView.setBackgroundColor(0xE00A0A14.toInt())
+        binding.navView.setBackgroundColor(0xF50A0A18.toInt())
 
         // Dividers
         aiChatBinding.headerDivider.setBackgroundColor(divColor)
         aiChatBinding.inputDivider.setBackgroundColor(divColor)
 
-        // Editor area: slightly tinted so text is readable
-        editorBinding.lineNumbersScroll.setBackgroundColor(0x99080810.toInt())
-        editorBinding.textArea.setBackgroundColor(0x66080810.toInt())
+        // Editor area: solid enough to read text comfortably
+        editorBinding.lineNumbersScroll.setBackgroundColor(0xEE080812.toInt())
+        editorBinding.textArea.setBackgroundColor(0xE5080812.toInt())
         editorBinding.textArea.setTextColor(0xFFF0F2FF.toInt())
-        editorBinding.textArea.setHintTextColor(0x88AABBFF.toInt())
+        editorBinding.textArea.setHintTextColor(0xAAAABBFF.toInt())
 
         // All text/icons in bars: white, always visible
         val white = 0xFFF0F2FF.toInt()
@@ -490,15 +489,15 @@ open class MainActivity : AppCompatActivity() {
         val editorHint = resources.getColor(R.color.editor_hint, theme)
 
         if (glass) {
-            homeBinding.homeRoot.setBackgroundColor(transparent)
-            homeBinding.homeHeader.setBackgroundColor(glassPanel)
-            homeBinding.searchCard.setCardBackgroundColor(glassPanel)
-            homeBinding.homeTitle.setTextColor(android.graphics.Color.BLACK)
-            homeBinding.homeTitle.setShadowLayer(3f, 0f, 1f, android.graphics.Color.parseColor("#44FFFFFF"))
+            homeBinding.homeRoot.setBackgroundColor(0xF0080812.toInt())
+            homeBinding.homeHeader.setBackgroundColor(0xF00A0A18.toInt())
+            homeBinding.searchCard.setCardBackgroundColor(0xE80A0A18.toInt())
+            homeBinding.homeTitle.setTextColor(0xFFF0F2FF.toInt())
+            homeBinding.homeTitle.setShadowLayer(4f, 0f, 1f, 0x66000000)
             homeBinding.fileCountLabel.setTextColor(resources.getColor(R.color.accent_primary, theme))
-            homeBinding.sortLabel.setTextColor(android.graphics.Color.BLACK)
-            homeBinding.searchBar.setTextColor(android.graphics.Color.BLACK)
-            homeBinding.searchBar.setHintTextColor(android.graphics.Color.parseColor("#88000000"))
+            homeBinding.sortLabel.setTextColor(0xCCF0F2FF.toInt())
+            homeBinding.searchBar.setTextColor(0xFFF0F2FF.toInt())
+            homeBinding.searchBar.setHintTextColor(0x88AABBFF.toInt())
         } else {
             homeBinding.homeRoot.setBackgroundColor(bgColor)
             homeBinding.homeHeader.setBackgroundColor(surfaceColor)
