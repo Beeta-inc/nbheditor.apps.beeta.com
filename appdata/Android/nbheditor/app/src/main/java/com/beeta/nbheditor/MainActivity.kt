@@ -251,6 +251,16 @@ open class MainActivity : AppCompatActivity() {
         setupImageButton()
         registerBackHandler()
 
+        // Request notification permission on Android 13+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(
+                    this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 102
+                )
+            }
+        }
+
         // Show home screen unless launched via "Open with"
         if (intent?.action == Intent.ACTION_VIEW || intent?.action == Intent.ACTION_EDIT) {
             showEditor()
