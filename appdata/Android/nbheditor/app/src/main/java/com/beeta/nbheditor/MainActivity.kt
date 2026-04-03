@@ -90,7 +90,7 @@ open class MainActivity : AppCompatActivity() {
     // Priority: OpenRouter free models (1→6) then Google Gemini as final fallback
     // Each model is skipped on 429 rate-limit and the next one is tried.
 
-    private val OPENROUTER_API_KEY = "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"
+    private val OPENROUTER_API_KEY = ""
 
     // 6 free OpenRouter models tried in order
     private val OR_MODELS = listOf(
