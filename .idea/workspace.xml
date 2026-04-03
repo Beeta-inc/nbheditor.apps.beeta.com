@@ -9,10 +9,7 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0de2c8aa-c6b7-419c-b7cd-e9cbf2927e27" name="Changes" comment="improvements">
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/AppUpdater.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/AppUpdater.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/UpdateCheckWorker.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/UpdateCheckWorker.kt" afterDir="false" />
-    </list>
+    <list default="true" id="0de2c8aa-c6b7-419c-b7cd-e9cbf2927e27" name="Changes" comment="improvements" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -317,22 +314,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1774176942839</updated>
-    </task>
-    <task id="LOCAL-00027" summary="fixed bug updated ui and fixed ask ai">
-      <option name="closed" value="true" />
-      <created>1774431059372</created>
-      <option name="number" value="00027" />
-      <option name="presentableId" value="LOCAL-00027" />
-      <option name="project" value="LOCAL" />
-      <updated>1774431059372</updated>
-    </task>
-    <task id="LOCAL-00028" summary="fixed bug updated ui and fixed ask ai">
-      <option name="closed" value="true" />
-      <created>1774431145421</created>
-      <option name="number" value="00028" />
-      <option name="presentableId" value="LOCAL-00028" />
-      <option name="project" value="LOCAL" />
-      <updated>1774431145421</updated>
     </task>
     <task id="LOCAL-00029" summary="fixed bug">
       <option name="closed" value="true" />
@@ -710,7 +691,23 @@
       <option name="project" value="LOCAL" />
       <updated>1775207978192</updated>
     </task>
-    <option name="localTasksCounter" value="76" />
+    <task id="LOCAL-00076" summary="improvements">
+      <option name="closed" value="true" />
+      <created>1775208340375</created>
+      <option name="number" value="00076" />
+      <option name="presentableId" value="LOCAL-00076" />
+      <option name="project" value="LOCAL" />
+      <updated>1775208340376</updated>
+    </task>
+    <task id="LOCAL-00077" summary="improvements">
+      <option name="closed" value="true" />
+      <created>1775208419556</created>
+      <option name="number" value="00077" />
+      <option name="presentableId" value="LOCAL-00077" />
+      <option name="project" value="LOCAL" />
+      <updated>1775208419559</updated>
+    </task>
+    <option name="localTasksCounter" value="78" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
