@@ -248,7 +248,7 @@ open class MainActivity : AppCompatActivity() {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
             applyGlassColors()
             window.decorView.post {
-                GlassBlurHelper.enableWindowBlur(window, this, blurRadius = 60)
+                GlassBlurHelper.enableWindowBlur(window, this, blurRadius = 120)
             }
         }
 
@@ -329,10 +329,10 @@ open class MainActivity : AppCompatActivity() {
             aiChatBinding.chatRecyclerView
         ).forEach { it.setBackgroundColor(Color.TRANSPARENT) }
 
-        // Premium frosted glass bars
-        val barColor    = 0xF5121826.toInt()   // 96% opaque dark
-        val surfaceColor = 0xF0121826.toInt()  // 94% opaque
-        val divColor    = 0x33FFFFFF
+        // Glass frosted bars - more transparent to show blur
+        val barColor    = 0xCC0D1117.toInt()   // 80% opaque
+        val surfaceColor = 0xBB0D1117.toInt()  // 73% opaque
+        val divColor    = 0x55FFFFFF
 
         binding.appBarMain.toolbar.setBackgroundColor(barColor)
         binding.appBarMain.contentMain.bottomNavView.setBackgroundColor(barColor)
@@ -341,17 +341,17 @@ open class MainActivity : AppCompatActivity() {
         aiChatBinding.inputBar.setBackgroundColor(barColor)
         editorBinding.aiSuggestionContainer.setBackgroundColor(surfaceColor)
         editorBinding.autoSaveContainer.setBackgroundColor(surfaceColor)
-        binding.navView.setBackgroundColor(0xF8121826.toInt())
+        binding.navView.setBackgroundColor(0xDD0D1117.toInt())
 
-        // Dividers
+        // Dividers - brighter for glass effect
         aiChatBinding.headerDivider.setBackgroundColor(divColor)
         aiChatBinding.inputDivider.setBackgroundColor(divColor)
 
-        // Editor area: solid enough to read text comfortably
-        editorBinding.lineNumbersScroll.setBackgroundColor(0xF5101520.toInt())
-        editorBinding.textArea.setBackgroundColor(0xF0101520.toInt())
+        // Editor area: more transparent for glass effect
+        editorBinding.lineNumbersScroll.setBackgroundColor(0xCC0A0E14.toInt())
+        editorBinding.textArea.setBackgroundColor(0xBB0A0E14.toInt())
         editorBinding.textArea.setTextColor(0xFFFFFFFF.toInt())
-        editorBinding.textArea.setHintTextColor(0x99FFFFFF.toInt())
+        editorBinding.textArea.setHintTextColor(0xAAFFFFFF.toInt())
 
         // All text/icons in bars: white, always visible
         val white = 0xFFFFFFFF.toInt()
@@ -522,23 +522,23 @@ open class MainActivity : AppCompatActivity() {
         val editorHint = resources.getColor(R.color.editor_hint, theme)
 
         if (glass) {
-            // Premium glass colors
-            homeBinding.homeRoot.setBackgroundColor(0xF5101520.toInt())
-            homeBinding.homeHeader.setBackgroundColor(0xF5121826.toInt())
+            // Glass mode - more transparent
+            homeBinding.homeRoot.setBackgroundColor(0xBB0A0E14.toInt())
+            homeBinding.homeHeader.setBackgroundColor(0xCC0D1117.toInt())
             homeBinding.searchCard.apply {
-                setCardBackgroundColor(0xF0121826.toInt())
+                setCardBackgroundColor(0xBB0D1117.toInt())
                 cardElevation = 0f
                 radius = 24f
             }
             homeBinding.homeTitle.apply {
                 setTextColor(0xFFFFFFFF.toInt())
-                setShadowLayer(6f, 0f, 2f, 0x88000000.toInt())
+                setShadowLayer(8f, 0f, 3f, 0xAA000000.toInt())
             }
             homeBinding.fileCountLabel.setTextColor(resources.getColor(R.color.accent_primary, theme))
-            homeBinding.sortLabel.setTextColor(0xCCFFFFFF.toInt())
+            homeBinding.sortLabel.setTextColor(0xDDFFFFFF.toInt())
             homeBinding.searchBar.apply {
                 setTextColor(0xFFFFFFFF.toInt())
-                setHintTextColor(0x99FFFFFF.toInt())
+                setHintTextColor(0xAAFFFFFF.toInt())
             }
             homeBinding.btnGlassToggle.apply {
                 setTextColor(0xFFFFFFFF.toInt())

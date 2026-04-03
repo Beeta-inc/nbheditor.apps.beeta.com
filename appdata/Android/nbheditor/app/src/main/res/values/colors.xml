@@ -29,23 +29,23 @@
     <color name="input_bg">#FFF8F9FA</color>
     <color name="divider">#FFE9ECEF</color>
 
-    <!-- Glass mode colors — Premium frosted glass effect -->
+    <!-- Glass mode colors — True frosted glass effect -->
     <color name="glass_scene_bg">#FF0A0E1A</color>
-    <color name="glass_editor_surface">#F0121826</color>
-    <color name="glass_line_numbers_bg">#F5101520</color>
+    <color name="glass_editor_surface">#BB0D1117</color>
+    <color name="glass_line_numbers_bg">#CC0A0E14</color>
     <color name="glass_editor_text">#FFFFFFFF</color>
-    <color name="glass_editor_hint">#99FFFFFF</color>
-    <color name="glass_line_number_text">#99FFFFFF</color>
-    <color name="glass_toolbar_bg">#F5121826</color>
-    <color name="glass_divider">#33FFFFFF</color>
-    <color name="glass_chat_ai_bubble">#F0121826</color>
+    <color name="glass_editor_hint">#AAFFFFFF</color>
+    <color name="glass_line_number_text">#AAFFFFFF</color>
+    <color name="glass_toolbar_bg">#CC0D1117</color>
+    <color name="glass_divider">#55FFFFFF</color>
+    <color name="glass_chat_ai_bubble">#BB0D1117</color>
     <color name="glass_chat_ai_text">#FFFFFFFF</color>
-    <color name="glass_input_bg">#F0121826</color>
-    <color name="glass_border">#55FFFFFF</color>
-    <color name="glass_border_subtle">#33FFFFFF</color>
-    <color name="glass_tint">#F0121826</color>
+    <color name="glass_input_bg">#BB0D1117</color>
+    <color name="glass_border">#77FFFFFF</color>
+    <color name="glass_border_subtle">#44FFFFFF</color>
+    <color name="glass_tint">#BB0D1117</color>
     <color name="glass_accent_tint">#FF4C6EF5</color>
     <color name="glass_highlight">#FF4C6EF5</color>
-    <color name="glass_gradient_top">#22FFFFFF</color>
+    <color name="glass_gradient_top">#33FFFFFF</color>
     <color name="glass_gradient_bottom">#00FFFFFF</color>
 </resources>
