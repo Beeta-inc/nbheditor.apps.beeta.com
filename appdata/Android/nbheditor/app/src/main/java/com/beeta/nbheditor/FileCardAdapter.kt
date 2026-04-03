@@ -66,28 +66,51 @@ class FileCardAdapter(
             b.accentBar.setBackgroundColor(accentColor)
 
             if (isGlassMode) {
-                // Glass card: semi-transparent dark background, white bold text
-                b.root.setCardBackgroundColor(
-                    ContextCompat.getColor(ctx, R.color.glass_editor_surface)
-                )
-                b.root.strokeColor = ContextCompat.getColor(ctx, R.color.glass_border)
-                b.fileName.setTextColor(Color.BLACK)
-                b.fileName.textSize = 15f
-                b.fileDate.setTextColor(Color.parseColor("#CC000000"))
-                b.filePreview.setTextColor(Color.parseColor("#AA000000"))
+                // Glass card: optimized for older Android devices (API 24+)
+                b.root.apply {
+                    setCardBackgroundColor(0xE80A0A18.toInt())
+                    strokeColor = 0x33FFFFFF
+                    strokeWidth = 2
+                    cardElevation = 0f
+                    radius = 18f
+                }
+                b.fileName.apply {
+                    setTextColor(0xFFF0F2FF.toInt())
+                    textSize = 15f
+                    setShadowLayer(2f, 0f, 1f, 0x44000000)
+                }
+                b.fileDate.setTextColor(0xCCAABBFF.toInt())
+                b.filePreview.setTextColor(0xAACCDDFF.toInt())
+                b.fileTypeIcon?.apply {
+                    setTextColor(0xFFF0F2FF.toInt())
+                    setShadowLayer(2f, 0f, 1f, 0x44000000)
+                }
             } else {
-                b.root.setCardBackgroundColor(
-                    ContextCompat.getColor(ctx, R.color.editor_surface)
-                )
-                b.root.strokeColor = ContextCompat.getColor(ctx, R.color.divider)
-                b.fileName.setTextColor(ContextCompat.getColor(ctx, R.color.editor_text))
-                b.fileName.textSize = 15f
+                b.root.apply {
+                    setCardBackgroundColor(ContextCompat.getColor(ctx, R.color.editor_surface))
+                    strokeColor = ContextCompat.getColor(ctx, R.color.divider)
+                    strokeWidth = 1
+                    cardElevation = 2f
+                    radius = 16f
+                }
+                b.fileName.apply {
+                    setTextColor(ContextCompat.getColor(ctx, R.color.editor_text))
+                    textSize = 15f
+                    setShadowLayer(0f, 0f, 0f, 0)
+                }
                 b.fileDate.setTextColor(ContextCompat.getColor(ctx, R.color.editor_line_number_text))
                 b.filePreview.setTextColor(ContextCompat.getColor(ctx, R.color.editor_hint))
+                b.fileTypeIcon?.apply {
+                    setTextColor(ContextCompat.getColor(ctx, R.color.editor_text))
+                    setShadowLayer(0f, 0f, 0f, 0)
+                }
             }
 
             b.root.setOnClickListener { onOpen(entry) }
             b.root.setOnLongClickListener { onLongClick(entry); true }
+            
+            // Add ripple effect for better touch feedback
+            b.root.foreground = ContextCompat.getDrawable(ctx, R.drawable.ripple_card)
         }
     }
 }

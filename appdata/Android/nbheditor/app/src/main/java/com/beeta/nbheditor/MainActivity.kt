@@ -90,7 +90,7 @@ open class MainActivity : AppCompatActivity() {
     // Priority: OpenRouter free models (1→6) then Google Gemini as final fallback
     // Each model is skipped on 429 rate-limit and the next one is tried.
 
-    private val OPENROUTER_API_KEY = "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"
+    private val OPENROUTER_API_KEY = "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"
 
     // 6 free OpenRouter models tried in order
     private val OR_MODELS = listOf(
@@ -478,46 +478,89 @@ open class MainActivity : AppCompatActivity() {
         val glassOn = isGlassMode
         fileCardAdapter.isGlassMode = glassOn
         applyHomeGlass(glassOn)
-        homeBinding.btnGlassToggle.text = if (glassOn) "✦ Glass ON" else "Glass"
+        updateGlassToggleButton(glassOn)
         homeBinding.btnGlassToggle.setOnClickListener {
             val newGlass = !fileCardAdapter.isGlassMode
             fileCardAdapter.isGlassMode = newGlass
-            fileCardAdapter.notifyDataSetChanged()
-            applyHomeGlass(newGlass)
-            homeBinding.btnGlassToggle.text = if (newGlass) "✦ Glass ON" else "Glass"
+            
+            // Smooth transition animation
+            homeBinding.fileGrid.animate()
+                .alpha(0.7f)
+                .setDuration(150)
+                .withEndAction {
+                    fileCardAdapter.notifyDataSetChanged()
+                    applyHomeGlass(newGlass)
+                    updateGlassToggleButton(newGlass)
+                    homeBinding.fileGrid.animate().alpha(1f).setDuration(150).start()
+                }
+                .start()
+        }
+    }
+
+    private fun updateGlassToggleButton(glass: Boolean) {
+        homeBinding.btnGlassToggle.apply {
+            text = if (glass) "✦ Glass ON" else "Glass"
+            // Subtle scale animation
+            animate().scaleX(0.95f).scaleY(0.95f).setDuration(100)
+                .withEndAction {
+                    animate().scaleX(1f).scaleY(1f).setDuration(100).start()
+                }
+                .start()
         }
     }
 
     private fun applyHomeGlass(glass: Boolean) {
         if (!::homeBinding.isInitialized) return
-        val transparent = android.graphics.Color.TRANSPARENT
         val surfaceColor = resources.getColor(R.color.editor_surface, theme)
         val bgColor = resources.getColor(R.color.editor_bg, theme)
-        val glassPanel = resources.getColor(R.color.glass_editor_surface, theme)
-        val glassText = resources.getColor(R.color.glass_editor_text, theme)
         val editorText = resources.getColor(R.color.editor_text, theme)
         val editorHint = resources.getColor(R.color.editor_hint, theme)
 
         if (glass) {
+            // Optimized glass colors for older devices
             homeBinding.homeRoot.setBackgroundColor(0xF0080812.toInt())
             homeBinding.homeHeader.setBackgroundColor(0xF00A0A18.toInt())
-            homeBinding.searchCard.setCardBackgroundColor(0xE80A0A18.toInt())
-            homeBinding.homeTitle.setTextColor(0xFFF0F2FF.toInt())
-            homeBinding.homeTitle.setShadowLayer(4f, 0f, 1f, 0x66000000)
+            homeBinding.searchCard.apply {
+                setCardBackgroundColor(0xE80A0A18.toInt())
+                cardElevation = 0f
+                radius = 20f
+            }
+            homeBinding.homeTitle.apply {
+                setTextColor(0xFFF0F2FF.toInt())
+                setShadowLayer(4f, 0f, 1f, 0x66000000)
+            }
             homeBinding.fileCountLabel.setTextColor(resources.getColor(R.color.accent_primary, theme))
             homeBinding.sortLabel.setTextColor(0xCCF0F2FF.toInt())
-            homeBinding.searchBar.setTextColor(0xFFF0F2FF.toInt())
-            homeBinding.searchBar.setHintTextColor(0x88AABBFF.toInt())
+            homeBinding.searchBar.apply {
+                setTextColor(0xFFF0F2FF.toInt())
+                setHintTextColor(0x88AABBFF.toInt())
+            }
+            homeBinding.btnGlassToggle.apply {
+                setTextColor(0xFFF0F2FF.toInt())
+                alpha = 1f
+            }
         } else {
             homeBinding.homeRoot.setBackgroundColor(bgColor)
             homeBinding.homeHeader.setBackgroundColor(surfaceColor)
-            homeBinding.searchCard.setCardBackgroundColor(surfaceColor)
-            homeBinding.homeTitle.setTextColor(editorText)
-            homeBinding.homeTitle.setShadowLayer(0f, 0f, 0f, 0)
+            homeBinding.searchCard.apply {
+                setCardBackgroundColor(surfaceColor)
+                cardElevation = 2f
+                radius = 16f
+            }
+            homeBinding.homeTitle.apply {
+                setTextColor(editorText)
+                setShadowLayer(0f, 0f, 0f, 0)
+            }
             homeBinding.fileCountLabel.setTextColor(resources.getColor(R.color.accent_primary, theme))
             homeBinding.sortLabel.setTextColor(resources.getColor(R.color.editor_line_number_text, theme))
-            homeBinding.searchBar.setTextColor(editorText)
-            homeBinding.searchBar.setHintTextColor(editorHint)
+            homeBinding.searchBar.apply {
+                setTextColor(editorText)
+                setHintTextColor(editorHint)
+            }
+            homeBinding.btnGlassToggle.apply {
+                setTextColor(editorText)
+                alpha = 0.9f
+            }
         }
     }
 
@@ -763,6 +806,7 @@ open class MainActivity : AppCompatActivity() {
 
     private var isListening = false
     private var voiceRetryCount = 0
+    private var voiceAnimator: android.animation.ObjectAnimator? = null
 
     private fun setupVoiceButtons() {
         editorBinding.editorVoiceButton.setOnClickListener {
@@ -779,6 +823,7 @@ open class MainActivity : AppCompatActivity() {
         speechRecognizer?.apply { stopListening(); cancel() }
         setMicActive(false)
         speechTarget?.hint = ""
+        stopVoiceAnimation()
     }
 
     private fun setMicActive(active: Boolean) {
@@ -786,8 +831,32 @@ open class MainActivity : AppCompatActivity() {
             resources.getColor(R.color.accent_peach, theme)
         else
             resources.getColor(R.color.accent_primary, theme)
-        editorBinding.editorVoiceButton.setColorFilter(tint)
-        aiChatBinding.voiceButton.setColorFilter(tint)
+        
+        editorBinding.editorVoiceButton.apply {
+            setColorFilter(tint)
+            if (active) startVoiceAnimation(this) else stopVoiceAnimation()
+        }
+        aiChatBinding.voiceButton.apply {
+            setColorFilter(tint)
+            if (active) startVoiceAnimation(this) else stopVoiceAnimation()
+        }
+    }
+
+    private fun startVoiceAnimation(view: android.view.View) {
+        stopVoiceAnimation()
+        voiceAnimator = android.animation.ObjectAnimator.ofFloat(view, "alpha", 1f, 0.4f).apply {
+            duration = 600
+            repeatCount = android.animation.ObjectAnimator.INFINITE
+            repeatMode = android.animation.ObjectAnimator.REVERSE
+            start()
+        }
+    }
+
+    private fun stopVoiceAnimation() {
+        voiceAnimator?.cancel()
+        voiceAnimator = null
+        editorBinding.editorVoiceButton.alpha = 1f
+        aiChatBinding.voiceButton.alpha = 1f
     }
 
     private fun destroySpeechRecognizer() {
@@ -821,7 +890,10 @@ open class MainActivity : AppCompatActivity() {
                 isListening = true
                 voiceRetryCount = 0
                 setMicActive(true)
-                speechTarget?.hint = "Listening..."
+                speechTarget?.hint = "🎤 Listening..."
+                runOnUiThread {
+                    android.widget.Toast.makeText(this@MainActivity, "Speak now", android.widget.Toast.LENGTH_SHORT).show()
+                }
             }
             override fun onBeginningOfSpeech() {}
             override fun onRmsChanged(rmsdB: Float) {}
@@ -836,13 +908,24 @@ open class MainActivity : AppCompatActivity() {
                     ?.firstOrNull()?.trim() ?: return
                 val et = speechTarget ?: return
                 val pos = et.selectionStart.coerceAtLeast(0)
-                et.text?.insert(pos, text) ?: et.setText(text)
+                
+                // Add space before if needed
+                val textToInsert = if (pos > 0 && et.text?.getOrNull(pos - 1)?.isWhitespace() == false) {
+                    " $text"
+                } else {
+                    text
+                }
+                
+                et.text?.insert(pos, textToInsert) ?: et.setText(textToInsert)
+                runOnUiThread {
+                    android.widget.Toast.makeText(this@MainActivity, "✓ Voice inserted", android.widget.Toast.LENGTH_SHORT).show()
+                }
             }
             override fun onPartialResults(partial: android.os.Bundle?) {
                 val text = partial
                     ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     ?.firstOrNull()?.trim() ?: return
-                speechTarget?.hint = text
+                speechTarget?.hint = "🎤 $text"
             }
             override fun onError(error: Int) {
                 isListening = false
@@ -873,10 +956,10 @@ open class MainActivity : AppCompatActivity() {
                     }
                     SpeechRecognizer.ERROR_NO_MATCH -> {
                         // No speech detected — silently reset, user can tap again
-                        Toast.makeText(this@MainActivity, "No speech detected", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@MainActivity, "🎤 No speech detected — try again", Toast.LENGTH_SHORT).show()
                     }
                     SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> {
-                        Toast.makeText(this@MainActivity, "Timed out — tap mic and speak", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@MainActivity, "⏱ Timed out — tap mic and speak clearly", Toast.LENGTH_SHORT).show()
                     }
                     SpeechRecognizer.ERROR_AUDIO -> {
                         Toast.makeText(this@MainActivity, "Audio error — check mic permissions", Toast.LENGTH_SHORT).show()
@@ -1040,7 +1123,7 @@ open class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val HF_API_KEY = ""
+    private val HF_API_KEY = "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"
 
     private suspend fun callImageGen(prompt: String): String? = withContext(Dispatchers.IO) {
         try {
