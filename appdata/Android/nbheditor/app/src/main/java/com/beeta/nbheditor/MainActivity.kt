@@ -800,10 +800,14 @@ open class MainActivity : AppCompatActivity() {
             return
         }
         val names = files.map { f ->
-            val n = f.name // e.g. 2025010701nbhheditorchat
-            val date = n.take(8)
-            val idx = n.drop(8).removeSuffix("nbhheditorchat")
-            "Chat #$idx  ·  ${date.substring(0,4)}-${date.substring(4,6)}-${date.substring(6,8)}"
+            try {
+                val type = object : com.google.gson.reflect.TypeToken<List<ChatMessage>>() {}.type
+                val msgs: List<ChatMessage> = gson.fromJson(f.readText(), type)
+                val firstUser = msgs.firstOrNull { it.role == "user" }?.content?.take(40) ?: "Empty chat"
+                firstUser.replace("\n", " ").trim()
+            } catch (_: Exception) {
+                "Chat"
+            }
         }.toTypedArray()
 
         androidx.appcompat.app.AlertDialog.Builder(this)
@@ -841,10 +845,10 @@ open class MainActivity : AppCompatActivity() {
 
     private fun setupVoiceButtons() {
         editorBinding.editorVoiceButton.setOnClickListener {
-            startAdvancedVoiceMode(editorBinding.textArea)
+            startVoiceInput(editorBinding.textArea)
         }
         aiChatBinding.voiceButton.setOnClickListener {
-            startAdvancedVoiceMode(aiChatBinding.queryEditText)
+            startVoiceInput(aiChatBinding.queryEditText)
         }
     }
 
