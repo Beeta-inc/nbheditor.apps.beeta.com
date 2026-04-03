@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="24dp"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="8dp"
+    app:cardBackgroundColor="@color/editor_surface">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:gravity="center">
+
+        <!-- Voice Mode Icon -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            app:cardCornerRadius="40dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@color/accent_primary">
+
+            <ImageView
+                android:id="@+id/voiceModeIcon"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_mic"
+                android:padding="20dp"
+                android:tint="@color/white"
+                android:contentDescription="Voice Mode" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Title -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Voice Mode"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="@color/editor_text"
+            android:layout_marginTop="16dp" />
+
+        <!-- Status Text -->
+        <TextView
+            android:id="@+id/voiceStatusText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🎤 Listening..."
+            android:textSize="14sp"
+            android:textColor="@color/accent_primary"
+            android:layout_marginTop="8dp" />
+
+        <!-- Waveform Visualization -->
+        <com.beeta.nbheditor.VoiceWaveformView
+            android:id="@+id/waveformView"
+            android:layout_width="match_parent"
+            android:layout_height="100dp"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="20dp" />
+
+        <!-- Partial Results Text -->
+        <TextView
+            android:id="@+id/partialResultsText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="15sp"
+            android:textColor="@color/editor_text"
+            android:gravity="center"
+            android:minHeight="60dp"
+            android:padding="12dp"
+            android:background="@drawable/bg_glass_input"
+            android:visibility="gone" />
+
+        <!-- Countdown Warning (shown when no voice detected) -->
+        <LinearLayout
+            android:id="@+id/countdownWarning"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="16dp"
+            android:background="@drawable/bg_glass_card"
+            android:visibility="gone"
+            android:layout_marginTop="12dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="⚠️ No voice detected"
+                android:textSize="14sp"
+                android:textColor="@color/accent_peach"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/countdownText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Closing in 5 seconds..."
+                android:textSize="13sp"
+                android:textColor="@color/editor_hint"
+                android:layout_marginTop="4dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/keepListeningBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Keep Listening"
+                android:textSize="12sp"
+                app:backgroundTint="@color/accent_primary"
+                app:cornerRadius="20dp"
+                android:layout_marginTop="12dp"
+                style="@style/Widget.MaterialComponents.Button" />
+        </LinearLayout>
+
+        <!-- Action Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="20dp">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/cancelVoiceBtn"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Cancel"
+                android:textSize="14sp"
+                app:backgroundTint="@color/editor_line_numbers_bg"
+                app:cornerRadius="20dp"
+                android:layout_marginEnd="8dp"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/stopVoiceBtn"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Done"
+                android:textSize="14sp"
+                app:backgroundTint="@color/accent_secondary"
+                app:cornerRadius="20dp"
+                android:layout_marginStart="8dp"
+                style="@style/Widget.MaterialComponents.Button" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>

@@ -90,7 +90,7 @@ open class MainActivity : AppCompatActivity() {
     // Priority: OpenRouter free models (1→6) then Google Gemini as final fallback
     // Each model is skipped on 429 rate-limit and the next one is tried.
 
-    private val OPENROUTER_API_KEY = "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"
+    private val OPENROUTER_API_KEY = ""
 
     // 6 free OpenRouter models tried in order
     private val OR_MODELS = listOf(
@@ -141,6 +141,11 @@ open class MainActivity : AppCompatActivity() {
 
     private var speechRecognizer: SpeechRecognizer? = null
     private var speechTarget: EditText? = null // which EditText receives speech
+    private var voiceModeDialog: android.app.Dialog? = null
+    private var voiceWaveformView: VoiceWaveformView? = null
+    private var voiceCountdownTimer: android.os.CountDownTimer? = null
+    private var lastVoiceDetectedTime = 0L
+    private var voiceTimeoutHandler = android.os.Handler(android.os.Looper.getMainLooper())
 
     // ── Chat Memory ───────────────────────────────────────────────────────────
     private val chatHistory = mutableListOf<ChatMessage>() // in-memory conversation history
@@ -688,6 +693,16 @@ open class MainActivity : AppCompatActivity() {
         val memoryAsked = prefs.getBoolean("memory_asked", false)
         if (!memoryAsked) showMemoryOnboardingDialog()
 
+        aiChatBinding.newChatBtn.setOnClickListener {
+            if (memoryEnabled && chatHistory.isNotEmpty()) saveCurrentChat()
+            chatAdapter.clearMessages()
+            chatHistory.clear()
+            currentChatFile = null
+            aiChatBinding.chatRecyclerView.visibility = View.GONE
+            aiChatBinding.emptyState.visibility = View.VISIBLE
+            Toast.makeText(this, "✨ New chat started", Toast.LENGTH_SHORT).show()
+        }
+
         aiChatBinding.clearChatBtn.setOnClickListener {
             if (memoryEnabled) saveCurrentChat()
             chatAdapter.clearMessages()
@@ -702,6 +717,22 @@ open class MainActivity : AppCompatActivity() {
         aiChatBinding.sendButton.setOnClickListener { sendChatMessage() }
         aiChatBinding.queryEditText.setOnEditorActionListener { _, _, _ ->
             sendChatMessage(); true
+        }
+
+        // Quick action chips
+        aiChatBinding.quickCodeChip.setOnClickListener {
+            aiChatBinding.queryEditText.setText("Help me write code for ")
+            aiChatBinding.queryEditText.setSelection(aiChatBinding.queryEditText.text.length)
+        }
+
+        aiChatBinding.quickExplainChip.setOnClickListener {
+            aiChatBinding.queryEditText.setText("Explain this concept: ")
+            aiChatBinding.queryEditText.setSelection(aiChatBinding.queryEditText.text.length)
+        }
+
+        aiChatBinding.quickDebugChip.setOnClickListener {
+            aiChatBinding.queryEditText.setText("Help me debug this issue: ")
+            aiChatBinding.queryEditText.setSelection(aiChatBinding.queryEditText.text.length)
         }
     }
 
@@ -810,10 +841,10 @@ open class MainActivity : AppCompatActivity() {
 
     private fun setupVoiceButtons() {
         editorBinding.editorVoiceButton.setOnClickListener {
-            if (isListening) stopVoiceInput() else startVoiceInput(editorBinding.textArea)
+            startAdvancedVoiceMode(editorBinding.textArea)
         }
         aiChatBinding.voiceButton.setOnClickListener {
-            if (isListening) stopVoiceInput() else startVoiceInput(aiChatBinding.queryEditText)
+            startAdvancedVoiceMode(aiChatBinding.queryEditText)
         }
     }
 
@@ -1123,7 +1154,7 @@ open class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val HF_API_KEY = "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"
+    private val HF_API_KEY = ""
 
     private suspend fun callImageGen(prompt: String): String? = withContext(Dispatchers.IO) {
         try {
