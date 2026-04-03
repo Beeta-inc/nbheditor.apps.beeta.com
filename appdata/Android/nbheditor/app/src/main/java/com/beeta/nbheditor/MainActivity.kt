@@ -842,6 +842,7 @@ open class MainActivity : AppCompatActivity() {
     private var isListening = false
     private var voiceRetryCount = 0
     private var voiceAnimator: android.animation.ObjectAnimator? = null
+    private var isRecognizerReady = true
 
     private fun setupVoiceButtons() {
         editorBinding.editorVoiceButton.setOnClickListener {
@@ -855,7 +856,10 @@ open class MainActivity : AppCompatActivity() {
     private fun stopVoiceInput() {
         isListening = false
         voiceRetryCount = 0
-        speechRecognizer?.apply { stopListening(); cancel() }
+        try {
+            speechRecognizer?.stopListening()
+            speechRecognizer?.cancel()
+        } catch (_: Exception) {}
         setMicActive(false)
         speechTarget?.hint = ""
         stopVoiceAnimation()
@@ -895,9 +899,16 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun destroySpeechRecognizer() {
-        try { speechRecognizer?.cancel() } catch (_: Exception) {}
-        try { speechRecognizer?.destroy() } catch (_: Exception) {}
+        isRecognizerReady = false
+        try { 
+            speechRecognizer?.stopListening()
+            speechRecognizer?.cancel() 
+        } catch (_: Exception) {}
+        try { 
+            speechRecognizer?.destroy() 
+        } catch (_: Exception) {}
         speechRecognizer = null
+        handler.postDelayed({ isRecognizerReady = true }, 500)
     }
 
     private fun startVoiceInput(target: EditText) {
@@ -906,45 +917,71 @@ open class MainActivity : AppCompatActivity() {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), 101)
             return
         }
-        if (isListening) { stopVoiceInput(); return }
+        
+        if (isListening) { 
+            stopVoiceInput()
+            return 
+        }
+        
+        if (!isRecognizerReady) {
+            Toast.makeText(this, "Please wait a moment...", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
         speechTarget = target
         voiceRetryCount = 0
         destroySpeechRecognizer()
-        doStartListening()
+        handler.postDelayed({ doStartListening() }, 600)
     }
 
     private fun doStartListening() {
+        if (!isRecognizerReady) return
+        
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            Toast.makeText(this, "Speech recognition not available on this device", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Speech recognition not available", Toast.LENGTH_LONG).show()
             return
         }
-        // Create fresh recognizer on the main thread (required by Android)
-        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
+        
+        try {
+            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
+            isRecognizerReady = true
+        } catch (e: Exception) {
+            Toast.makeText(this, "Could not initialize voice input", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
         speechRecognizer?.setRecognitionListener(object : RecognitionListener {
             override fun onReadyForSpeech(params: android.os.Bundle?) {
                 isListening = true
                 voiceRetryCount = 0
                 setMicActive(true)
                 speechTarget?.hint = "🎤 Listening..."
-                runOnUiThread {
-                    android.widget.Toast.makeText(this@MainActivity, "Speak now", android.widget.Toast.LENGTH_SHORT).show()
-                }
             }
-            override fun onBeginningOfSpeech() {}
+            
+            override fun onBeginningOfSpeech() {
+                speechTarget?.hint = "🎤 Speak now..."
+            }
+            
             override fun onRmsChanged(rmsdB: Float) {}
             override fun onBufferReceived(buffer: ByteArray?) {}
-            override fun onEndOfSpeech() { setMicActive(false) }
+            
+            override fun onEndOfSpeech() { 
+                setMicActive(false)
+                speechTarget?.hint = "Processing..."
+            }
+            
             override fun onResults(results: android.os.Bundle) {
                 isListening = false
                 voiceRetryCount = 0
                 setMicActive(false)
                 speechTarget?.hint = ""
+                
                 val text = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     ?.firstOrNull()?.trim() ?: return
+                    
                 val et = speechTarget ?: return
                 val pos = et.selectionStart.coerceAtLeast(0)
                 
-                // Add space before if needed
                 val textToInsert = if (pos > 0 && et.text?.getOrNull(pos - 1)?.isWhitespace() == false) {
                     " $text"
                 } else {
@@ -952,84 +989,102 @@ open class MainActivity : AppCompatActivity() {
                 }
                 
                 et.text?.insert(pos, textToInsert) ?: et.setText(textToInsert)
-                runOnUiThread {
-                    android.widget.Toast.makeText(this@MainActivity, "✓ Voice inserted", android.widget.Toast.LENGTH_SHORT).show()
-                }
+                Toast.makeText(this@MainActivity, "✓ Voice inserted", Toast.LENGTH_SHORT).show()
+                
+                handler.postDelayed({ destroySpeechRecognizer() }, 300)
             }
+            
             override fun onPartialResults(partial: android.os.Bundle?) {
                 val text = partial
                     ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     ?.firstOrNull()?.trim() ?: return
                 speechTarget?.hint = "🎤 $text"
             }
+            
             override fun onError(error: Int) {
                 isListening = false
                 setMicActive(false)
                 speechTarget?.hint = ""
+                
                 when (error) {
                     SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> {
-                        // Recognizer busy: destroy and retry once after delay
-                        destroySpeechRecognizer()
-                        if (voiceRetryCount < 2) {
-                            voiceRetryCount++
-                            handler.postDelayed({ doStartListening() }, 600L)
-                        } else {
-                            voiceRetryCount = 0
-                            Toast.makeText(this@MainActivity, "Mic busy — try again", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                    SpeechRecognizer.ERROR_CLIENT -> {
-                        // Client error: recreate and retry once
                         destroySpeechRecognizer()
                         if (voiceRetryCount < 1) {
                             voiceRetryCount++
-                            handler.postDelayed({ doStartListening() }, 400L)
+                            Toast.makeText(this@MainActivity, "Retrying...", Toast.LENGTH_SHORT).show()
+                            handler.postDelayed({ doStartListening() }, 800)
                         } else {
                             voiceRetryCount = 0
-                            Toast.makeText(this@MainActivity, "Voice error — try again", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@MainActivity, "Voice busy. Please try again.", Toast.LENGTH_SHORT).show()
                         }
                     }
+                    
+                    SpeechRecognizer.ERROR_CLIENT -> {
+                        destroySpeechRecognizer()
+                        if (voiceRetryCount < 1) {
+                            voiceRetryCount++
+                            handler.postDelayed({ doStartListening() }, 600)
+                        } else {
+                            voiceRetryCount = 0
+                            Toast.makeText(this@MainActivity, "Voice error. Try again.", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    
                     SpeechRecognizer.ERROR_NO_MATCH -> {
-                        // No speech detected — silently reset, user can tap again
-                        Toast.makeText(this@MainActivity, "🎤 No speech detected — try again", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@MainActivity, "No speech detected", Toast.LENGTH_SHORT).show()
+                        destroySpeechRecognizer()
                     }
+                    
                     SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> {
-                        Toast.makeText(this@MainActivity, "⏱ Timed out — tap mic and speak clearly", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@MainActivity, "Timeout. Tap mic and speak.", Toast.LENGTH_SHORT).show()
+                        destroySpeechRecognizer()
                     }
+                    
                     SpeechRecognizer.ERROR_AUDIO -> {
-                        Toast.makeText(this@MainActivity, "Audio error — check mic permissions", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@MainActivity, "Audio error. Check microphone.", Toast.LENGTH_SHORT).show()
+                        destroySpeechRecognizer()
                     }
+                    
                     SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> {
-                        // On physical devices, some OEMs require network for the default recognizer.
-                        // Inform user clearly.
-                        Toast.makeText(this@MainActivity, "Voice needs network on this device", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@MainActivity, "Network required for voice", Toast.LENGTH_LONG).show()
+                        destroySpeechRecognizer()
                     }
+                    
                     SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> {
                         Toast.makeText(this@MainActivity, "Microphone permission denied", Toast.LENGTH_SHORT).show()
+                        destroySpeechRecognizer()
                     }
-                    else -> Toast.makeText(this@MainActivity, "Voice error ($error)", Toast.LENGTH_SHORT).show()
+                    
+                    SpeechRecognizer.ERROR_SERVER -> {
+                        Toast.makeText(this@MainActivity, "Server error. Try again.", Toast.LENGTH_SHORT).show()
+                        destroySpeechRecognizer()
+                    }
+                    
+                    else -> {
+                        Toast.makeText(this@MainActivity, "Voice error. Please retry.", Toast.LENGTH_SHORT).show()
+                        destroySpeechRecognizer()
+                    }
                 }
             }
+            
             override fun onEvent(eventType: Int, params: android.os.Bundle?) {}
         })
 
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, Locale.getDefault().toString())
-            putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, false)
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
             putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 4000L)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 1500L)
         }
+        
         try {
             speechRecognizer?.startListening(intent)
-            Toast.makeText(this, "🎙 Listening...", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
-            Log.e("Voice", "startListening failed: ${e.message}")
             Toast.makeText(this, "Could not start voice input", Toast.LENGTH_SHORT).show()
+            destroySpeechRecognizer()
         }
     }
 

@@ -3,20 +3,32 @@ package com.beeta.nbheditor
 import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import android.os.Environment
+import android.view.LayoutInflater
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import com.google.android.material.card.MaterialCardView
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.net.URL
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 object AppUpdater {
 
     private const val RAW_BASE = "https://raw.githubusercontent.com/Beeta-inc/Nbheditrupdater/main"
     private const val PREFS_KEY_LAST_CHECK = "updater_last_check_date"
+    
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .build()
 
     fun shouldCheckToday(context: Context): Boolean {
         val prefs = context.getSharedPreferences("nbheditor_prefs", Context.MODE_PRIVATE)
@@ -30,9 +42,6 @@ object AppUpdater {
             .edit().putString(PREFS_KEY_LAST_CHECK, today).apply()
     }
 
-    /**
-     * @param force skip the "already checked today" guard — used when user taps the notification
-     */
     suspend fun checkForUpdate(context: Context, force: Boolean = false) {
         if (!force && !shouldCheckToday(context)) return
         markCheckedToday(context)
@@ -87,18 +96,46 @@ object AppUpdater {
         downloadLink: String,
         isMajor: Boolean
     ) {
-        val message = buildString {
-            append("Version $version is available.\n\n")
-            if (changelog.isNotBlank()) append("What's new:\n$changelog")
-            if (isMajor) append("\n\n⚠ This is a major update and is required.")
+        val prefs = context.getSharedPreferences("nbheditor_prefs", Context.MODE_PRIVATE)
+        val isGlass = prefs.getBoolean("glass_mode", false)
+        
+        val dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_update, null)
+        
+        val versionText = dialogView.findViewById<TextView>(R.id.updateVersionText)
+        val changelogText = dialogView.findViewById<TextView>(R.id.updateChangelogText)
+        val majorBadge = dialogView.findViewById<MaterialCardView>(R.id.majorUpdateBadge)
+        val contentCard = dialogView.findViewById<MaterialCardView>(R.id.updateContentCard)
+        
+        versionText.text = "Version $version"
+        changelogText.text = if (changelog.isNotBlank()) changelog else "Bug fixes and improvements"
+        majorBadge.visibility = if (isMajor) android.view.View.VISIBLE else android.view.View.GONE
+        
+        if (isGlass) {
+            contentCard.setCardBackgroundColor(0xBB0D1117.toInt())
+            contentCard.strokeColor = 0x77FFFFFF
+            versionText.setTextColor(0xFFFFFFFF.toInt())
+            changelogText.setTextColor(0xDDFFFFFF.toInt())
         }
 
-        AlertDialog.Builder(context)
-            .setTitle("✦ Update Available")
-            .setMessage(message)
-            .setPositiveButton("Download") { _, _ -> downloadApk(context, downloadLink, version) }
-            .apply { if (!isMajor) setNegativeButton("Later", null) else setCancelable(false) }
-            .show()
+        val dialog = MaterialAlertDialogBuilder(context)
+            .setView(dialogView)
+            .setPositiveButton("Download Now") { _, _ -> downloadApk(context, downloadLink, version) }
+            .apply { 
+                if (!isMajor) setNegativeButton("Later", null) 
+                else setCancelable(false) 
+            }
+            .create()
+        
+        if (isGlass) {
+            dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        }
+        
+        dialog.show()
+        
+        if (isGlass) {
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(context.resources.getColor(R.color.accent_primary, null))
+            dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(0xDDFFFFFF.toInt())
+        }
     }
 
     private fun downloadApk(context: Context, url: String, version: String) {
@@ -112,7 +149,7 @@ object AppUpdater {
             }
             (context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
             android.widget.Toast.makeText(
-                context, "Downloading update to Downloads folder...", android.widget.Toast.LENGTH_LONG
+                context, "✓ Downloading update...", android.widget.Toast.LENGTH_LONG
             ).show()
         } catch (_: Exception) {
             context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
@@ -121,7 +158,12 @@ object AppUpdater {
         }
     }
 
-    private fun fetchText(url: String): String? = try {
-        URL(url).openStream().bufferedReader().use { it.readText() }
-    } catch (_: Exception) { null }
+    private suspend fun fetchText(url: String): String? = withContext(Dispatchers.IO) {
+        try {
+            val request = Request.Builder().url(url).build()
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) response.body?.string() else null
+            }
+        } catch (_: Exception) { null }
+    }
 }

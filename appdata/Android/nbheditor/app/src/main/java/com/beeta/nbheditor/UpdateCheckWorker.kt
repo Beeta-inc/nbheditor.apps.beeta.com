@@ -9,7 +9,8 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.work.*
-import java.net.URL
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import java.util.concurrent.TimeUnit
 
 class UpdateCheckWorker(
@@ -17,15 +18,19 @@ class UpdateCheckWorker(
     workerParams: WorkerParameters
 ) : Worker(context, workerParams) {
 
+    private val client = OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .build()
+
     override fun doWork(): Result {
-        val remoteVersion = fetchText("$RAW_BASE/version.txt")?.trim() ?: return Result.success()
+        val remoteVersion = fetchText("$RAW_BASE/version.txt")?.trim() ?: return Result.retry()
         val changelog     = fetchText("$RAW_BASE/about.txt")?.trim() ?: ""
-        val downloadLink  = fetchText("$RAW_BASE/link.txt")?.trim() ?: return Result.success()
+        val downloadLink  = fetchText("$RAW_BASE/link.txt")?.trim() ?: return Result.retry()
 
         val currentVersion = getCurrentVersion()
         if (!isNewerVersion(remoteVersion, currentVersion)) return Result.success()
 
-        // Don't re-notify for the same version
         val prefs = context.getSharedPreferences("nbheditor_prefs", Context.MODE_PRIVATE)
         val lastNotified = prefs.getString(PREFS_NOTIFIED_VERSION, "")
         if (lastNotified == remoteVersion) return Result.success()
@@ -38,7 +43,6 @@ class UpdateCheckWorker(
     private fun showUpdateNotification(version: String, changelog: String, downloadLink: String) {
         createNotificationChannel()
 
-        // Tapping the notification opens the app (SplashActivity will handle the dialog)
         val openIntent = PendingIntent.getActivity(
             context, 0,
             Intent(context, SplashActivity::class.java).apply {
@@ -49,11 +53,11 @@ class UpdateCheckWorker(
         )
 
         val isMajor = isMajorUpdate(version, getCurrentVersion())
-        val title = if (isMajor) "⚠ Required Update: NBH Editor $version" else "NBH Editor $version Available"
+        val title = if (isMajor) "⚠ Required: NBH Editor $version" else "✦ NBH Editor $version Available"
         val body = if (changelog.isNotBlank())
-            changelog.lines().first().take(80)
+            changelog.lines().firstOrNull()?.take(80) ?: "New update available"
         else
-            "A new version of NBH Editor is ready to download."
+            "Tap to download the latest version"
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_save_toolbar)
@@ -65,11 +69,12 @@ class UpdateCheckWorker(
             .setPriority(if (isMajor) NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT)
             .setContentIntent(openIntent)
             .setAutoCancel(true)
+            .setColor(context.resources.getColor(R.color.accent_primary, null))
             .build()
 
         try {
             NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
-        } catch (_: SecurityException) { /* POST_NOTIFICATIONS not granted on API 33+ */ }
+        } catch (_: SecurityException) { }
     }
 
     private fun createNotificationChannel() {
@@ -78,7 +83,11 @@ class UpdateCheckWorker(
                 CHANNEL_ID,
                 "App Updates",
                 NotificationManager.IMPORTANCE_DEFAULT
-            ).apply { description = "Notifies when a new version of NBH Editor is available" }
+            ).apply { 
+                description = "Notifications for NBH Editor updates"
+                enableLights(true)
+                lightColor = context.resources.getColor(R.color.accent_primary, null)
+            }
             val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             nm.createNotificationChannel(channel)
         }
@@ -92,7 +101,10 @@ class UpdateCheckWorker(
     }
 
     private fun fetchText(url: String): String? = try {
-        URL(url).openStream().bufferedReader().use { it.readText() }
+        val request = Request.Builder().url(url).build()
+        client.newCall(request).execute().use { response ->
+            if (response.isSuccessful) response.body?.string() else null
+        }
     } catch (_: Exception) { null }
 
     private fun isNewerVersion(remote: String, current: String): Boolean {
@@ -131,13 +143,19 @@ class UpdateCheckWorker(
                 .setConstraints(
                     Constraints.Builder()
                         .setRequiredNetworkType(NetworkType.CONNECTED)
+                        .setRequiresBatteryNotLow(true)
                         .build()
+                )
+                .setBackoffCriteria(
+                    BackoffPolicy.EXPONENTIAL,
+                    15,
+                    TimeUnit.MINUTES
                 )
                 .build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_NAME,
-                ExistingPeriodicWorkPolicy.KEEP, // don't reset timer if already scheduled
+                ExistingPeriodicWorkPolicy.KEEP,
                 request
             )
         }
