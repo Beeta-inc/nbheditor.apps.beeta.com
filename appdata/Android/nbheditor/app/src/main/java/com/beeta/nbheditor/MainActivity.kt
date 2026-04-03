@@ -329,10 +329,10 @@ open class MainActivity : AppCompatActivity() {
             aiChatBinding.chatRecyclerView
         ).forEach { it.setBackgroundColor(Color.TRANSPARENT) }
 
-        // Bars: heavily frosted — dark enough to always read text clearly
-        val barColor    = 0xF00A0A18.toInt()   // 94% opaque
-        val surfaceColor = 0xE80A0A18.toInt()  // 91% opaque
-        val divColor    = 0x44FFFFFF
+        // Premium frosted glass bars
+        val barColor    = 0xF5121826.toInt()   // 96% opaque dark
+        val surfaceColor = 0xF0121826.toInt()  // 94% opaque
+        val divColor    = 0x33FFFFFF
 
         binding.appBarMain.toolbar.setBackgroundColor(barColor)
         binding.appBarMain.contentMain.bottomNavView.setBackgroundColor(barColor)
@@ -341,21 +341,21 @@ open class MainActivity : AppCompatActivity() {
         aiChatBinding.inputBar.setBackgroundColor(barColor)
         editorBinding.aiSuggestionContainer.setBackgroundColor(surfaceColor)
         editorBinding.autoSaveContainer.setBackgroundColor(surfaceColor)
-        binding.navView.setBackgroundColor(0xF50A0A18.toInt())
+        binding.navView.setBackgroundColor(0xF8121826.toInt())
 
         // Dividers
         aiChatBinding.headerDivider.setBackgroundColor(divColor)
         aiChatBinding.inputDivider.setBackgroundColor(divColor)
 
         // Editor area: solid enough to read text comfortably
-        editorBinding.lineNumbersScroll.setBackgroundColor(0xEE080812.toInt())
-        editorBinding.textArea.setBackgroundColor(0xE5080812.toInt())
-        editorBinding.textArea.setTextColor(0xFFF0F2FF.toInt())
-        editorBinding.textArea.setHintTextColor(0xAAAABBFF.toInt())
+        editorBinding.lineNumbersScroll.setBackgroundColor(0xF5101520.toInt())
+        editorBinding.textArea.setBackgroundColor(0xF0101520.toInt())
+        editorBinding.textArea.setTextColor(0xFFFFFFFF.toInt())
+        editorBinding.textArea.setHintTextColor(0x99FFFFFF.toInt())
 
         // All text/icons in bars: white, always visible
-        val white = 0xFFF0F2FF.toInt()
-        val whiteSecondary = 0xBBF0F2FF.toInt()
+        val white = 0xFFFFFFFF.toInt()
+        val whiteSecondary = 0xCCFFFFFF.toInt()
         val accentBlue = resources.getColor(R.color.accent_primary, theme)
 
         // Toolbar title
@@ -409,7 +409,7 @@ open class MainActivity : AppCompatActivity() {
         // Line numbers
         for (i in 0 until editorBinding.lineNumbersVBox.childCount) {
             (editorBinding.lineNumbersVBox.getChildAt(i) as? TextView)
-                ?.setTextColor(0x88AABBFF.toInt())
+                ?.setTextColor(0x99FFFFFF.toInt())
         }
 
         // Editor text area: adaptive color only here (text sits on variable bg)
@@ -522,26 +522,26 @@ open class MainActivity : AppCompatActivity() {
         val editorHint = resources.getColor(R.color.editor_hint, theme)
 
         if (glass) {
-            // Optimized glass colors for older devices
-            homeBinding.homeRoot.setBackgroundColor(0xF0080812.toInt())
-            homeBinding.homeHeader.setBackgroundColor(0xF00A0A18.toInt())
+            // Premium glass colors
+            homeBinding.homeRoot.setBackgroundColor(0xF5101520.toInt())
+            homeBinding.homeHeader.setBackgroundColor(0xF5121826.toInt())
             homeBinding.searchCard.apply {
-                setCardBackgroundColor(0xE80A0A18.toInt())
+                setCardBackgroundColor(0xF0121826.toInt())
                 cardElevation = 0f
-                radius = 20f
+                radius = 24f
             }
             homeBinding.homeTitle.apply {
-                setTextColor(0xFFF0F2FF.toInt())
-                setShadowLayer(4f, 0f, 1f, 0x66000000)
+                setTextColor(0xFFFFFFFF.toInt())
+                setShadowLayer(6f, 0f, 2f, 0x88000000.toInt())
             }
             homeBinding.fileCountLabel.setTextColor(resources.getColor(R.color.accent_primary, theme))
-            homeBinding.sortLabel.setTextColor(0xCCF0F2FF.toInt())
+            homeBinding.sortLabel.setTextColor(0xCCFFFFFF.toInt())
             homeBinding.searchBar.apply {
-                setTextColor(0xFFF0F2FF.toInt())
-                setHintTextColor(0x88AABBFF.toInt())
+                setTextColor(0xFFFFFFFF.toInt())
+                setHintTextColor(0x99FFFFFF.toInt())
             }
             homeBinding.btnGlassToggle.apply {
-                setTextColor(0xFFF0F2FF.toInt())
+                setTextColor(0xFFFFFFFF.toInt())
                 alpha = 1f
             }
         } else {
