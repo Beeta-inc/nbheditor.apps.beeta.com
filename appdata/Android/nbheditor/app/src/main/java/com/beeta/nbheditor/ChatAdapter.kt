@@ -35,6 +35,8 @@ class ChatAdapter(
 
     data class ImageMessage(val prompt: String, val base64: String)
 
+    fun getMessages(): List<Any> = messages.toList()
+
     private val messages = mutableListOf<Any>()
 
     fun addMessage(message: MainActivity.ChatMessage) {

@@ -110,6 +110,7 @@ open class MainActivity : AppCompatActivity() {
     private lateinit var chatAdapter: ChatAdapter
 
     data class ChatMessage(val role: String, val content: String)
+    data class ChatHistoryItem(val type: String, val role: String? = null, val content: String? = null, val prompt: String? = null, val base64: String? = null)
     // OpenRouter
     data class ChatRequest(val model: String, val messages: List<ChatMessage>, val max_tokens: Int = 512)
     data class ChatResponse(val choices: List<Choice>)
@@ -149,12 +150,19 @@ open class MainActivity : AppCompatActivity() {
 
     // ── Chat Memory ───────────────────────────────────────────────────────────
     private val chatHistory = mutableListOf<ChatMessage>() // in-memory conversation history
+    private val fullChatHistory = mutableListOf<Any>() // includes images
     private var memoryEnabled = false
     private var currentChatFile: java.io.File? = null
 
     private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let { uri -> insertImageIntoEditor(uri) }
+        }
+    }
+
+    private val videoPickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            result.data?.data?.let { uri -> analyzeVideo(uri) }
         }
     }
 
@@ -697,6 +705,7 @@ open class MainActivity : AppCompatActivity() {
             if (memoryEnabled && chatHistory.isNotEmpty()) saveCurrentChat()
             chatAdapter.clearMessages()
             chatHistory.clear()
+            fullChatHistory.clear()
             currentChatFile = null
             aiChatBinding.chatRecyclerView.visibility = View.GONE
             aiChatBinding.emptyState.visibility = View.VISIBLE
@@ -707,6 +716,7 @@ open class MainActivity : AppCompatActivity() {
             if (memoryEnabled) saveCurrentChat()
             chatAdapter.clearMessages()
             chatHistory.clear()
+            fullChatHistory.clear()
             currentChatFile = null
             aiChatBinding.chatRecyclerView.visibility = View.GONE
             aiChatBinding.emptyState.visibility = View.VISIBLE
@@ -734,6 +744,19 @@ open class MainActivity : AppCompatActivity() {
             aiChatBinding.queryEditText.setText("Help me debug this issue: ")
             aiChatBinding.queryEditText.setSelection(aiChatBinding.queryEditText.text.length)
         }
+
+        aiChatBinding.videoAnalysisChip.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                aiChatBinding.imageGenChip.isChecked = false
+                pickVideo()
+            }
+        }
+
+        aiChatBinding.imageGenChip.setOnCheckedChangeListener { _, isChecked ->
+            if (isChecked) {
+                aiChatBinding.videoAnalysisChip.isChecked = false
+            }
+        }
     }
 
     // ── Memory: onboarding dialog ─────────────────────────────────────────────
@@ -756,7 +779,7 @@ open class MainActivity : AppCompatActivity() {
 
     // ── Memory: save current chat to file ─────────────────────────────────────
     private fun saveCurrentChat() {
-        if (chatHistory.isEmpty()) return
+        if (chatHistory.isEmpty() && fullChatHistory.isEmpty()) return
         val chatsDir = java.io.File(filesDir, "nbh_chats").also { it.mkdirs() }
         val date = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault()).format(java.util.Date())
         val file = currentChatFile ?: run {
@@ -769,25 +792,55 @@ open class MainActivity : AppCompatActivity() {
         }
         try {
             val gson = com.google.gson.Gson()
-            file.writeText(gson.toJson(chatHistory))
+            // Convert all messages to ChatHistoryItem
+            val historyItems = chatAdapter.getMessages().map { msg ->
+                when (msg) {
+                    is ChatMessage -> ChatHistoryItem("text", msg.role, msg.content)
+                    is ChatAdapter.ImageMessage -> ChatHistoryItem("image", prompt = msg.prompt, base64 = msg.base64)
+                    else -> null
+                }
+            }.filterNotNull()
+            file.writeText(gson.toJson(historyItems))
         } catch (_: Exception) {}
     }
 
     // ── Memory: load a saved chat ─────────────────────────────────────────────
     private fun loadChat(file: java.io.File) {
-        try {
-            val type = object : com.google.gson.reflect.TypeToken<List<ChatMessage>>() {}.type
-            val loaded: List<ChatMessage> = gson.fromJson(file.readText(), type)
-            chatHistory.clear()
-            chatHistory.addAll(loaded)
-            chatAdapter.clearMessages()
-            loaded.forEach { chatAdapter.addMessage(it) }
-            currentChatFile = file
-            aiChatBinding.chatRecyclerView.visibility = View.VISIBLE
-            aiChatBinding.emptyState.visibility = View.GONE
-            scrollChatToBottom()
-        } catch (_: Exception) {
-            Toast.makeText(this, "Failed to load chat", Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch {
+            try {
+                val loaded = withContext(Dispatchers.IO) {
+                    val type = object : com.google.gson.reflect.TypeToken<List<ChatHistoryItem>>() {}.type
+                    gson.fromJson<List<ChatHistoryItem>>(file.readText(), type)
+                }
+                
+                chatHistory.clear()
+                fullChatHistory.clear()
+                chatAdapter.clearMessages()
+                
+                loaded.forEach { item ->
+                    when (item.type) {
+                        "text" -> {
+                            val msg = ChatMessage(item.role ?: "assistant", item.content ?: "")
+                            chatAdapter.addMessage(msg)
+                            chatHistory.add(msg)
+                            fullChatHistory.add(msg)
+                        }
+                        "image" -> {
+                            val imgMsg = ChatAdapter.ImageMessage(item.prompt ?: "", item.base64 ?: "")
+                            chatAdapter.addImageMessage(imgMsg)
+                            fullChatHistory.add(imgMsg)
+                        }
+                    }
+                }
+                
+                currentChatFile = file
+                aiChatBinding.chatRecyclerView.visibility = View.VISIBLE
+                aiChatBinding.emptyState.visibility = View.GONE
+                scrollChatToBottom()
+                Toast.makeText(this@MainActivity, "Chat loaded", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(this@MainActivity, "Failed to load chat: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -848,10 +901,10 @@ open class MainActivity : AppCompatActivity() {
 
     private fun setupVoiceButtons() {
         editorBinding.editorVoiceButton.setOnClickListener {
-            startVoiceInput(editorBinding.textArea)
+            toggleVoiceInput(editorBinding.textArea)
         }
         aiChatBinding.voiceButton.setOnClickListener {
-            startVoiceInput(aiChatBinding.queryEditText)
+            toggleVoiceInput(aiChatBinding.queryEditText)
         }
     }
 
@@ -869,9 +922,60 @@ open class MainActivity : AppCompatActivity() {
             } catch (_: Exception) {}
             
             setMicActive(false)
+            updateVoiceButtonIcon(false)
             speechTarget?.hint = ""
             stopVoiceAnimation()
+            hideVoiceStatus()
         }
+    }
+
+    private fun toggleVoiceInput(target: EditText) {
+        if (isListening) {
+            stopVoiceInput()
+        } else {
+            startVoiceInput(target)
+        }
+    }
+
+    private fun updateVoiceButtonIcon(isActive: Boolean) {
+        val iconRes = if (isActive) R.drawable.ic_mic else R.drawable.ic_mic_off
+        aiChatBinding.voiceButton.setImageResource(iconRes)
+        editorBinding.editorVoiceButton.setImageResource(iconRes)
+    }
+
+    private fun showVoiceStatusNoSpeech() {
+        aiChatBinding.voiceStatusIndicator.visibility = View.VISIBLE
+        aiChatBinding.voiceStatusText.text = "Voice mode active - no speech detected"
+        aiChatBinding.voiceStatusText.visibility = View.VISIBLE
+        aiChatBinding.voiceEqualizer.visibility = View.GONE
+        aiChatBinding.voiceEqualizer.stopAnimation()
+        
+        editorBinding.editorVoiceStatusIndicator.visibility = View.VISIBLE
+        editorBinding.editorVoiceStatusText.text = "Voice mode active - no speech detected"
+        editorBinding.editorVoiceStatusText.visibility = View.VISIBLE
+        editorBinding.editorVoiceEqualizer.visibility = View.GONE
+        editorBinding.editorVoiceEqualizer.stopAnimation()
+    }
+
+    private fun showVoiceStatusSpeaking() {
+        aiChatBinding.voiceStatusIndicator.visibility = View.VISIBLE
+        aiChatBinding.voiceStatusText.text = "Voice mode active"
+        aiChatBinding.voiceStatusText.visibility = View.VISIBLE
+        aiChatBinding.voiceEqualizer.visibility = View.VISIBLE
+        aiChatBinding.voiceEqualizer.startAnimation()
+        
+        editorBinding.editorVoiceStatusIndicator.visibility = View.VISIBLE
+        editorBinding.editorVoiceStatusText.text = "Voice mode active"
+        editorBinding.editorVoiceStatusText.visibility = View.VISIBLE
+        editorBinding.editorVoiceEqualizer.visibility = View.VISIBLE
+        editorBinding.editorVoiceEqualizer.startAnimation()
+    }
+
+    private fun hideVoiceStatus() {
+        aiChatBinding.voiceStatusIndicator.visibility = View.GONE
+        aiChatBinding.voiceEqualizer.stopAnimation()
+        editorBinding.editorVoiceStatusIndicator.visibility = View.GONE
+        editorBinding.editorVoiceEqualizer.stopAnimation()
     }
 
     private fun setMicActive(active: Boolean) {
@@ -986,13 +1090,14 @@ open class MainActivity : AppCompatActivity() {
                     runOnUiThread {
                         isListening = true
                         setMicActive(true)
-                        speechTarget?.hint = "🎤 Listening..."
+                        updateVoiceButtonIcon(true)
+                        showVoiceStatusNoSpeech()
                     }
                 }
                 
                 override fun onBeginningOfSpeech() {
                     runOnUiThread {
-                        speechTarget?.hint = "🎤 Speak now..."
+                        showVoiceStatusSpeaking()
                     }
                 }
                 
@@ -1001,47 +1106,45 @@ open class MainActivity : AppCompatActivity() {
                 
                 override fun onEndOfSpeech() {
                     runOnUiThread {
-                        setMicActive(false)
-                        speechTarget?.hint = "Processing..."
+                        if (isListening) {
+                            // Restart listening to keep mic active
+                            voiceHandler.postDelayed({
+                                if (isListening) {
+                                    try {
+                                        val intent = android.content.Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                            putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                            putExtra(android.speech.RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                                            putExtra(android.speech.RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+                                        }
+                                        speechRecognizer?.startListening(intent)
+                                        showVoiceStatusNoSpeech()
+                                    } catch (_: Exception) {}
+                                }
+                            }, 300)
+                        }
                     }
                 }
                 
                 override fun onResults(results: android.os.Bundle) {
                     runOnUiThread {
-                        isListening = false
-                        setMicActive(false)
-                        speechTarget?.hint = ""
-                        
                         val text = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                             ?.firstOrNull()?.trim()
                         
-                        if (text.isNullOrBlank()) {
-                            Toast.makeText(this@MainActivity, "No speech detected", Toast.LENGTH_SHORT).show()
-                            scheduleCleanup()
-                            return@runOnUiThread
+                        if (!text.isNullOrBlank()) {
+                            val et = speechTarget
+                            if (et != null) {
+                                val pos = et.selectionStart.coerceAtLeast(0)
+                                val textToInsert = if (pos > 0 && et.text?.getOrNull(pos - 1)?.isWhitespace() == false) {
+                                    " $text"
+                                } else {
+                                    text
+                                }
+                                
+                                try {
+                                    et.text?.insert(pos, textToInsert) ?: et.setText(textToInsert)
+                                } catch (_: Exception) {}
+                            }
                         }
-                        
-                        val et = speechTarget
-                        if (et == null) {
-                            scheduleCleanup()
-                            return@runOnUiThread
-                        }
-                        
-                        val pos = et.selectionStart.coerceAtLeast(0)
-                        val textToInsert = if (pos > 0 && et.text?.getOrNull(pos - 1)?.isWhitespace() == false) {
-                            " $text"
-                        } else {
-                            text
-                        }
-                        
-                        try {
-                            et.text?.insert(pos, textToInsert) ?: et.setText(textToInsert)
-                            Toast.makeText(this@MainActivity, "✓ Voice inserted", Toast.LENGTH_SHORT).show()
-                        } catch (e: Exception) {
-                            Toast.makeText(this@MainActivity, "Failed to insert text", Toast.LENGTH_SHORT).show()
-                        }
-                        
-                        scheduleCleanup()
                     }
                 }
                 
@@ -1051,38 +1154,29 @@ open class MainActivity : AppCompatActivity() {
                             ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                             ?.firstOrNull()?.trim()
                         if (!text.isNullOrBlank()) {
-                            speechTarget?.hint = "🎤 $text"
+                            showVoiceStatusSpeaking()
                         }
                     }
                 }
                 
                 override fun onError(error: Int) {
                     runOnUiThread {
-                        isListening = false
-                        setMicActive(false)
-                        speechTarget?.hint = ""
-                        
-                        val message = when (error) {
-                            SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> {
-                                scheduleRetry()
-                                return@runOnUiThread
-                            }
-                            SpeechRecognizer.ERROR_CLIENT -> {
-                                scheduleRetry()
-                                return@runOnUiThread
-                            }
-                            SpeechRecognizer.ERROR_NO_MATCH -> "No speech detected"
-                            SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Timeout. Please try again."
-                            SpeechRecognizer.ERROR_AUDIO -> "Audio error. Check microphone."
-                            SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> 
-                                "Network required for voice"
-                            SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Microphone permission denied"
-                            SpeechRecognizer.ERROR_SERVER -> "Server error. Try again."
-                            else -> "Voice error. Please retry."
+                        if (isListening && error != SpeechRecognizer.ERROR_NO_MATCH) {
+                            // Restart on error except no match
+                            voiceHandler.postDelayed({
+                                if (isListening) {
+                                    try {
+                                        val intent = android.content.Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                            putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                            putExtra(android.speech.RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                                            putExtra(android.speech.RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+                                        }
+                                        speechRecognizer?.startListening(intent)
+                                    } catch (_: Exception) {}
+                                }
+                            }, 500)
                         }
-                        
-                        Toast.makeText(this@MainActivity, message, Toast.LENGTH_SHORT).show()
-                        scheduleCleanup()
+                        showVoiceStatusNoSpeech()
                     }
                 }
                 
@@ -1210,7 +1304,10 @@ open class MainActivity : AppCompatActivity() {
 
         val userMsg = ChatMessage("user", query)
         chatAdapter.addMessage(userMsg)
-        if (memoryEnabled) chatHistory.add(userMsg)
+        if (memoryEnabled) {
+            chatHistory.add(userMsg)
+            fullChatHistory.add(userMsg)
+        }
         aiChatBinding.queryEditText.text.clear()
         aiChatBinding.emptyState.visibility = View.GONE
         aiChatBinding.chatRecyclerView.visibility = View.VISIBLE
@@ -1223,7 +1320,12 @@ open class MainActivity : AppCompatActivity() {
                     val base64 = callImageGen(query)
                     aiChatBinding.typingRow.visibility = View.GONE
                     if (base64 != null) {
-                        chatAdapter.addImageMessage(ChatAdapter.ImageMessage(query, base64))
+                        val imgMsg = ChatAdapter.ImageMessage(query, base64)
+                        chatAdapter.addImageMessage(imgMsg)
+                        if (memoryEnabled) {
+                            fullChatHistory.add(imgMsg)
+                            saveCurrentChat()
+                        }
                         scrollChatToBottom()
                     } else {
                         showChatError("Image generation failed. Try again.")
@@ -1236,6 +1338,7 @@ open class MainActivity : AppCompatActivity() {
                         chatAdapter.addMessage(aiMsg)
                         if (memoryEnabled) {
                             chatHistory.add(aiMsg)
+                            fullChatHistory.add(aiMsg)
                             saveCurrentChat()
                         }
                         scrollChatToBottom()
@@ -1838,9 +1941,19 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun openFileFromUri(uri: Uri) {
-        try {
-            contentResolver.openInputStream(uri)?.use {
-                val content = BufferedReader(InputStreamReader(it)).readText()
+        lifecycleScope.launch {
+            try {
+                val content = withContext(Dispatchers.IO) {
+                    contentResolver.openInputStream(uri)?.use {
+                        BufferedReader(InputStreamReader(it)).readText()
+                    }
+                }
+                
+                if (content == null) {
+                    Toast.makeText(this@MainActivity, "Failed to read file", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                
                 editorBinding.textArea.setText(content)
                 currentFileUri = uri
                 textChanged = false
@@ -1850,13 +1963,12 @@ open class MainActivity : AppCompatActivity() {
                     .apply()
                 updateLineNumbers()
                 updateToolbarTitle()
-                // Restore any embedded image tags back to ImageSpans
                 deserializeImagesInText()
                 addToRecents(uri)
-                Toast.makeText(this, "Opened", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@MainActivity, "Opened", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(this@MainActivity, "Failed to open file: ${e.message}", Toast.LENGTH_SHORT).show()
             }
-        } catch (e: Exception) {
-            Toast.makeText(this, "Failed to open file", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -2030,6 +2142,199 @@ open class MainActivity : AppCompatActivity() {
             editorBinding.textArea.setText(recovered)
             updateLineNumbers()
             Toast.makeText(this, "Recovered unsaved text", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    // ── Video Analysis ────────────────────────────────────────────────────────
+    private fun pickVideo() {
+        val intent = Intent(Intent.ACTION_PICK).apply {
+            type = "video/*"
+        }
+        videoPickerLauncher.launch(intent)
+    }
+
+    private fun analyzeVideo(uri: android.net.Uri) {
+        lifecycleScope.launch {
+            try {
+                aiChatBinding.typingRow.visibility = View.VISIBLE
+                val query = aiChatBinding.queryEditText.text.toString().trim()
+                    .ifBlank { "Analyze this video and describe what you see" }
+                
+                val userMsg = ChatMessage("user", "$query [Video attached]")
+                chatAdapter.addMessage(userMsg)
+                if (memoryEnabled) {
+                    chatHistory.add(userMsg)
+                    fullChatHistory.add(userMsg)
+                }
+                aiChatBinding.queryEditText.text.clear()
+                aiChatBinding.emptyState.visibility = View.GONE
+                aiChatBinding.chatRecyclerView.visibility = View.VISIBLE
+                scrollChatToBottom()
+
+                // Extract frames from video
+                val frames = extractVideoFrames(uri, maxFrames = 3)
+                if (frames.isEmpty()) {
+                    aiChatBinding.typingRow.visibility = View.GONE
+                    showChatError("Could not extract video frames")
+                    return@launch
+                }
+
+                // Try primary model (Hugging Face - free)
+                var response = callVideoAnalysisHF(query, frames)
+                
+                // Fallback to OpenRouter free model
+                if (response == null) {
+                    response = callVideoAnalysisOR(query, frames)
+                }
+
+                aiChatBinding.typingRow.visibility = View.GONE
+                aiChatBinding.videoAnalysisChip.isChecked = false
+
+                if (response != null) {
+                    val aiMsg = ChatMessage("assistant", response)
+                    chatAdapter.addMessage(aiMsg)
+                    if (memoryEnabled) {
+                        chatHistory.add(aiMsg)
+                        fullChatHistory.add(aiMsg)
+                        saveCurrentChat()
+                    }
+                    scrollChatToBottom()
+                } else {
+                    showChatError("Video analysis failed. Try again.")
+                }
+            } catch (e: Exception) {
+                aiChatBinding.typingRow.visibility = View.GONE
+                aiChatBinding.videoAnalysisChip.isChecked = false
+                showChatError("Error: ${e.message?.take(60)}")
+            }
+        }
+    }
+
+    private suspend fun extractVideoFrames(uri: android.net.Uri, maxFrames: Int = 3): List<String> = withContext(Dispatchers.IO) {
+        val frames = mutableListOf<String>()
+        var retriever: android.media.MediaMetadataRetriever? = null
+        try {
+            retriever = android.media.MediaMetadataRetriever()
+            retriever.setDataSource(this@MainActivity, uri)
+            val duration = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
+            
+            if (duration > 0) {
+                val interval = duration / (maxFrames + 1)
+                for (i in 1..maxFrames) {
+                    val timeUs = interval * i * 1000
+                    val bitmap = retriever.getFrameAtTime(timeUs, android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+                    if (bitmap != null) {
+                        val maxDim = 768
+                        val scale = maxDim.toFloat() / Math.max(bitmap.width, bitmap.height)
+                        val newWidth = (bitmap.width * scale).toInt()
+                        val newHeight = (bitmap.height * scale).toInt()
+                        val resized = android.graphics.Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
+                        val stream = java.io.ByteArrayOutputStream()
+                        resized.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, stream)
+                        val base64 = android.util.Base64.encodeToString(stream.toByteArray(), android.util.Base64.NO_WRAP)
+                        frames.add(base64)
+                        bitmap.recycle()
+                        resized.recycle()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("VideoAnalysis", "Frame extraction error: ${e.message}")
+        } finally {
+            try {
+                retriever?.release()
+            } catch (_: Exception) {}
+        }
+        frames
+    }
+
+    private suspend fun callVideoAnalysisHF(query: String, frames: List<String>): String? = withContext(Dispatchers.IO) {
+        try {
+            val frameDesc = mutableListOf<String>()
+            val hfClient = okhttp3.OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(90, TimeUnit.SECONDS)
+                .build()
+            
+            frames.forEachIndexed { idx, frame ->
+                try {
+                    val body = gson.toJson(mapOf(
+                        "inputs" to frame,
+                        "parameters" to mapOf("max_length" to 150)
+                    )).toRequestBody("application/json".toMediaType())
+                    
+                    val request = Request.Builder()
+                        .url("https://api-inference.huggingface.co/models/Salesforce/blip-image-captioning-large")
+                        .post(body)
+                        .addHeader("Authorization", "Bearer $HF_API_KEY")
+                        .build()
+                    
+                    hfClient.newCall(request).execute().use { response ->
+                        if (response.isSuccessful) {
+                            val json = response.body?.string()
+                            val listType = object : com.google.gson.reflect.TypeToken<List<Map<String, Any>>>() {}.type
+                            val result: List<Map<String, Any>>? = gson.fromJson(json, listType)
+                            val caption = result?.firstOrNull()?.get("generated_text") as? String
+                            if (!caption.isNullOrBlank()) {
+                                frameDesc.add("Frame ${idx + 1}: $caption")
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("VideoAnalysisHF", "Frame $idx error: ${e.message}")
+                }
+            }
+
+            if (frameDesc.isNotEmpty()) {
+                val summary = "Video Analysis (${frames.size} frames):\n\n${frameDesc.joinToString("\n\n")}\n\nQuery: $query"
+                summary
+            } else null
+        } catch (e: Exception) {
+            android.util.Log.e("VideoAnalysisHF", "Error: ${e.message}")
+            null
+        }
+    }
+
+    private suspend fun callVideoAnalysisOR(query: String, frames: List<String>): String? = withContext(Dispatchers.IO) {
+        try {
+            // Using free model on OpenRouter: google/gemini-flash-1.5-8b (free tier)
+            val messages = listOf(
+                mapOf(
+                    "role" to "user",
+                    "content" to listOf(
+                        mapOf("type" to "text", "text" to query),
+                        *frames.map { mapOf("type" to "image_url", "image_url" to mapOf("url" to "data:image/jpeg;base64,$it")) }.toTypedArray()
+                    )
+                )
+            )
+
+            val body = gson.toJson(mapOf(
+                "model" to "google/gemini-flash-1.5-8b:free",
+                "messages" to messages
+            )).toRequestBody("application/json".toMediaType())
+
+            val request = Request.Builder()
+                .url("https://openrouter.ai/api/v1/chat/completions")
+                .post(body)
+                .addHeader("Authorization", "Bearer ")
+                .addHeader("HTTP-Referer", "https://nbheditor.beeta.com")
+                .addHeader("X-Title", "NBH Editor")
+                .build()
+
+            client.newCall(request).execute().use { response ->
+                if (response.isSuccessful) {
+                    val json = response.body?.string()
+                    val result = gson.fromJson(json, Map::class.java)
+                    (result["choices"] as? List<*>)?.firstOrNull()
+                        ?.let { it as? Map<*, *> }
+                        ?.get("message")
+                        ?.let { it as? Map<*, *> }
+                        ?.get("content") as? String
+                } else null
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("VideoAnalysisOR", "Error: ${e.message}")
+            null
         }
     }
 }

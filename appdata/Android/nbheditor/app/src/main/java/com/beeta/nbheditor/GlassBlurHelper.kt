@@ -19,6 +19,7 @@ object GlassBlurHelper {
     /**
      * API 31+: real compositor blur behind the window (live wallpaper, homescreen, other apps).
      * API 29-30: RenderScript blur of the wallpaper bitmap set as window background.
+     * API <29: Fallback to solid translucent background.
      */
     fun enableWindowBlur(window: Window, activity: Activity, blurRadius: Int = 200) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -31,6 +32,19 @@ object GlassBlurHelper {
             Thread {
                 blurWallpaperFallback(window, activity, blurRadius)
             }.start()
+        } else {
+            // API <29: Fallback to solid translucent background
+            applyFallbackBackground(window, activity)
+        }
+    }
+
+    private fun applyFallbackBackground(window: Window, activity: Activity) {
+        try {
+            val drawable = activity.resources.getDrawable(R.drawable.bg_glass_scene, activity.theme)
+            window.setBackgroundDrawable(drawable)
+        } catch (e: Exception) {
+            // Fallback to solid color
+            window.setBackgroundDrawableResource(android.R.color.transparent)
         }
     }
 

@@ -113,7 +113,7 @@ object AppUpdater {
         val majorBadge = dialogView.findViewById<MaterialCardView>(R.id.majorUpdateBadge)
         val contentCard = dialogView.findViewById<MaterialCardView>(R.id.updateContentCard)
         
-        versionText.text = "Version $version"
+        versionText.text = version
         changelogText.text = if (changelog.isNotBlank()) changelog else "Bug fixes and improvements"
         majorBadge.visibility = if (isMajor) android.view.View.VISIBLE else android.view.View.GONE
         

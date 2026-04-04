@@ -83,7 +83,7 @@
         android:layout_height="0dp"
         android:orientation="horizontal"
         app:layout_constraintTop_toBottomOf="@id/editorToolbarDivider"
-        app:layout_constraintBottom_toTopOf="@id/aiSuggestionContainer"
+        app:layout_constraintBottom_toTopOf="@id/editorVoiceStatusIndicator"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -126,6 +126,40 @@
             android:hint="Start typing..."
             android:textColorHint="@color/editor_hint"
             android:scrollbars="vertical" />
+    </LinearLayout>
+
+    <!-- Voice Status Indicator for Editor -->
+    <LinearLayout
+        android:id="@+id/editorVoiceStatusIndicator"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:gravity="center_vertical"
+        android:visibility="gone"
+        android:background="@drawable/bg_glass_card"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="8dp"
+        app:layout_constraintBottom_toTopOf="@id/aiSuggestionContainer">
+
+        <TextView
+            android:id="@+id/editorVoiceStatusText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Voice mode active - no speech detected"
+            android:textSize="13sp"
+            android:textColor="@color/editor_text" />
+
+        <com.beeta.nbheditor.VoiceEqualizerView
+            android:id="@+id/editorVoiceEqualizer"
+            android:layout_width="80dp"
+            android:layout_height="40dp"
+            android:visibility="gone" />
     </LinearLayout>
 
     <HorizontalScrollView

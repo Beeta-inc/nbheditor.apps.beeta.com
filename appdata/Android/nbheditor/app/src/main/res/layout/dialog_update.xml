@@ -1,128 +1,130 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="24dp">
+    android:padding="20dp">
 
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/updateContentCard"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:cardBackgroundColor="@color/editor_surface"
-        app:cardCornerRadius="20dp"
-        app:cardElevation="0dp"
-        app:strokeWidth="1.5dp"
-        app:strokeColor="@color/divider">
+        android:orientation="vertical">
 
-        <LinearLayout
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/updateContentCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="24dp">
+            app:cardBackgroundColor="@color/editor_surface"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1.5dp"
+            app:strokeColor="@color/divider">
 
-            <!-- Icon -->
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="80dp"
-                android:layout_height="80dp"
-                android:layout_gravity="center_horizontal"
-                app:cardCornerRadius="40dp"
-                app:cardElevation="4dp"
-                app:cardBackgroundColor="@color/accent_primary">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:text="✦"
-                    android:textSize="48sp"
-                    android:textColor="@color/white"
-                    android:gravity="center" />
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- Title -->
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="16dp"
-                android:text="Update Available"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                android:letterSpacing="0.01"
-                android:textColor="@color/editor_text" />
+                android:orientation="vertical"
+                android:padding="24dp">
 
-            <!-- Version -->
-            <TextView
-                android:id="@+id/updateVersionText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="8dp"
-                android:text="Version 2.0.0"
-                android:textSize="16sp"
-                android:textColor="@color/accent_primary" />
+                <!-- Icon -->
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:layout_gravity="center_horizontal"
+                    app:cardCornerRadius="40dp"
+                    app:cardElevation="4dp"
+                    app:cardBackgroundColor="@color/accent_primary">
 
-            <!-- Major Update Badge -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/majorUpdateBadge"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_horizontal"
-                android:layout_marginTop="12dp"
-                android:visibility="gone"
-                app:cardBackgroundColor="@color/accent_peach"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="0dp">
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:text="✦"
+                        android:textSize="48sp"
+                        android:textColor="@color/white"
+                        android:gravity="center" />
+                </com.google.android.material.card.MaterialCardView>
 
+                <!-- Title -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="⚠ Required Update"
-                    android:textSize="12sp"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="16dp"
+                    android:text="Update Available"
+                    android:textSize="22sp"
                     android:textStyle="bold"
-                    android:textColor="@color/white"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp"
-                    android:paddingTop="6dp"
-                    android:paddingBottom="6dp" />
-            </com.google.android.material.card.MaterialCardView>
+                    android:letterSpacing="0.01"
+                    android:textColor="@color/editor_text" />
 
-            <!-- Divider -->
-            <View
-                android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="16dp"
-                android:background="@color/divider" />
+                <!-- Version -->
+                <TextView
+                    android:id="@+id/updateVersionText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="8dp"
+                    android:text="Version 2.0.0"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/accent_primary" />
 
-            <!-- Changelog Label -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="What's New"
-                android:textSize="14sp"
-                android:textStyle="bold"
-                android:textColor="@color/editor_text"
-                android:layout_marginBottom="8dp" />
+                <!-- Major Update Badge -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/majorUpdateBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="12dp"
+                    android:visibility="gone"
+                    app:cardBackgroundColor="@color/accent_peach"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="0dp">
 
-            <!-- Changelog -->
-            <ScrollView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:maxHeight="200dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="⚠ Required Update"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/white"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp"
+                        android:paddingTop="6dp"
+                        android:paddingBottom="6dp" />
+                </com.google.android.material.card.MaterialCardView>
 
+                <!-- Divider -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="16dp"
+                    android:background="@color/divider" />
+
+                <!-- What's New Label -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="What's New"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/editor_text"
+                    android:layout_marginBottom="12dp" />
+
+                <!-- Changelog -->
                 <TextView
                     android:id="@+id/updateChangelogText"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="• Bug fixes and improvements"
                     android:textSize="14sp"
-                    android:lineSpacingMultiplier="1.4"
+                    android:lineSpacingMultiplier="1.5"
+                    android:maxLines="10"
+                    android:scrollbars="vertical"
                     android:textColor="@color/editor_hint" />
-            </ScrollView>
 
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
-</LinearLayout>
+    </LinearLayout>
+</ScrollView>

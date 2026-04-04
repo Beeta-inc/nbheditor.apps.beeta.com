@@ -137,26 +137,40 @@ class UpdateCheckWorker(
         private const val PREFS_NOTIFIED_VERSION = "updater_last_notified_version"
         const val EXTRA_FORCE_UPDATE_CHECK = "force_update_check"
         private const val WORK_NAME = "nbheditor_update_check"
+        private const val WORK_NAME_FREQUENT = "nbheditor_update_check_frequent"
 
         fun schedule(context: Context) {
-            val request = PeriodicWorkRequestBuilder<UpdateCheckWorker>(1, TimeUnit.DAYS)
+            // Frequent check every 30 minutes when app is running
+            val frequentRequest = PeriodicWorkRequestBuilder<UpdateCheckWorker>(30, TimeUnit.MINUTES)
+                .setConstraints(
+                    Constraints.Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED)
+                        .build()
+                )
+                .setBackoffCriteria(BackoffPolicy.LINEAR, 5, TimeUnit.MINUTES)
+                .build()
+
+            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                WORK_NAME_FREQUENT,
+                ExistingPeriodicWorkPolicy.KEEP,
+                frequentRequest
+            )
+
+            // Background check every 5 hours when app is off
+            val backgroundRequest = PeriodicWorkRequestBuilder<UpdateCheckWorker>(5, TimeUnit.HOURS)
                 .setConstraints(
                     Constraints.Builder()
                         .setRequiredNetworkType(NetworkType.CONNECTED)
                         .setRequiresBatteryNotLow(true)
                         .build()
                 )
-                .setBackoffCriteria(
-                    BackoffPolicy.EXPONENTIAL,
-                    15,
-                    TimeUnit.MINUTES
-                )
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.MINUTES)
                 .build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_NAME,
                 ExistingPeriodicWorkPolicy.KEEP,
-                request
+                backgroundRequest
             )
         }
     }
