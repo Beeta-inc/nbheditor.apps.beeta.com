@@ -1,33 +1,41 @@
 {
   "project_info": {
-    "project_number": "123456789000",
-    "project_id": "nbheditor-placeholder",
-    "storage_bucket": "nbheditor-placeholder.appspot.com"
+    "project_number": "998554648295",
+    "project_id": "nbheditior",
+    "storage_bucket": "nbheditior.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:123456789000:android:0000000000000000000000",
+        "mobilesdk_app_id": "1:998554648295:android:51a42065d7ef39c78e2c42",
         "android_client_info": {
           "package_name": "com.beeta.nbheditor"
         }
       },
       "oauth_client": [
         {
-          "client_id": "123456789000-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com",
+          "client_id": "998554648295-3ncdj1skks5h0vhfa5kddig35bk606u1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.beeta.nbheditor",
+            "certificate_hash": "71bcf667e98ab73c7a81d19373822ff39d7d1286"
+          }
+        },
+        {
+          "client_id": "998554648295-m8s7fja9issf5gkqtdq0afbqr2sh4k9s.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+          "current_key": "AIzaSyDbUHAVRvUWJIv0Tk_8OJJgKVZzzFwC6Pw"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "123456789000-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com",
+              "client_id": "998554648295-m8s7fja9issf5gkqtdq0afbqr2sh4k9s.apps.googleusercontent.com",
               "client_type": 3
             }
           ]
