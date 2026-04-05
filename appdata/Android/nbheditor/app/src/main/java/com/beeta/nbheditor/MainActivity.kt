@@ -907,6 +907,8 @@ open class MainActivity : AppCompatActivity() {
 
     private fun stopVoiceInput() {
         synchronized(recognizerLock) {
+            if (!isListening) return
+            
             isListening = false
             cleanupRunnable?.let { voiceHandler.removeCallbacks(it) }
             
@@ -923,6 +925,8 @@ open class MainActivity : AppCompatActivity() {
             speechTarget?.hint = ""
             stopVoiceAnimation()
             hideVoiceStatus()
+            
+            Toast.makeText(this, "Voice mode stopped", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -942,27 +946,27 @@ open class MainActivity : AppCompatActivity() {
 
     private fun showVoiceStatusNoSpeech() {
         aiChatBinding.voiceStatusIndicator.visibility = View.VISIBLE
-        aiChatBinding.voiceStatusText.text = "🎤 Listening... Speak now"
+        aiChatBinding.voiceStatusText.text = "🎤 Listening..."
         aiChatBinding.voiceStatusText.visibility = View.VISIBLE
-        aiChatBinding.voiceEqualizer.visibility = View.VISIBLE
-        aiChatBinding.voiceEqualizer.startAnimation()
+        aiChatBinding.voiceEqualizer.visibility = View.GONE
+        aiChatBinding.voiceEqualizer.stopAnimation()
         
         editorBinding.editorVoiceStatusIndicator.visibility = View.VISIBLE
-        editorBinding.editorVoiceStatusText.text = "🎤 Listening... Speak now"
+        editorBinding.editorVoiceStatusText.text = "🎤 Listening..."
         editorBinding.editorVoiceStatusText.visibility = View.VISIBLE
-        editorBinding.editorVoiceEqualizer.visibility = View.VISIBLE
-        editorBinding.editorVoiceEqualizer.startAnimation()
+        editorBinding.editorVoiceEqualizer.visibility = View.GONE
+        editorBinding.editorVoiceEqualizer.stopAnimation()
     }
 
     private fun showVoiceStatusSpeaking() {
         aiChatBinding.voiceStatusIndicator.visibility = View.VISIBLE
-        aiChatBinding.voiceStatusText.text = "✓ Voice detected - keep speaking"
+        aiChatBinding.voiceStatusText.text = "✓ Voice detected"
         aiChatBinding.voiceStatusText.visibility = View.VISIBLE
         aiChatBinding.voiceEqualizer.visibility = View.VISIBLE
         aiChatBinding.voiceEqualizer.startAnimation()
         
         editorBinding.editorVoiceStatusIndicator.visibility = View.VISIBLE
-        editorBinding.editorVoiceStatusText.text = "✓ Voice detected - keep speaking"
+        editorBinding.editorVoiceStatusText.text = "✓ Voice detected"
         editorBinding.editorVoiceStatusText.visibility = View.VISIBLE
         editorBinding.editorVoiceEqualizer.visibility = View.VISIBLE
         editorBinding.editorVoiceEqualizer.startAnimation()
@@ -1089,7 +1093,6 @@ open class MainActivity : AppCompatActivity() {
                         setMicActive(true)
                         updateVoiceButtonIcon(true)
                         showVoiceStatusNoSpeech()
-                        Toast.makeText(this@MainActivity, "🎤 Voice mode active", Toast.LENGTH_SHORT).show()
                     }
                 }
                 
@@ -1102,7 +1105,7 @@ open class MainActivity : AppCompatActivity() {
                 override fun onRmsChanged(rmsdB: Float) {
                     // Update visual feedback based on volume
                     runOnUiThread {
-                        if (rmsdB > 2.0f) {
+                        if (rmsdB > 3.0f && isListening) {
                             showVoiceStatusSpeaking()
                         }
                     }
@@ -1112,23 +1115,14 @@ open class MainActivity : AppCompatActivity() {
                 
                 override fun onEndOfSpeech() {
                     runOnUiThread {
+                        // Don't stop - just restart listening to keep mic active
                         if (isListening) {
-                            // Restart listening to keep mic active
+                            showVoiceStatusNoSpeech()
                             voiceHandler.postDelayed({
                                 if (isListening) {
-                                    try {
-                                        val intent = android.content.Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                                            putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                                            putExtra(android.speech.RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-                                            putExtra(android.speech.RecognizerIntent.EXTRA_MAX_RESULTS, 1)
-                                            putExtra(android.speech.RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
-                                            putExtra(android.speech.RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
-                                        }
-                                        speechRecognizer?.startListening(intent)
-                                        showVoiceStatusNoSpeech()
-                                    } catch (_: Exception) {}
+                                    restartListening()
                                 }
-                            }, 300)
+                            }, 100)
                         }
                     }
                 }
@@ -1150,10 +1144,18 @@ open class MainActivity : AppCompatActivity() {
                                 
                                 try {
                                     et.text?.insert(pos, textToInsert) ?: et.setText(textToInsert)
-                                    // Show brief confirmation
-                                    Toast.makeText(this@MainActivity, "✓ Added: ${text.take(30)}...", Toast.LENGTH_SHORT).show()
                                 } catch (_: Exception) {}
                             }
+                        }
+                        
+                        // Restart listening immediately to keep mic active
+                        if (isListening) {
+                            showVoiceStatusNoSpeech()
+                            voiceHandler.postDelayed({
+                                if (isListening) {
+                                    restartListening()
+                                }
+                            }, 100)
                         }
                     }
                 }
@@ -1165,7 +1167,7 @@ open class MainActivity : AppCompatActivity() {
                             ?.firstOrNull()?.trim()
                         if (!text.isNullOrBlank()) {
                             showVoiceStatusSpeaking()
-                            // Update hint with partial text
+                            // Show partial text in hint
                             speechTarget?.hint = "Hearing: ${text.take(40)}..."
                         }
                     }
@@ -1173,39 +1175,37 @@ open class MainActivity : AppCompatActivity() {
                 
                 override fun onError(error: Int) {
                     runOnUiThread {
-                        val errorMsg = when (error) {
-                            SpeechRecognizer.ERROR_AUDIO -> "Audio error"
-                            SpeechRecognizer.ERROR_CLIENT -> "Client error"
-                            SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Permission denied"
-                            SpeechRecognizer.ERROR_NETWORK -> "Network error"
-                            SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Network timeout"
-                            SpeechRecognizer.ERROR_NO_MATCH -> null // Don't show error for no match
-                            SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Recognizer busy"
-                            SpeechRecognizer.ERROR_SERVER -> "Server error"
-                            SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> null // Don't show error for timeout
-                            else -> "Unknown error"
+                        // Only show error for serious issues, not for no speech
+                        when (error) {
+                            SpeechRecognizer.ERROR_AUDIO -> {
+                                Toast.makeText(this@MainActivity, "Audio error", Toast.LENGTH_SHORT).show()
+                            }
+                            SpeechRecognizer.ERROR_NETWORK -> {
+                                Toast.makeText(this@MainActivity, "Network error", Toast.LENGTH_SHORT).show()
+                            }
+                            SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> {
+                                Toast.makeText(this@MainActivity, "Network timeout", Toast.LENGTH_SHORT).show()
+                            }
+                            SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> {
+                                Toast.makeText(this@MainActivity, "Microphone permission required", Toast.LENGTH_SHORT).show()
+                                stopVoiceInput()
+                                return@runOnUiThread
+                            }
+                            SpeechRecognizer.ERROR_NO_MATCH,
+                            SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> {
+                                // These are normal - just no speech detected, keep listening
+                            }
                         }
                         
-                        if (errorMsg != null) {
-                            Toast.makeText(this@MainActivity, "Voice: $errorMsg", Toast.LENGTH_SHORT).show()
-                        }
-                        
-                        if (isListening && error != SpeechRecognizer.ERROR_NO_MATCH && error != SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
-                            // Restart on error except no match or timeout
+                        // Restart listening to keep mic active (unless permission error)
+                        if (isListening) {
+                            showVoiceStatusNoSpeech()
                             voiceHandler.postDelayed({
                                 if (isListening) {
-                                    try {
-                                        val intent = android.content.Intent(android.speech.RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                                            putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                                            putExtra(android.speech.RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-                                            putExtra(android.speech.RecognizerIntent.EXTRA_MAX_RESULTS, 1)
-                                        }
-                                        speechRecognizer?.startListening(intent)
-                                    } catch (_: Exception) {}
+                                    restartListening()
                                 }
-                            }, 500)
+                            }, 300)
                         }
-                        showVoiceStatusNoSpeech()
                     }
                 }
                 
@@ -1218,8 +1218,8 @@ open class MainActivity : AppCompatActivity() {
                 putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
                 putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
                 putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 1500L)
                 putExtra("android.speech.extra.DICTATION_MODE", true)
             }
             
@@ -1229,6 +1229,27 @@ open class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Could not start voice input: ${e.message}", Toast.LENGTH_SHORT).show()
                 scheduleCleanup()
             }
+        }
+    }
+    
+    private fun restartListening() {
+        if (!isListening) return
+        
+        try {
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+                putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 1500L)
+                putExtra("android.speech.extra.DICTATION_MODE", true)
+            }
+            speechRecognizer?.startListening(intent)
+        } catch (e: Exception) {
+            // If restart fails, stop voice mode
+            stopVoiceInput()
         }
     }
     
