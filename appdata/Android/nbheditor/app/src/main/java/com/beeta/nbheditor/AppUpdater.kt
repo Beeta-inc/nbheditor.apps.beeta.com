@@ -9,6 +9,7 @@ import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.util.Log
 import android.view.LayoutInflater
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
@@ -27,14 +28,18 @@ import java.util.concurrent.TimeUnit
 
 object AppUpdater {
 
+    private const val TAG = "AppUpdater"
     private const val RAW_BASE = "https://raw.githubusercontent.com/Beeta-inc/Nbheditrupdater/main"
     private const val PREFS_KEY_LAST_CHECK = "updater_last_check_date"
+    private const val PREFS_KEY_SKIP_VERSION = "updater_skip_version"
     
     private val client = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(20, TimeUnit.SECONDS)
+        .writeTimeout(20, TimeUnit.SECONDS)
         .followRedirects(true)
         .followSslRedirects(true)
+        .retryOnConnectionFailure(true)
         .build()
 
     fun shouldCheckToday(context: Context): Boolean {
@@ -50,20 +55,52 @@ object AppUpdater {
     }
 
     suspend fun checkForUpdate(context: Context, force: Boolean = false) {
-        if (!force && !shouldCheckToday(context)) return
-        markCheckedToday(context)
+        try {
+            if (!force && !shouldCheckToday(context)) {
+                Log.d(TAG, "Already checked today, skipping")
+                return
+            }
+            
+            Log.d(TAG, "Checking for updates...")
+            markCheckedToday(context)
 
-        val remoteVersion = fetchText("$RAW_BASE/version.txt")?.trim() ?: return
-        val changelog     = fetchText("$RAW_BASE/about.txt")?.trim() ?: ""
-        val downloadLink  = fetchText("$RAW_BASE/link.txt")?.trim() ?: return
+            val remoteVersion = fetchText("$RAW_BASE/version.txt")?.trim()
+            if (remoteVersion.isNullOrBlank()) {
+                Log.e(TAG, "Failed to fetch remote version")
+                return
+            }
+            
+            val changelog = fetchText("$RAW_BASE/about.txt")?.trim() ?: ""
+            val downloadLink = fetchText("$RAW_BASE/link.txt")?.trim()
+            if (downloadLink.isNullOrBlank()) {
+                Log.e(TAG, "Failed to fetch download link")
+                return
+            }
 
-        val currentVersion = getCurrentVersion(context)
-        if (!isNewerVersion(remoteVersion, currentVersion)) return
+            val currentVersion = getCurrentVersion(context)
+            Log.d(TAG, "Current: $currentVersion, Remote: $remoteVersion")
+            
+            if (!isNewerVersion(remoteVersion, currentVersion)) {
+                Log.d(TAG, "No update available")
+                return
+            }
+            
+            // Check if user skipped this version
+            val prefs = context.getSharedPreferences("nbheditor_prefs", Context.MODE_PRIVATE)
+            val skippedVersion = prefs.getString(PREFS_KEY_SKIP_VERSION, "")
+            if (!force && skippedVersion == remoteVersion) {
+                Log.d(TAG, "User skipped version $remoteVersion")
+                return
+            }
 
-        val isMajor = isMajorUpdate(remoteVersion, currentVersion)
+            val isMajor = isMajorUpdate(remoteVersion, currentVersion)
+            Log.d(TAG, "Update available: $remoteVersion (Major: $isMajor)")
 
-        withContext(Dispatchers.Main) {
-            showUpdateDialog(context, remoteVersion, changelog, downloadLink, isMajor)
+            withContext(Dispatchers.Main) {
+                showUpdateDialog(context, remoteVersion, changelog, downloadLink, isMajor)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error checking for updates: ${e.message}", e)
         }
     }
 
@@ -128,8 +165,15 @@ object AppUpdater {
             .setView(dialogView)
             .setPositiveButton("Download Now") { _, _ -> downloadApk(context, downloadLink, version) }
             .apply { 
-                if (!isMajor) setNegativeButton("Later", null) 
-                else setCancelable(false) 
+                if (!isMajor) {
+                    setNegativeButton("Later", null)
+                    setNeutralButton("Skip") { _, _ ->
+                        prefs.edit().putString(PREFS_KEY_SKIP_VERSION, version).apply()
+                        android.widget.Toast.makeText(context, "Update skipped", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                } else {
+                    setCancelable(false)
+                }
             }
             .create()
         
@@ -142,17 +186,27 @@ object AppUpdater {
         if (isGlass) {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(context.resources.getColor(R.color.accent_primary, null))
             dialog.getButton(AlertDialog.BUTTON_NEGATIVE)?.setTextColor(0xDDFFFFFF.toInt())
+            dialog.getButton(AlertDialog.BUTTON_NEUTRAL)?.setTextColor(0xAAFFFFFF.toInt())
         }
     }
 
     private fun downloadApk(context: Context, url: String, version: String) {
         try {
+            Log.d(TAG, "Starting download from: $url")
+            
             // Extract filename from URL or use default
             val filename = try {
-                Uri.parse(url).lastPathSegment ?: "NbhEditor-$version.apk"
+                val lastSegment = Uri.parse(url).lastPathSegment
+                if (lastSegment != null && lastSegment.endsWith(".apk")) {
+                    lastSegment
+                } else {
+                    "NbhEditor-$version.apk"
+                }
             } catch (_: Exception) {
                 "NbhEditor-$version.apk"
             }
+            
+            Log.d(TAG, "Download filename: $filename")
             
             val request = DownloadManager.Request(Uri.parse(url)).apply {
                 setTitle("NBH Editor $version")
@@ -161,17 +215,20 @@ object AppUpdater {
                 setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
                 setMimeType("application/vnd.android.package-archive")
                 
-                // Add headers for GitHub releases
-                addRequestHeader("User-Agent", "NBHEditor-Updater")
-                addRequestHeader("Accept", "application/octet-stream")
+                // Add headers for GitHub releases and direct downloads
+                addRequestHeader("User-Agent", "NBHEditor-Updater/2.2")
+                addRequestHeader("Accept", "application/octet-stream, application/vnd.android.package-archive, */*")
                 
                 // Allow download over metered networks
                 setAllowedOverMetered(true)
                 setAllowedOverRoaming(false)
+                setAllowedNetworkTypes(DownloadManager.Request.NETWORK_WIFI or DownloadManager.Request.NETWORK_MOBILE)
             }
             
             val downloadManager = context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
             val downloadId = downloadManager.enqueue(request)
+            
+            Log.d(TAG, "Download enqueued with ID: $downloadId")
             
             // Save download ID for tracking
             context.getSharedPreferences("nbheditor_prefs", Context.MODE_PRIVATE)
@@ -189,6 +246,7 @@ object AppUpdater {
             ).show()
             
         } catch (e: Exception) {
+            Log.e(TAG, "Download failed: ${e.message}", e)
             // Fallback: open in browser
             try {
                 context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
@@ -197,7 +255,8 @@ object AppUpdater {
                 android.widget.Toast.makeText(
                     context, "Opening download in browser...", android.widget.Toast.LENGTH_SHORT
                 ).show()
-            } catch (_: Exception) {
+            } catch (browserError: Exception) {
+                Log.e(TAG, "Browser fallback failed: ${browserError.message}", browserError)
                 android.widget.Toast.makeText(
                     context, "Failed to download. Please check the link.", android.widget.Toast.LENGTH_LONG
                 ).show()
@@ -258,10 +317,25 @@ object AppUpdater {
 
     private suspend fun fetchText(url: String): String? = withContext(Dispatchers.IO) {
         try {
-            val request = Request.Builder().url(url).build()
+            Log.d(TAG, "Fetching: $url")
+            val request = Request.Builder()
+                .url(url)
+                .addHeader("User-Agent", "NBHEditor-Updater/2.2")
+                .addHeader("Cache-Control", "no-cache")
+                .build()
             client.newCall(request).execute().use { response ->
-                if (response.isSuccessful) response.body?.string() else null
+                val body = response.body?.string()
+                if (response.isSuccessful && body != null) {
+                    Log.d(TAG, "Fetched successfully: ${body.take(100)}")
+                    body
+                } else {
+                    Log.e(TAG, "Fetch failed: ${response.code} ${response.message}")
+                    null
+                }
             }
-        } catch (_: Exception) { null }
+        } catch (e: Exception) {
+            Log.e(TAG, "Fetch error: ${e.message}", e)
+            null
+        }
     }
 }

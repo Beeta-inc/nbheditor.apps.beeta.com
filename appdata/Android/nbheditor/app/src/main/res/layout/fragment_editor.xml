@@ -114,8 +114,8 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:background="@color/editor_bg"
-            android:gravity="top"
-            android:inputType="textMultiLine"
+            android:gravity="top|start"
+            android:inputType="textMultiLine|textNoSuggestions"
             android:padding="16dp"
             android:fontFamily="monospace"
             android:textSize="16sp"
@@ -125,7 +125,11 @@
             android:lineSpacingMultiplier="1.6"
             android:hint="Start typing..."
             android:textColorHint="@color/editor_hint"
-            android:scrollbars="vertical" />
+            android:scrollbars="vertical"
+            android:focusable="true"
+            android:focusableInTouchMode="true"
+            android:clickable="true"
+            android:enabled="true" />
     </LinearLayout>
 
     <!-- Voice Status Indicator for Editor -->

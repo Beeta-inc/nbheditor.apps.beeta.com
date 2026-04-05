@@ -6,6 +6,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.work.*
@@ -18,26 +19,58 @@ class UpdateCheckWorker(
     workerParams: WorkerParameters
 ) : Worker(context, workerParams) {
 
+    private val TAG = "UpdateCheckWorker"
+    
     private val client = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(20, TimeUnit.SECONDS)
+        .retryOnConnectionFailure(true)
         .build()
 
     override fun doWork(): Result {
-        val remoteVersion = fetchText("$RAW_BASE/version.txt")?.trim() ?: return Result.retry()
-        val changelog     = fetchText("$RAW_BASE/about.txt")?.trim() ?: ""
-        val downloadLink  = fetchText("$RAW_BASE/link.txt")?.trim() ?: return Result.retry()
+        return try {
+            Log.d(TAG, "Starting background update check")
+            
+            val remoteVersion = fetchText("$RAW_BASE/version.txt")?.trim()
+            if (remoteVersion.isNullOrBlank()) {
+                Log.e(TAG, "Failed to fetch remote version")
+                return Result.retry()
+            }
+            
+            val changelog = fetchText("$RAW_BASE/about.txt")?.trim() ?: ""
+            val downloadLink = fetchText("$RAW_BASE/link.txt")?.trim()
+            if (downloadLink.isNullOrBlank()) {
+                Log.e(TAG, "Failed to fetch download link")
+                return Result.retry()
+            }
 
-        val currentVersion = getCurrentVersion()
-        if (!isNewerVersion(remoteVersion, currentVersion)) return Result.success()
+            val currentVersion = getCurrentVersion()
+            Log.d(TAG, "Current: $currentVersion, Remote: $remoteVersion")
+            
+            if (!isNewerVersion(remoteVersion, currentVersion)) {
+                Log.d(TAG, "No update available")
+                return Result.success()
+            }
 
-        val prefs = context.getSharedPreferences("nbheditor_prefs", Context.MODE_PRIVATE)
-        val lastNotified = prefs.getString(PREFS_NOTIFIED_VERSION, "")
-        if (lastNotified == remoteVersion) return Result.success()
-        prefs.edit().putString(PREFS_NOTIFIED_VERSION, remoteVersion).apply()
+            val prefs = context.getSharedPreferences("nbheditor_prefs", Context.MODE_PRIVATE)
+            val lastNotified = prefs.getString(PREFS_NOTIFIED_VERSION, "")
+            val skippedVersion = prefs.getString("updater_skip_version", "")
+            
+            // Don't notify if already notified or user skipped this version
+            if (lastNotified == remoteVersion || skippedVersion == remoteVersion) {
+                Log.d(TAG, "Already notified or skipped version $remoteVersion")
+                return Result.success()
+            }
+            
+            prefs.edit().putString(PREFS_NOTIFIED_VERSION, remoteVersion).apply()
+            Log.d(TAG, "Showing notification for version $remoteVersion")
 
-        showUpdateNotification(remoteVersion, changelog, downloadLink)
-        return Result.success()
+            showUpdateNotification(remoteVersion, changelog, downloadLink)
+            Result.success()
+        } catch (e: Exception) {
+            Log.e(TAG, "Update check failed: ${e.message}", e)
+            Result.retry()
+        }
     }
 
     private fun showUpdateNotification(version: String, changelog: String, downloadLink: String) {
@@ -101,11 +134,26 @@ class UpdateCheckWorker(
     }
 
     private fun fetchText(url: String): String? = try {
-        val request = Request.Builder().url(url).build()
+        Log.d(TAG, "Fetching: $url")
+        val request = Request.Builder()
+            .url(url)
+            .addHeader("User-Agent", "NBHEditor-Updater/2.2")
+            .addHeader("Cache-Control", "no-cache")
+            .build()
         client.newCall(request).execute().use { response ->
-            if (response.isSuccessful) response.body?.string() else null
+            val body = response.body?.string()
+            if (response.isSuccessful && body != null) {
+                Log.d(TAG, "Fetched successfully")
+                body
+            } else {
+                Log.e(TAG, "Fetch failed: ${response.code}")
+                null
+            }
         }
-    } catch (_: Exception) { null }
+    } catch (e: Exception) {
+        Log.e(TAG, "Fetch error: ${e.message}", e)
+        null
+    }
 
     private fun isNewerVersion(remote: String, current: String): Boolean {
         val r = parseParts(remote)
@@ -140,14 +188,17 @@ class UpdateCheckWorker(
         private const val WORK_NAME_FREQUENT = "nbheditor_update_check_frequent"
 
         fun schedule(context: Context) {
-            // Frequent check every 30 minutes when app is running
-            val frequentRequest = PeriodicWorkRequestBuilder<UpdateCheckWorker>(30, TimeUnit.MINUTES)
+            Log.d("UpdateCheckWorker", "Scheduling update checks")
+            
+            // Frequent check every 6 hours when app is running
+            val frequentRequest = PeriodicWorkRequestBuilder<UpdateCheckWorker>(6, TimeUnit.HOURS)
                 .setConstraints(
                     Constraints.Builder()
                         .setRequiredNetworkType(NetworkType.CONNECTED)
                         .build()
                 )
-                .setBackoffCriteria(BackoffPolicy.LINEAR, 5, TimeUnit.MINUTES)
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.MINUTES)
+                .setInitialDelay(30, TimeUnit.MINUTES) // Wait 30 min after app start
                 .build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
@@ -156,15 +207,15 @@ class UpdateCheckWorker(
                 frequentRequest
             )
 
-            // Background check every 5 hours when app is off
-            val backgroundRequest = PeriodicWorkRequestBuilder<UpdateCheckWorker>(5, TimeUnit.HOURS)
+            // Background check every 12 hours
+            val backgroundRequest = PeriodicWorkRequestBuilder<UpdateCheckWorker>(12, TimeUnit.HOURS)
                 .setConstraints(
                     Constraints.Builder()
                         .setRequiredNetworkType(NetworkType.CONNECTED)
                         .setRequiresBatteryNotLow(true)
                         .build()
                 )
-                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 15, TimeUnit.MINUTES)
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 20, TimeUnit.MINUTES)
                 .build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
@@ -172,6 +223,8 @@ class UpdateCheckWorker(
                 ExistingPeriodicWorkPolicy.KEEP,
                 backgroundRequest
             )
+            
+            Log.d("UpdateCheckWorker", "Update checks scheduled successfully")
         }
     }
 }

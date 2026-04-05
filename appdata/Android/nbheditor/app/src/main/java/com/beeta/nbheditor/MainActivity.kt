@@ -945,27 +945,27 @@ open class MainActivity : AppCompatActivity() {
 
     private fun showVoiceStatusNoSpeech() {
         aiChatBinding.voiceStatusIndicator.visibility = View.VISIBLE
-        aiChatBinding.voiceStatusText.text = "Voice mode active - no speech detected"
-        aiChatBinding.voiceStatusText.visibility = View.VISIBLE
-        aiChatBinding.voiceEqualizer.visibility = View.GONE
-        aiChatBinding.voiceEqualizer.stopAnimation()
-        
-        editorBinding.editorVoiceStatusIndicator.visibility = View.VISIBLE
-        editorBinding.editorVoiceStatusText.text = "Voice mode active - no speech detected"
-        editorBinding.editorVoiceStatusText.visibility = View.VISIBLE
-        editorBinding.editorVoiceEqualizer.visibility = View.GONE
-        editorBinding.editorVoiceEqualizer.stopAnimation()
-    }
-
-    private fun showVoiceStatusSpeaking() {
-        aiChatBinding.voiceStatusIndicator.visibility = View.VISIBLE
-        aiChatBinding.voiceStatusText.text = "Voice mode active"
+        aiChatBinding.voiceStatusText.text = "🎤 Listening... Speak now"
         aiChatBinding.voiceStatusText.visibility = View.VISIBLE
         aiChatBinding.voiceEqualizer.visibility = View.VISIBLE
         aiChatBinding.voiceEqualizer.startAnimation()
         
         editorBinding.editorVoiceStatusIndicator.visibility = View.VISIBLE
-        editorBinding.editorVoiceStatusText.text = "Voice mode active"
+        editorBinding.editorVoiceStatusText.text = "🎤 Listening... Speak now"
+        editorBinding.editorVoiceStatusText.visibility = View.VISIBLE
+        editorBinding.editorVoiceEqualizer.visibility = View.VISIBLE
+        editorBinding.editorVoiceEqualizer.startAnimation()
+    }
+
+    private fun showVoiceStatusSpeaking() {
+        aiChatBinding.voiceStatusIndicator.visibility = View.VISIBLE
+        aiChatBinding.voiceStatusText.text = "✓ Voice detected - keep speaking"
+        aiChatBinding.voiceStatusText.visibility = View.VISIBLE
+        aiChatBinding.voiceEqualizer.visibility = View.VISIBLE
+        aiChatBinding.voiceEqualizer.startAnimation()
+        
+        editorBinding.editorVoiceStatusIndicator.visibility = View.VISIBLE
+        editorBinding.editorVoiceStatusText.text = "✓ Voice detected - keep speaking"
         editorBinding.editorVoiceStatusText.visibility = View.VISIBLE
         editorBinding.editorVoiceEqualizer.visibility = View.VISIBLE
         editorBinding.editorVoiceEqualizer.startAnimation()

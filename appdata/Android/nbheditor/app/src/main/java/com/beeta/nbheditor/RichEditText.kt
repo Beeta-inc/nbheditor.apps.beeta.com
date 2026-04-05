@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import android.text.Editable
 import android.text.Spannable
 import android.text.SpannableStringBuilder
 import android.text.style.ImageSpan
@@ -25,6 +26,13 @@ class RichEditText @JvmOverloads constructor(
     defStyle: Int = android.R.attr.editTextStyle
 ) : AppCompatEditText(context, attrs, defStyle) {
 
+    init {
+        // Ensure the EditText is focusable and editable
+        isFocusable = true
+        isFocusableInTouchMode = true
+        isEnabled = true
+    }
+
     /**
      * Inserts a bitmap at the given cursor position.
      * Image is scaled down and placed inline with text.
@@ -44,12 +52,13 @@ class RichEditText @JvmOverloads constructor(
             setBounds(0, 0, imgW, imgH)
         }
 
-        val sb = text as? SpannableStringBuilder ?: SpannableStringBuilder(text)
+        val currentText = text ?: return
+        val sb = if (currentText is SpannableStringBuilder) currentText else SpannableStringBuilder(currentText)
         val pos = cursorPos.coerceIn(0, sb.length)
 
         // Insert on new line with newlines around it
         val prefix = if (pos > 0 && sb.isNotEmpty() && sb[pos - 1] != '\n') "\n" else ""
-        val imgChar = "\uFFFC"
+        val imgChar = " "
         val suffix = "\n"
         val insertStr = "$prefix$imgChar$suffix"
         

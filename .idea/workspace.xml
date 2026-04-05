@@ -9,28 +9,28 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0de2c8aa-c6b7-419c-b7cd-e9cbf2927e27" name="Changes" comment="improvements">
+    <list default="true" id="0de2c8aa-c6b7-419c-b7cd-e9cbf2927e27" name="Changes" comment="fixed some bugs">
       <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/resourceHashesCache.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/resourceHashesCache.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/file-system.probe" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/file-system.probe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/amazonq.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/amazonq.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_3_29_26,_1_45 PM_[Changes]/buildOutputCleanup.lock" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_3_29_26,_1_45 PM_[Changes]/executionHistory.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_3_29_26,_1_45 PM_[Changes]/executionHistory.lock" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_3_29_26,_1_45 PM_[Changes]/file-system.probe" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_3_29_26,_1_45 PM_[Changes]/fileHashes.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_3_29_26,_1_45 PM_[Changes]/fileHashes.lock" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_3_29_26,_1_45 PM_[Changes]/shelved.patch" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_3_29_26__1_45PM__Changes_.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/build.gradle.kts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/AppUpdater.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/AppUpdater.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/ChatAdapter.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/ChatAdapter.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/GlassBlurHelper.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/GlassBlurHelper.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/RichEditText.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/RichEditText.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/UpdateCheckWorker.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/UpdateCheckWorker.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/ui/settings/SettingsFragment.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/ui/settings/SettingsFragment.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/ui/settings/SettingsViewModel.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/ui/settings/SettingsViewModel.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/layout/dialog_update.xml" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/layout/dialog_update.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/layout/fragment_ai_chat.xml" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/layout/fragment_ai_chat.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/layout/fragment_editor.xml" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/layout/fragment_editor.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/layout/nav_header_main.xml" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/layout/nav_header_main.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -40,7 +40,7 @@
   <component name="ClangdSettings">
     <option name="formatViaClangd" value="false" />
   </component>
-  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[LocalEmulator::path=/home/noywrit/.android/avd/Pixel_8.avd]" />
+  <component name="ExecutionTargetManager" SELECTED_TARGET="device_and_snapshot_combo_box_target[LocalEmulator::path=/home/noywrit/.android/avd/Pixel_9a.avd]" />
   <component name="ExternalProjectsData">
     <projectState path="$PROJECT_DIR$">
       <ProjectState />
@@ -175,7 +175,7 @@
     "project.structure.last.edited": "Modules",
     "project.structure.proportion": "0.17",
     "project.structure.side.proportion": "0.2",
-    "settings.editor.selected.configurable": "AndroidSdkUpdater"
+    "settings.editor.selected.configurable": "templates.modelproviders.configurable"
   },
   "keyToStringList": {
     "android-custom-view/home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/RichEditText.kt_RichEditText_DIMENSIONS": [
@@ -776,12 +776,12 @@
       <map>
         <entry key="com.beeta.nbheditor">
           <value>
-            <CheckInfo lastCheckTimestamp="1775203980800" />
+            <CheckInfo lastCheckTimestamp="1775376677343" />
           </value>
         </entry>
         <entry key="com.beeta.nbheditor.test">
           <value>
-            <CheckInfo lastCheckTimestamp="1775203980813" />
+            <CheckInfo lastCheckTimestamp="1775376677342" />
           </value>
         </entry>
         <entry key="com.example.nbheditor">
