@@ -1073,6 +1073,15 @@ open class MainActivity : AppCompatActivity() {
             return
         }
         
+        // Warn if running on emulator (audio may be unreliable)
+        if (Build.FINGERPRINT.contains("generic") || Build.FINGERPRINT.contains("emulator")) {
+            val isFirstTime = prefs.getBoolean("emulator_audio_warned", false)
+            if (!isFirstTime) {
+                Toast.makeText(this, "⚠ Emulator audio may be unreliable. Test on real device for best results.", Toast.LENGTH_LONG).show()
+                prefs.edit().putBoolean("emulator_audio_warned", true).apply()
+            }
+        }
+        
         synchronized(recognizerLock) {
             if (isListening) {
                 stopVoiceInput()
