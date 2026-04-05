@@ -9,12 +9,7 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0de2c8aa-c6b7-419c-b7cd-e9cbf2927e27" name="Changes" comment="version 3 initialisation and bring login and cloud support">
-      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/file-system.probe" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/file-system.probe" afterDir="false" />
-    </list>
+    <list default="true" id="0de2c8aa-c6b7-419c-b7cd-e9cbf2927e27" name="Changes" comment="updated dp profile" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -319,22 +314,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1774176942839</updated>
-    </task>
-    <task id="LOCAL-00037" summary="fixed some issues and ui updates">
-      <option name="closed" value="true" />
-      <created>1774518251794</created>
-      <option name="number" value="00037" />
-      <option name="presentableId" value="LOCAL-00037" />
-      <option name="project" value="LOCAL" />
-      <updated>1774518251794</updated>
-    </task>
-    <task id="LOCAL-00038" summary="final updates for version1">
-      <option name="closed" value="true" />
-      <created>1774518310999</created>
-      <option name="number" value="00038" />
-      <option name="presentableId" value="LOCAL-00038" />
-      <option name="project" value="LOCAL" />
-      <updated>1774518310999</updated>
     </task>
     <task id="LOCAL-00039" summary="final updates for version1">
       <option name="closed" value="true" />
@@ -712,7 +691,23 @@
       <option name="project" value="LOCAL" />
       <updated>1775393002324</updated>
     </task>
-    <option name="localTasksCounter" value="86" />
+    <task id="LOCAL-00086" summary="updated to the the real google-service.json file">
+      <option name="closed" value="true" />
+      <created>1775393381448</created>
+      <option name="number" value="00086" />
+      <option name="presentableId" value="LOCAL-00086" />
+      <option name="project" value="LOCAL" />
+      <updated>1775393381448</updated>
+    </task>
+    <task id="LOCAL-00087" summary="updated dp profile">
+      <option name="closed" value="true" />
+      <created>1775393607819</created>
+      <option name="number" value="00087" />
+      <option name="presentableId" value="LOCAL-00087" />
+      <option name="project" value="LOCAL" />
+      <updated>1775393607819</updated>
+    </task>
+    <option name="localTasksCounter" value="88" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -727,8 +722,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="fixed some issues" />
-    <MESSAGE value="fixed some issues and ui updates" />
     <MESSAGE value="final updates for version1" />
     <MESSAGE value="vwersion 1 updates" />
     <MESSAGE value="vwersion 1 updates and bug fixes" />
@@ -752,7 +745,9 @@
     <MESSAGE value="fixed voice mode" />
     <MESSAGE value="fixed voice mode animation and updater" />
     <MESSAGE value="version 3 initialisation and bring login and cloud support" />
-    <option name="LAST_COMMIT_MESSAGE" value="version 3 initialisation and bring login and cloud support" />
+    <MESSAGE value="updated to the the real google-service.json file" />
+    <MESSAGE value="updated dp profile" />
+    <option name="LAST_COMMIT_MESSAGE" value="updated dp profile" />
   </component>
   <component name="play_dynamic_filters_status">
     <option name="appIdToCheckInfo">

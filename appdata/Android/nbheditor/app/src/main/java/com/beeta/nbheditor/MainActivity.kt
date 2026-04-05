@@ -2071,6 +2071,7 @@ open class MainActivity : AppCompatActivity() {
             }
         }
         textChanged = false
+        updateToolbarTitle() // Update cloud icon after save
     }
 
     private fun getFileName(uri: Uri): String {
@@ -2097,8 +2098,28 @@ open class MainActivity : AppCompatActivity() {
     private fun updateToolbarTitle() {
         val name = if (currentFileUri != null) getFileName(currentFileUri!!) else "NBH Editor"
         val dot = if (textChanged) " ●" else ""
+        val cloudIcon = if (GoogleSignInHelper.isSignedIn(this)) " ☁" else " ☁"
         val tv = binding.appBarMain.toolbarTitle ?: return
-        tv.text = "$name$dot"
+        
+        val displayText = "$name$dot$cloudIcon"
+        val spannable = android.text.SpannableString(displayText)
+        
+        // Color the cloud icon
+        val cloudStart = displayText.indexOf("☁")
+        if (cloudStart >= 0) {
+            val cloudColor = if (GoogleSignInHelper.isSignedIn(this)) {
+                0xFF4CAF50.toInt() // Green
+            } else {
+                0xFFF44336.toInt() // Red
+            }
+            spannable.setSpan(
+                android.text.style.ForegroundColorSpan(cloudColor),
+                cloudStart, cloudStart + 1,
+                android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
+        }
+        
+        tv.text = spannable
         tv.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
         tv.paintFlags = tv.paintFlags or android.graphics.Paint.FAKE_BOLD_TEXT_FLAG
         tv.textSize = 19f
@@ -2158,11 +2179,20 @@ open class MainActivity : AppCompatActivity() {
             }
             addToRecents(uri)
             
-            // Sync to cloud if signed in
+            // Auto-sync to cloud if signed in
             if (GoogleSignInHelper.isSignedIn(this)) {
                 val fileName = getFileName(uri)
                 lifecycleScope.launch {
-                    GoogleSignInHelper.syncFileToCloud(this@MainActivity, text, fileName)
+                    try {
+                        GoogleSignInHelper.syncFileToCloud(this@MainActivity, text, fileName)
+                        withContext(Dispatchers.Main) {
+                            updateToolbarTitle() // Update to green cloud
+                        }
+                    } catch (e: Exception) {
+                        withContext(Dispatchers.Main) {
+                            updateToolbarTitle() // Update to red cloud on error
+                        }
+                    }
                 }
             }
         } catch (e: Exception) {
