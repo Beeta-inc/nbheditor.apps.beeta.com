@@ -2309,6 +2309,7 @@ open class MainActivity : AppCompatActivity() {
             }
             R.id.improveMenuItem -> improveWithAI()
             R.id.nav_sign_in -> showAccountDialog()
+            R.id.nav_about -> showAboutDialog()
             R.id.quitMenuItem -> finish()
             else -> return false
         }
@@ -2913,5 +2914,34 @@ open class MainActivity : AppCompatActivity() {
         canvas.drawBitmap(scaled, 0f, 0f, paint)
         
         return output
+    }
+    
+    private fun showAboutDialog() {
+        val message = """
+            📝 NBH Editor v3.1.0
+            
+            A blazing-fast, modern text editor built for Linux users.
+            
+            ✨ Features:
+            • AI-Assisted Editing (Beeta AI)
+            • Auto-sync to Google Cloud
+            • Dark & Light Themes
+            • Voice Input
+            • Image Support
+            • Chat Memory
+            
+            🔒 Privacy:
+            All data synced to your personal Google account.
+            No third-party access.
+            
+            Made with ❤️ by Beeta
+            "Made For Human"
+        """.trimIndent()
+        
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("About NBH Editor")
+            .setMessage(message)
+            .setPositiveButton("OK", null)
+            .show()
     }
 }

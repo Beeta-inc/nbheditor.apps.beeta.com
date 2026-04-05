@@ -50,4 +50,11 @@
             android:checkable="true" />
     </group>
 
+    <group android:id="@+id/group_about">
+        <item
+            android:id="@+id/nav_about"
+            android:icon="@drawable/ic_ai_chat"
+            android:title="About v3.1.0" />
+    </group>
+
 </menu>
