@@ -45,7 +45,8 @@ object AppUpdater {
     fun shouldCheckToday(context: Context): Boolean {
         val prefs = context.getSharedPreferences("nbheditor_prefs", Context.MODE_PRIVATE)
         val today = SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(Date())
-        return prefs.getString(PREFS_KEY_LAST_CHECK, "") != today
+        val lastCheck = prefs.getString(PREFS_KEY_LAST_CHECK, "")
+        return lastCheck != today
     }
 
     fun markCheckedToday(context: Context) {

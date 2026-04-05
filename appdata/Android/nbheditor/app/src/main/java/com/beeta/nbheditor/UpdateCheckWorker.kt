@@ -190,41 +190,25 @@ class UpdateCheckWorker(
         fun schedule(context: Context) {
             Log.d("UpdateCheckWorker", "Scheduling update checks")
             
-            // Frequent check every 6 hours when app is running
-            val frequentRequest = PeriodicWorkRequestBuilder<UpdateCheckWorker>(6, TimeUnit.HOURS)
-                .setConstraints(
-                    Constraints.Builder()
-                        .setRequiredNetworkType(NetworkType.CONNECTED)
-                        .build()
-                )
-                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.MINUTES)
-                .setInitialDelay(30, TimeUnit.MINUTES) // Wait 30 min after app start
-                .build()
-
-            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                WORK_NAME_FREQUENT,
-                ExistingPeriodicWorkPolicy.KEEP,
-                frequentRequest
-            )
-
-            // Background check every 12 hours
-            val backgroundRequest = PeriodicWorkRequestBuilder<UpdateCheckWorker>(12, TimeUnit.HOURS)
+            // Single daily check at a reasonable time
+            val dailyRequest = PeriodicWorkRequestBuilder<UpdateCheckWorker>(24, TimeUnit.HOURS)
                 .setConstraints(
                     Constraints.Builder()
                         .setRequiredNetworkType(NetworkType.CONNECTED)
                         .setRequiresBatteryNotLow(true)
                         .build()
                 )
-                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 20, TimeUnit.MINUTES)
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.HOURS)
+                .setInitialDelay(1, TimeUnit.HOURS) // Wait 1 hour after app start
                 .build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_NAME,
                 ExistingPeriodicWorkPolicy.KEEP,
-                backgroundRequest
+                dailyRequest
             )
             
-            Log.d("UpdateCheckWorker", "Update checks scheduled successfully")
+            Log.d("UpdateCheckWorker", "Daily update check scheduled successfully")
         }
     }
 }

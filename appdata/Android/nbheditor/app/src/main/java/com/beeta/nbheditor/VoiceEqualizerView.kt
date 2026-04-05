@@ -17,17 +17,17 @@ class VoiceEqualizerView @JvmOverloads constructor(
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = ContextCompat.getColor(context, R.color.accent_secondary)
-        strokeWidth = 10f
+        strokeWidth = 3f
         strokeCap = Paint.Cap.ROUND
     }
 
-    private val barCount = 7
+    private val barCount = 5
     private val barHeights = FloatArray(barCount) { 0.3f }
     private val barPhases = FloatArray(barCount) { Random.nextFloat() * 6.28f }
-    private val barSpeeds = FloatArray(barCount) { 2.5f + Random.nextFloat() * 1.5f }
+    private val barSpeeds = FloatArray(barCount) { 2.0f + Random.nextFloat() * 1.0f }
     private var animationTime = 0f
     private var isAnimating = false
-    private var intensity = 1.0f // 0.0 to 1.0
+    private var intensity = 1.0f
 
     fun startAnimation() {
         isAnimating = true
@@ -57,22 +57,22 @@ class VoiceEqualizerView @JvmOverloads constructor(
             val x = barSpacing * (i + 1)
             val heightFactor = if (isAnimating) {
                 val wave = sin(animationTime * barSpeeds[i] + barPhases[i]) * 0.5f + 0.5f
-                0.2f + (0.8f * wave * intensity)
+                0.25f + (0.75f * wave * intensity)
             } else {
-                0.3f
+                0.25f
             }
             
-            val barHeight = (height * 0.7f * heightFactor).coerceAtLeast(height * 0.15f)
+            val barHeight = (height * 0.65f * heightFactor).coerceAtLeast(height * 0.2f)
             
-            // Add gradient effect by varying alpha
-            val alpha = (200 + (55 * heightFactor)).toInt().coerceIn(150, 255)
+            // Smooth alpha variation
+            val alpha = (180 + (75 * heightFactor)).toInt().coerceIn(150, 255)
             paint.alpha = alpha
             
             canvas.drawLine(x, centerY - barHeight / 2, x, centerY + barHeight / 2, paint)
         }
         
         if (isAnimating) {
-            animationTime += 0.12f
+            animationTime += 0.15f
             postInvalidateOnAnimation()
         }
     }

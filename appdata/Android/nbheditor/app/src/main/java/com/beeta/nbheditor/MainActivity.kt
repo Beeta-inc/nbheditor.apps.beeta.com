@@ -2082,6 +2082,18 @@ open class MainActivity : AppCompatActivity() {
 
     private fun handleMenuItem(item: MenuItem): Boolean {
         when (item.itemId) {
+            R.id.nav_settings -> {
+                // Navigate to settings fragment
+                val settingsFragment = com.beeta.nbheditor.ui.settings.SettingsFragment()
+                supportFragmentManager.beginTransaction()
+                    .replace(binding.appBarMain.contentMain.fragmentContainer.id, settingsFragment)
+                    .addToBackStack(null)
+                    .commit()
+                binding.appBarMain.contentMain.fragmentContainer.visibility = View.VISIBLE
+                binding.appBarMain.contentMain.homeContainer?.visibility = View.GONE
+                binding.appBarMain.contentMain.bottomNavView?.visibility = View.GONE
+                binding.appBarMain.toolbarTitle?.text = "Settings"
+            }
             R.id.nav_new_file -> {
                 editorBinding.textArea.setText("")
                 currentFileUri = null
