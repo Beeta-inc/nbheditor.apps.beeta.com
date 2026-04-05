@@ -355,11 +355,11 @@ open class MainActivity : AppCompatActivity() {
         aiChatBinding.headerDivider.setBackgroundColor(divColor)
         aiChatBinding.inputDivider.setBackgroundColor(divColor)
 
-        // Editor area: more transparent for glass effect
+        // Editor area: more transparent for glass effect but ensure text is visible
         editorBinding.lineNumbersScroll.setBackgroundColor(0xCC0A0E14.toInt())
         editorBinding.textArea.setBackgroundColor(0xBB0A0E14.toInt())
-        editorBinding.textArea.setTextColor(0xFFFFFFFF.toInt())
-        editorBinding.textArea.setHintTextColor(0xAAFFFFFF.toInt())
+        editorBinding.textArea.setTextColor(0xFFFFFFFF.toInt()) // Pure white
+        editorBinding.textArea.setHintTextColor(0x88FFFFFF.toInt()) // Semi-transparent white
 
         // All text/icons in bars: white, always visible
         val white = 0xFFFFFFFF.toInt()
@@ -427,13 +427,10 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun startAdaptiveColorLoop() {
-        GlassTextAdapter.start(this)
-        // Only the editor text area needs adaptive color — everything else
-        // sits on the dark semi-opaque bar and is always white
-        GlassTextAdapter.watch(editorBinding.textArea) { fg, sh ->
-            editorBinding.textArea.setTextColor(fg)
-            editorBinding.textArea.setShadowLayer(5f, 0f, 1f, sh)
-        }
+        if (!isGlassMode) return
+        
+        // Don't use adaptive colors for the editor text - keep it white for visibility
+        // The glass effect is achieved through the background transparency
     }
 
     private fun adjustAlpha(color: Int, factor: Float): Int {
@@ -1092,6 +1089,7 @@ open class MainActivity : AppCompatActivity() {
                         setMicActive(true)
                         updateVoiceButtonIcon(true)
                         showVoiceStatusNoSpeech()
+                        Toast.makeText(this@MainActivity, "🎤 Voice mode active", Toast.LENGTH_SHORT).show()
                     }
                 }
                 
@@ -1101,7 +1099,15 @@ open class MainActivity : AppCompatActivity() {
                     }
                 }
                 
-                override fun onRmsChanged(rmsdB: Float) {}
+                override fun onRmsChanged(rmsdB: Float) {
+                    // Update visual feedback based on volume
+                    runOnUiThread {
+                        if (rmsdB > 2.0f) {
+                            showVoiceStatusSpeaking()
+                        }
+                    }
+                }
+                
                 override fun onBufferReceived(buffer: ByteArray?) {}
                 
                 override fun onEndOfSpeech() {
@@ -1115,6 +1121,8 @@ open class MainActivity : AppCompatActivity() {
                                             putExtra(android.speech.RecognizerIntent.EXTRA_LANGUAGE_MODEL, android.speech.RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
                                             putExtra(android.speech.RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
                                             putExtra(android.speech.RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+                                            putExtra(android.speech.RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
+                                            putExtra(android.speech.RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
                                         }
                                         speechRecognizer?.startListening(intent)
                                         showVoiceStatusNoSpeech()
@@ -1142,6 +1150,8 @@ open class MainActivity : AppCompatActivity() {
                                 
                                 try {
                                     et.text?.insert(pos, textToInsert) ?: et.setText(textToInsert)
+                                    // Show brief confirmation
+                                    Toast.makeText(this@MainActivity, "✓ Added: ${text.take(30)}...", Toast.LENGTH_SHORT).show()
                                 } catch (_: Exception) {}
                             }
                         }
@@ -1155,14 +1165,33 @@ open class MainActivity : AppCompatActivity() {
                             ?.firstOrNull()?.trim()
                         if (!text.isNullOrBlank()) {
                             showVoiceStatusSpeaking()
+                            // Update hint with partial text
+                            speechTarget?.hint = "Hearing: ${text.take(40)}..."
                         }
                     }
                 }
                 
                 override fun onError(error: Int) {
                     runOnUiThread {
-                        if (isListening && error != SpeechRecognizer.ERROR_NO_MATCH) {
-                            // Restart on error except no match
+                        val errorMsg = when (error) {
+                            SpeechRecognizer.ERROR_AUDIO -> "Audio error"
+                            SpeechRecognizer.ERROR_CLIENT -> "Client error"
+                            SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Permission denied"
+                            SpeechRecognizer.ERROR_NETWORK -> "Network error"
+                            SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Network timeout"
+                            SpeechRecognizer.ERROR_NO_MATCH -> null // Don't show error for no match
+                            SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Recognizer busy"
+                            SpeechRecognizer.ERROR_SERVER -> "Server error"
+                            SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> null // Don't show error for timeout
+                            else -> "Unknown error"
+                        }
+                        
+                        if (errorMsg != null) {
+                            Toast.makeText(this@MainActivity, "Voice: $errorMsg", Toast.LENGTH_SHORT).show()
+                        }
+                        
+                        if (isListening && error != SpeechRecognizer.ERROR_NO_MATCH && error != SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
+                            // Restart on error except no match or timeout
                             voiceHandler.postDelayed({
                                 if (isListening) {
                                     try {
@@ -1189,14 +1218,15 @@ open class MainActivity : AppCompatActivity() {
                 putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
                 putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
                 putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 1000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
+                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
+                putExtra("android.speech.extra.DICTATION_MODE", true)
             }
             
             try {
                 speechRecognizer?.startListening(intent)
             } catch (e: Exception) {
-                Toast.makeText(this, "Could not start voice input", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Could not start voice input: ${e.message}", Toast.LENGTH_SHORT).show()
                 scheduleCleanup()
             }
         }
@@ -2158,7 +2188,7 @@ open class MainActivity : AppCompatActivity() {
             try {
                 aiChatBinding.typingRow.visibility = View.VISIBLE
                 val query = aiChatBinding.queryEditText.text.toString().trim()
-                    .ifBlank { "Analyze this video and describe what you see" }
+                    .ifBlank { "Analyze this video in detail and describe what you see" }
                 
                 val userMsg = ChatMessage("user", "$query [Video attached]")
                 chatAdapter.addMessage(userMsg)
@@ -2171,19 +2201,28 @@ open class MainActivity : AppCompatActivity() {
                 aiChatBinding.chatRecyclerView.visibility = View.VISIBLE
                 scrollChatToBottom()
 
-                // Extract frames from video
-                val frames = extractVideoFrames(uri, maxFrames = 3)
+                // Extract frames from video (5 frames for better analysis)
+                val frames = extractVideoFrames(uri, maxFrames = 5)
                 if (frames.isEmpty()) {
                     aiChatBinding.typingRow.visibility = View.GONE
-                    showChatError("Could not extract video frames")
+                    showChatError("Could not extract video frames. Please try a different video.")
                     return@launch
                 }
 
-                // Try primary model (Hugging Face - free)
-                var response = callVideoAnalysisHF(query, frames)
+                Log.d("VideoAnalysis", "Analyzing ${frames.size} frames")
+
+                // Try Gemini first (best for video/image analysis)
+                var response = callVideoAnalysisGemini(query, frames)
                 
-                // Fallback to OpenRouter free model
+                // Fallback to Hugging Face
                 if (response == null) {
+                    Log.d("VideoAnalysis", "Gemini failed, trying HuggingFace")
+                    response = callVideoAnalysisHF(query, frames)
+                }
+                
+                // Final fallback to OpenRouter
+                if (response == null) {
+                    Log.d("VideoAnalysis", "HuggingFace failed, trying OpenRouter")
                     response = callVideoAnalysisOR(query, frames)
                 }
 
@@ -2200,9 +2239,10 @@ open class MainActivity : AppCompatActivity() {
                     }
                     scrollChatToBottom()
                 } else {
-                    showChatError("Video analysis failed. Try again.")
+                    showChatError("Video analysis failed. Please try again or use a shorter video.")
                 }
             } catch (e: Exception) {
+                Log.e("VideoAnalysis", "Analysis error: ${e.message}", e)
                 aiChatBinding.typingRow.visibility = View.GONE
                 aiChatBinding.videoAnalysisChip.isChecked = false
                 showChatError("Error: ${e.message?.take(60)}")
@@ -2210,48 +2250,150 @@ open class MainActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun extractVideoFrames(uri: android.net.Uri, maxFrames: Int = 3): List<String> = withContext(Dispatchers.IO) {
+    private suspend fun extractVideoFrames(uri: android.net.Uri, maxFrames: Int = 5): List<String> = withContext(Dispatchers.IO) {
         val frames = mutableListOf<String>()
         var retriever: android.media.MediaMetadataRetriever? = null
         try {
             retriever = android.media.MediaMetadataRetriever()
             retriever.setDataSource(this@MainActivity, uri)
+            
             val duration = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
+            val width = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull() ?: 0
+            val height = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull() ?: 0
+            
+            Log.d("VideoAnalysis", "Video duration: ${duration}ms, size: ${width}x${height}")
             
             if (duration > 0) {
+                // Extract frames at strategic points: start, middle sections, and end
                 val interval = duration / (maxFrames + 1)
-                for (i in 1..maxFrames) {
-                    val timeUs = interval * i * 1000
-                    val bitmap = retriever.getFrameAtTime(timeUs, android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
-                    if (bitmap != null) {
-                        val maxDim = 768
-                        val scale = maxDim.toFloat() / Math.max(bitmap.width, bitmap.height)
-                        val newWidth = (bitmap.width * scale).toInt()
-                        val newHeight = (bitmap.height * scale).toInt()
-                        val resized = android.graphics.Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
-                        val stream = java.io.ByteArrayOutputStream()
-                        resized.compress(android.graphics.Bitmap.CompressFormat.JPEG, 85, stream)
-                        val base64 = android.util.Base64.encodeToString(stream.toByteArray(), android.util.Base64.NO_WRAP)
-                        frames.add(base64)
-                        bitmap.recycle()
-                        resized.recycle()
+                val extractionPoints = mutableListOf<Long>()
+                
+                // Add start frame (skip first 500ms to avoid black frames)
+                extractionPoints.add(500L)
+                
+                // Add evenly distributed frames
+                for (i in 1..maxFrames - 2) {
+                    extractionPoints.add(interval * i)
+                }
+                
+                // Add end frame (500ms before end)
+                extractionPoints.add((duration - 500).coerceAtLeast(1000L))
+                
+                extractionPoints.take(maxFrames).forEach { timeMs ->
+                    try {
+                        val timeUs = timeMs * 1000
+                        val bitmap = retriever.getFrameAtTime(
+                            timeUs, 
+                            android.media.MediaMetadataRetriever.OPTION_CLOSEST_SYNC
+                        )
+                        
+                        if (bitmap != null) {
+                            // Resize to max 1024px on longest side for better quality
+                            val maxDim = 1024
+                            val scale = maxDim.toFloat() / Math.max(bitmap.width, bitmap.height)
+                            val newWidth = (bitmap.width * scale).toInt()
+                            val newHeight = (bitmap.height * scale).toInt()
+                            
+                            val resized = android.graphics.Bitmap.createScaledBitmap(
+                                bitmap, newWidth, newHeight, true
+                            )
+                            
+                            val stream = java.io.ByteArrayOutputStream()
+                            resized.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, stream)
+                            val base64 = android.util.Base64.encodeToString(
+                                stream.toByteArray(), 
+                                android.util.Base64.NO_WRAP
+                            )
+                            
+                            frames.add(base64)
+                            Log.d("VideoAnalysis", "Extracted frame at ${timeMs}ms (${newWidth}x${newHeight})")
+                            
+                            bitmap.recycle()
+                            resized.recycle()
+                        }
+                    } catch (e: Exception) {
+                        Log.e("VideoAnalysis", "Failed to extract frame at ${timeMs}ms: ${e.message}")
                     }
                 }
             }
         } catch (e: Exception) {
-            android.util.Log.e("VideoAnalysis", "Frame extraction error: ${e.message}")
+            Log.e("VideoAnalysis", "Frame extraction error: ${e.message}", e)
         } finally {
             try {
                 retriever?.release()
             } catch (_: Exception) {}
         }
+        
+        Log.d("VideoAnalysis", "Extracted ${frames.size} frames")
         frames
+    }
+
+    private suspend fun callVideoAnalysisGemini(query: String, frames: List<String>): String? = withContext(Dispatchers.IO) {
+        try {
+            Log.d("VideoAnalysisGemini", "Analyzing ${frames.size} frames with Gemini")
+            
+            // Build parts array with text and images
+            val parts = mutableListOf<Map<String, Any>>()
+            parts.add(mapOf("text" to "$query\n\nAnalyze these video frames in sequence and provide a detailed description:"))
+            
+            frames.forEachIndexed { idx, frame ->
+                parts.add(mapOf(
+                    "inline_data" to mapOf(
+                        "mime_type" to "image/jpeg",
+                        "data" to frame
+                    )
+                ))
+            }
+            
+            val requestBody = mapOf(
+                "contents" to listOf(
+                    mapOf("parts" to parts)
+                )
+            )
+            
+            val body = gson.toJson(requestBody)
+                .toRequestBody("application/json".toMediaType())
+            
+            val request = Request.Builder()
+                .url("https://generativelanguage.googleapis.com/v1beta/models/$GEMINI_MODEL:generateContent?key=$GEMINI_API_KEY")
+                .post(body)
+                .build()
+            
+            val geminiClient = OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(90, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
+                .build()
+            
+            geminiClient.newCall(request).execute().use { response ->
+                val responseBody = response.body?.string()
+                Log.d("VideoAnalysisGemini", "Response code: ${response.code}")
+                
+                if (!response.isSuccessful) {
+                    Log.e("VideoAnalysisGemini", "Error: $responseBody")
+                    return@withContext null
+                }
+                
+                val result = gson.fromJson(responseBody, GeminiResponse::class.java)
+                val text = result.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text?.trim()
+                
+                if (text != null) {
+                    Log.d("VideoAnalysisGemini", "Success: ${text.take(100)}")
+                }
+                
+                text
+            }
+        } catch (e: Exception) {
+            Log.e("VideoAnalysisGemini", "Error: ${e.message}", e)
+            null
+        }
     }
 
     private suspend fun callVideoAnalysisHF(query: String, frames: List<String>): String? = withContext(Dispatchers.IO) {
         try {
+            Log.d("VideoAnalysisHF", "Analyzing ${frames.size} frames with HuggingFace")
             val frameDesc = mutableListOf<String>()
-            val hfClient = okhttp3.OkHttpClient.Builder()
+            val hfClient = OkHttpClient.Builder()
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .readTimeout(90, TimeUnit.SECONDS)
                 .build()
@@ -2260,7 +2402,7 @@ open class MainActivity : AppCompatActivity() {
                 try {
                     val body = gson.toJson(mapOf(
                         "inputs" to frame,
-                        "parameters" to mapOf("max_length" to 150)
+                        "parameters" to mapOf("max_length" to 200)
                     )).toRequestBody("application/json".toMediaType())
                     
                     val request = Request.Builder()
@@ -2277,63 +2419,94 @@ open class MainActivity : AppCompatActivity() {
                             val caption = result?.firstOrNull()?.get("generated_text") as? String
                             if (!caption.isNullOrBlank()) {
                                 frameDesc.add("Frame ${idx + 1}: $caption")
+                                Log.d("VideoAnalysisHF", "Frame $idx: $caption")
                             }
+                        } else {
+                            Log.e("VideoAnalysisHF", "Frame $idx failed: ${response.code}")
                         }
                     }
                 } catch (e: Exception) {
-                    android.util.Log.e("VideoAnalysisHF", "Frame $idx error: ${e.message}")
+                    Log.e("VideoAnalysisHF", "Frame $idx error: ${e.message}")
                 }
             }
 
             if (frameDesc.isNotEmpty()) {
-                val summary = "Video Analysis (${frames.size} frames):\n\n${frameDesc.joinToString("\n\n")}\n\nQuery: $query"
+                val summary = "Video Analysis (${frames.size} frames):\n\n${frameDesc.joinToString("\n\n")}\n\nBased on the frames, this video shows: ${frameDesc.joinToString(", ") { it.substringAfter(": ") }}"
+                Log.d("VideoAnalysisHF", "Success: ${frameDesc.size} frames analyzed")
                 summary
-            } else null
+            } else {
+                Log.e("VideoAnalysisHF", "No frames analyzed")
+                null
+            }
         } catch (e: Exception) {
-            android.util.Log.e("VideoAnalysisHF", "Error: ${e.message}")
+            Log.e("VideoAnalysisHF", "Error: ${e.message}", e)
             null
         }
     }
 
     private suspend fun callVideoAnalysisOR(query: String, frames: List<String>): String? = withContext(Dispatchers.IO) {
         try {
-            // Using free model on OpenRouter: google/gemini-flash-1.5-8b (free tier)
+            Log.d("VideoAnalysisOR", "Analyzing ${frames.size} frames with OpenRouter")
+            
+            // Using free vision model on OpenRouter
+            val content = mutableListOf<Map<String, Any>>()
+            content.add(mapOf("type" to "text", "text" to "$query\n\nAnalyze these video frames:"))
+            
+            frames.forEach { frame ->
+                content.add(mapOf(
+                    "type" to "image_url",
+                    "image_url" to mapOf("url" to "data:image/jpeg;base64,$frame")
+                ))
+            }
+            
             val messages = listOf(
-                mapOf(
-                    "role" to "user",
-                    "content" to listOf(
-                        mapOf("type" to "text", "text" to query),
-                        *frames.map { mapOf("type" to "image_url", "image_url" to mapOf("url" to "data:image/jpeg;base64,$it")) }.toTypedArray()
-                    )
-                )
+                mapOf("role" to "user", "content" to content)
             )
 
             val body = gson.toJson(mapOf(
                 "model" to "google/gemini-flash-1.5-8b:free",
-                "messages" to messages
+                "messages" to messages,
+                "max_tokens" to 1024
             )).toRequestBody("application/json".toMediaType())
 
             val request = Request.Builder()
                 .url("https://openrouter.ai/api/v1/chat/completions")
                 .post(body)
-                .addHeader("Authorization", "Bearer ")
+                .addHeader("Authorization", "Bearer $OPENROUTER_API_KEY")
                 .addHeader("HTTP-Referer", "https://nbheditor.beeta.com")
                 .addHeader("X-Title", "NBH Editor")
                 .build()
 
-            client.newCall(request).execute().use { response ->
+            val orClient = OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(120, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
+                .build()
+
+            orClient.newCall(request).execute().use { response ->
+                val responseBody = response.body?.string()
+                Log.d("VideoAnalysisOR", "Response code: ${response.code}")
+                
                 if (response.isSuccessful) {
-                    val json = response.body?.string()
-                    val result = gson.fromJson(json, Map::class.java)
-                    (result["choices"] as? List<*>)?.firstOrNull()
+                    val json = gson.fromJson(responseBody, Map::class.java)
+                    val text = (json["choices"] as? List<*>)?.firstOrNull()
                         ?.let { it as? Map<*, *> }
                         ?.get("message")
                         ?.let { it as? Map<*, *> }
                         ?.get("content") as? String
-                } else null
+                    
+                    if (text != null) {
+                        Log.d("VideoAnalysisOR", "Success: ${text.take(100)}")
+                    }
+                    
+                    text
+                } else {
+                    Log.e("VideoAnalysisOR", "Error: $responseBody")
+                    null
+                }
             }
         } catch (e: Exception) {
-            android.util.Log.e("VideoAnalysisOR", "Error: ${e.message}")
+            Log.e("VideoAnalysisOR", "Error: ${e.message}", e)
             null
         }
     }

@@ -15,32 +15,41 @@ class VoiceWaveformView @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        strokeWidth = 4f
+        strokeWidth = 5f
         strokeCap = Paint.Cap.ROUND
         style = Paint.Style.STROKE
     }
 
-    private val bars = 30
+    private val bars = 40
     private val barHeights = FloatArray(bars) { 0.2f }
+    private val barVelocities = FloatArray(bars) { 0f }
     private var animationPhase = 0f
     private var isAnimating = false
     private var hasVoice = false
+    private var intensity = 0.3f
 
     fun startAnimation(voiceDetected: Boolean = false) {
         isAnimating = true
         hasVoice = voiceDetected
+        intensity = if (voiceDetected) 0.8f else 0.3f
         invalidate()
     }
 
     fun stopAnimation() {
         isAnimating = false
         hasVoice = false
+        intensity = 0.2f
         barHeights.fill(0.2f)
         invalidate()
     }
 
     fun setVoiceDetected(detected: Boolean) {
         hasVoice = detected
+        intensity = if (detected) 0.8f else 0.3f
+    }
+    
+    fun setIntensity(level: Float) {
+        intensity = level.coerceIn(0.2f, 1.0f)
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -54,30 +63,44 @@ class VoiceWaveformView @JvmOverloads constructor(
         paint.color = if (hasVoice) {
             context.resources.getColor(R.color.accent_secondary, null) // Green when voice detected
         } else {
-            context.resources.getColor(R.color.accent_peach, null) // Orange when listening
+            context.resources.getColor(R.color.accent_primary, null) // Blue when listening
         }
 
         for (i in 0 until bars) {
             val x = i * barWidth + barWidth / 2f
             
             if (isAnimating) {
-                // Animate bar heights
-                if (hasVoice) {
+                // Smooth wave animation with physics-like motion
+                val targetHeight = if (hasVoice) {
                     // Active waveform when voice detected
-                    barHeights[i] = (sin(animationPhase + i * 0.5f) * 0.4f + 0.5f).coerceIn(0.1f, 1f)
+                    val wave1 = sin(animationPhase + i * 0.4f) * 0.35f
+                    val wave2 = sin(animationPhase * 1.5f + i * 0.2f) * 0.25f
+                    (wave1 + wave2 + 0.6f).coerceIn(0.2f, 1.0f) * intensity
                 } else {
                     // Gentle pulse when just listening
-                    barHeights[i] = (sin(animationPhase * 0.5f) * 0.15f + 0.25f).coerceIn(0.1f, 0.4f)
+                    val pulse = sin(animationPhase * 0.6f + i * 0.1f) * 0.1f
+                    (0.25f + pulse).coerceIn(0.15f, 0.4f)
                 }
+                
+                // Smooth interpolation
+                val diff = targetHeight - barHeights[i]
+                barVelocities[i] = barVelocities[i] * 0.7f + diff * 0.3f
+                barHeights[i] += barVelocities[i]
+                barHeights[i] = barHeights[i].coerceIn(0.1f, 1.0f)
             }
             
-            val barHeight = barHeights[i] * h * 0.7f
+            val barHeight = barHeights[i] * h * 0.8f
+            
+            // Add alpha variation for depth effect
+            val alpha = (180 + (75 * barHeights[i])).toInt().coerceIn(150, 255)
+            paint.alpha = alpha
+            
             canvas.drawLine(x, centerY - barHeight / 2f, x, centerY + barHeight / 2f, paint)
         }
 
         if (isAnimating) {
-            animationPhase += if (hasVoice) 0.3f else 0.15f
-            postInvalidateDelayed(50)
+            animationPhase += if (hasVoice) 0.35f else 0.18f
+            postInvalidateDelayed(33) // ~30 FPS
         }
     }
 }

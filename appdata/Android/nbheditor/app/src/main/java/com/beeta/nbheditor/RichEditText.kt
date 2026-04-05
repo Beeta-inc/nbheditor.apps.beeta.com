@@ -2,14 +2,10 @@ package com.beeta.nbheditor
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
-import android.graphics.drawable.Drawable
-import android.text.Editable
 import android.text.Spannable
 import android.text.SpannableStringBuilder
 import android.text.style.ImageSpan
-import android.text.style.LeadingMarginSpan
 import android.util.AttributeSet
 import androidx.appcompat.widget.AppCompatEditText
 
@@ -25,13 +21,6 @@ class RichEditText @JvmOverloads constructor(
     attrs: AttributeSet? = null,
     defStyle: Int = android.R.attr.editTextStyle
 ) : AppCompatEditText(context, attrs, defStyle) {
-
-    init {
-        // Ensure the EditText is focusable and editable
-        isFocusable = true
-        isFocusableInTouchMode = true
-        isEnabled = true
-    }
 
     /**
      * Inserts a bitmap at the given cursor position.
