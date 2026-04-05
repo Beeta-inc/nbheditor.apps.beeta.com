@@ -9,10 +9,10 @@
             <InsightsFilterSettings>
               <option name="connection">
                 <ConnectionSetting>
-                  <option name="appId" value="PLACEHOLDER" />
-                  <option name="mobileSdkAppId" value="" />
-                  <option name="projectId" value="" />
-                  <option name="projectNumber" value="" />
+                  <option name="appId" value="com.beeta.nbheditor" />
+                  <option name="mobileSdkAppId" value="1:123456789000:android:0000000000000000000000" />
+                  <option name="projectId" value="nbheditor-placeholder" />
+                  <option name="projectNumber" value="123456789000" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

@@ -1,5 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
+    // Add the Google services Gradle plugin
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -65,6 +67,15 @@ dependencies {
 
     // WorkManager for background update checks
     implementation("androidx.work:work-runtime-ktx:2.9.1")
+
+    // Google Sign-In and Drive API
+    implementation("com.google.android.gms:play-services-auth:21.0.0")
+    
+    // Firebase for free cloud storage
+    implementation(platform("com.google.firebase:firebase-bom:34.11.0"))
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
+    implementation("com.google.firebase:firebase-storage")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

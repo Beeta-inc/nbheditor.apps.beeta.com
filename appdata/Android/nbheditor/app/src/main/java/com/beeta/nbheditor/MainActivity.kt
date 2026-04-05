@@ -92,6 +92,9 @@ open class MainActivity : AppCompatActivity() {
 
     private val OPENROUTER_API_KEY = ""
 
+    // Sign-in request code
+    private val RC_SIGN_IN = 9001
+
     // 6 free OpenRouter models tried in order
     private val OR_MODELS = listOf(
         "stepfun/step-3.5-flash:free",            // 1 — fast, generous limits
@@ -263,6 +266,9 @@ open class MainActivity : AppCompatActivity() {
         setupVoiceButtons()
         setupImageButton()
         registerBackHandler()
+
+        // Show first-time login dialog
+        showFirstTimeLoginDialog()
 
         // Request notification permission on Android 13+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -797,7 +803,15 @@ open class MainActivity : AppCompatActivity() {
                     else -> null
                 }
             }.filterNotNull()
-            file.writeText(gson.toJson(historyItems))
+            val jsonContent = gson.toJson(historyItems)
+            file.writeText(jsonContent)
+            
+            // Sync to cloud if signed in
+            if (GoogleSignInHelper.isSignedIn(this)) {
+                lifecycleScope.launch {
+                    GoogleSignInHelper.syncChatToCloud(this@MainActivity, jsonContent, file.name)
+                }
+            }
         } catch (_: Exception) {}
     }
 
@@ -1528,6 +1542,19 @@ open class MainActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menuInflater.inflate(R.menu.main_menu, menu)
+        
+        // Add sign-in button dynamically
+        val signInItem = menu.add(0, R.id.nav_sign_in, 0, "Sign In")
+        signInItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
+        
+        if (GoogleSignInHelper.isSignedIn(this)) {
+            // Show profile picture if signed in
+            signInItem.setIcon(R.drawable.ic_account_circle)
+            signInItem.title = "Account"
+        } else {
+            signInItem.setIcon(R.drawable.ic_account_circle)
+        }
+        
         return true
     }
 
@@ -2112,6 +2139,14 @@ open class MainActivity : AppCompatActivity() {
                 updateToolbarTitle()
             }
             addToRecents(uri)
+            
+            // Sync to cloud if signed in
+            if (GoogleSignInHelper.isSignedIn(this)) {
+                val fileName = getFileName(uri)
+                lifecycleScope.launch {
+                    GoogleSignInHelper.syncFileToCloud(this@MainActivity, text, fileName)
+                }
+            }
         } catch (e: Exception) {
             Toast.makeText(this, "Failed to save", Toast.LENGTH_SHORT).show()
         }
@@ -2225,6 +2260,7 @@ open class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, if (aiEnabled) "AI Enabled" else "AI Disabled", Toast.LENGTH_SHORT).show()
             }
             R.id.improveMenuItem -> improveWithAI()
+            R.id.nav_sign_in -> showAccountDialog()
             R.id.quitMenuItem -> finish()
             else -> return false
         }
@@ -2622,5 +2658,178 @@ open class MainActivity : AppCompatActivity() {
             Log.e("VideoAnalysisOR", "Error: ${e.message}", e)
             null
         }
+    }
+    
+    // ── Google Sign-In ────────────────────────────────────────────────────────
+    
+    private fun showFirstTimeLoginDialog() {
+        val hasAsked = prefs.getBoolean("login_dialog_shown", false)
+        if (hasAsked) return
+        
+        val dialogView = layoutInflater.inflate(R.layout.dialog_first_time_login, null)
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+        
+        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.signInButton)
+            .setOnClickListener {
+                dialog.dismiss()
+                startGoogleSignIn()
+            }
+        
+        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.skipButton)
+            .setOnClickListener {
+                dialog.dismiss()
+                prefs.edit().putBoolean("login_dialog_shown", true).apply()
+                Toast.makeText(this, "You can sign in later from the menu", Toast.LENGTH_LONG).show()
+            }
+        
+        dialog.show()
+    }
+    
+    private fun startGoogleSignIn() {
+        val signInIntent = GoogleSignInHelper.getSignInClient(this).signInIntent
+        startActivityForResult(signInIntent, RC_SIGN_IN)
+    }
+    
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        
+        if (requestCode == RC_SIGN_IN) {
+            val task = com.google.android.gms.auth.api.signin.GoogleSignIn.getSignedInAccountFromIntent(data)
+            try {
+                val account = task.getResult(Exception::class.java)
+                
+                lifecycleScope.launch {
+                    try {
+                        GoogleSignInHelper.saveSignInState(this@MainActivity, account)
+                        prefs.edit().putBoolean("login_dialog_shown", true).apply()
+                        Toast.makeText(this@MainActivity, "✓ Signed in as ${account.email}", Toast.LENGTH_LONG).show()
+                        invalidateOptionsMenu() // Refresh toolbar
+                        
+                        // Start syncing chats and files
+                        syncAllDataToCloud()
+                    } catch (e: Exception) {
+                        Toast.makeText(this@MainActivity, "Firebase auth failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                val errorMsg = when {
+                    e.message?.contains("10:") == true || e.message?.contains("10") == true -> {
+                        "Sign-in not configured. Please set up Firebase.\n\nSee FIREBASE_SETUP.md for instructions."
+                    }
+                    e.message?.contains("12:") == true || e.message?.contains("12") == true -> {
+                        "Sign-in cancelled"
+                    }
+                    e.message?.contains("7:") == true || e.message?.contains("7") == true -> {
+                        "Network error. Check your internet connection."
+                    }
+                    else -> "Sign in failed: ${e.message}"
+                }
+                
+                androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle("Sign-In Error")
+                    .setMessage(errorMsg)
+                    .setPositiveButton("OK", null)
+                    .setNeutralButton("Setup Guide") { _, _ ->
+                        showSetupGuide()
+                    }
+                    .show()
+            }
+        }
+    }
+    
+    private suspend fun syncAllDataToCloud() {
+        withContext(Dispatchers.IO) {
+            try {
+                // Sync all chat files
+                val chatsDir = java.io.File(filesDir, "nbh_chats")
+                chatsDir.listFiles()?.forEach { file ->
+                    val content = file.readText()
+                    GoogleSignInHelper.syncChatToCloud(this@MainActivity, content, file.name)
+                }
+                
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@MainActivity, "✓ Data synced to cloud", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@MainActivity, "Sync error: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+    
+    private fun showAccountDialog() {
+        if (!GoogleSignInHelper.isSignedIn(this)) {
+            startGoogleSignIn()
+            return
+        }
+        
+        val email = GoogleSignInHelper.getUserEmail(this)
+        val name = GoogleSignInHelper.getUserName(this)
+        
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Account")
+            .setMessage("Signed in as:\n$name\n$email")
+            .setPositiveButton("Sync Now") { _, _ ->
+                lifecycleScope.launch {
+                    Toast.makeText(this@MainActivity, "Syncing...", Toast.LENGTH_SHORT).show()
+                    syncAllDataToCloud()
+                }
+            }
+            .setNegativeButton("Sign Out") { _, _ ->
+                GoogleSignInHelper.signOut(this)
+                Toast.makeText(this, "Signed out", Toast.LENGTH_SHORT).show()
+                invalidateOptionsMenu()
+            }
+            .setNeutralButton("Close", null)
+            .show()
+    }
+    
+    private fun showSetupGuide() {
+        val guide = """
+            📋 Firebase Setup Required (100% FREE)
+            
+            Error code 10 means Firebase needs to be configured.
+            
+            Quick Steps:
+            1. Go to console.firebase.google.com
+            2. Create project "NBH Editor"
+            3. Add Android app
+            4. Package: com.beeta.nbheditor
+            5. Add SHA-1 fingerprints (tap to copy):
+            
+            Debug SHA-1 (with colons)
+            Release SHA-1 (with colons)
+            
+            6. Download google-services.json
+            7. Place in app/ folder
+            8. Enable Authentication (Google)
+            9. Enable Firestore Database
+            
+            ✅ Completely FREE - No credit card needed!
+            
+            See FIREBASE_SETUP.md for detailed guide.
+        """.trimIndent()
+        
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Firebase Setup (FREE)")
+            .setMessage(guide)
+            .setPositiveButton("Copy Debug SHA-1") { _, _ ->
+                val clipboard = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                val clip = android.content.ClipData.newPlainText("SHA-1", "71:BC:F6:67:E9:8A:B7:3C:7A:81:D1:93:73:82:2F:F3:9D:7D:12:86")
+                clipboard.setPrimaryClip(clip)
+                Toast.makeText(this, "✓ Debug SHA-1 copied (with colons)", Toast.LENGTH_LONG).show()
+            }
+            .setNegativeButton("Copy Release SHA-1") { _, _ ->
+                val clipboard = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                val clip = android.content.ClipData.newPlainText("SHA-1", "E5:99:68:01:45:96:26:EE:65:91:15:9B:C3:3E:87:26:A7:85:7E:B3")
+                clipboard.setPrimaryClip(clip)
+                Toast.makeText(this, "✓ Release SHA-1 copied (with colons)", Toast.LENGTH_LONG).show()
+            }
+            .setNeutralButton("Close", null)
+            .show()
     }
 }

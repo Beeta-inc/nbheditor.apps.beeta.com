@@ -46,6 +46,11 @@ class SettingsFragment : Fragment() {
                 checkForUpdates()
             }
         }
+        
+        // Back button to return to editor
+        binding.backButton?.setOnClickListener {
+            requireActivity().supportFragmentManager.popBackStack()
+        }
     }
 
     private fun checkForUpdates() {
