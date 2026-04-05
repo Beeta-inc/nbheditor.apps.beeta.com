@@ -1548,8 +1548,26 @@ open class MainActivity : AppCompatActivity() {
         signInItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS)
         
         if (GoogleSignInHelper.isSignedIn(this)) {
-            // Show profile picture if signed in
-            signInItem.setIcon(R.drawable.ic_account_circle)
+            // Load and show profile picture if signed in
+            val photoUrl = GoogleSignInHelper.getUserPhotoUrl(this)
+            if (photoUrl != null) {
+                lifecycleScope.launch {
+                    try {
+                        val bitmap = loadProfilePicture(photoUrl)
+                        if (bitmap != null) {
+                            val circularBitmap = getCircularBitmap(bitmap)
+                            val drawable = android.graphics.drawable.BitmapDrawable(resources, circularBitmap)
+                            signInItem.icon = drawable
+                        } else {
+                            signInItem.setIcon(R.drawable.ic_account_circle)
+                        }
+                    } catch (e: Exception) {
+                        signInItem.setIcon(R.drawable.ic_account_circle)
+                    }
+                }
+            } else {
+                signInItem.setIcon(R.drawable.ic_account_circle)
+            }
             signInItem.title = "Account"
         } else {
             signInItem.setIcon(R.drawable.ic_account_circle)
@@ -2831,5 +2849,39 @@ open class MainActivity : AppCompatActivity() {
             }
             .setNeutralButton("Close", null)
             .show()
+    }
+    
+    private suspend fun loadProfilePicture(url: String): Bitmap? = withContext(Dispatchers.IO) {
+        try {
+            val connection = java.net.URL(url).openConnection()
+            connection.doInput = true
+            connection.connect()
+            val input = connection.getInputStream()
+            BitmapFactory.decodeStream(input)
+        } catch (e: Exception) {
+            Log.e("ProfilePic", "Failed to load profile picture", e)
+            null
+        }
+    }
+    
+    private fun getCircularBitmap(bitmap: Bitmap): Bitmap {
+        val size = 96 // Size in pixels for toolbar icon
+        val scaled = Bitmap.createScaledBitmap(bitmap, size, size, true)
+        val output = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(output)
+        
+        val paint = android.graphics.Paint().apply {
+            isAntiAlias = true
+            color = android.graphics.Color.WHITE
+        }
+        
+        // Draw circle
+        canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
+        
+        // Apply bitmap with circular mask
+        paint.xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.SRC_IN)
+        canvas.drawBitmap(scaled, 0f, 0f, paint)
+        
+        return output
     }
 }
