@@ -1,0 +1,17 @@
+#!/bin/bash
+
+echo "=== NbhEditor Sign-In Fix Script ==="
+echo ""
+echo "Your debug keystore SHA1: F8:96:A2:F9:65:67:C8:C9:91:EF:5B:EA:B2:FB:9D:A5:84:DA:E0:20"
+echo "Your production keystore SHA1: E5:99:68:01:45:96:26:EE:65:91:15:9B:C3:3E:87:26:A7:85:7E:B3"
+echo ""
+echo "Steps to fix:"
+echo "1. Uninstall the app from your device/emulator completely"
+echo "2. In Android Studio: Build > Clean Project"
+echo "3. In Android Studio: Build > Rebuild Project"
+echo "4. Run the app again"
+echo ""
+echo "The app will now use the production keystore for debug builds."
+echo ""
+echo "If it still doesn't work, add this SHA1 to Firebase Console:"
+echo "F8:96:A2:F9:65:67:C8:C9:91:EF:5B:EA:B2:FB:9D:A5:84:DA:E0:20"

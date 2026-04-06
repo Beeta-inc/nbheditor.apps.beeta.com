@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "998554648295-vbjbldv2f16o5nvppg3p296i2r2atta7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.beeta.nbheditor",
+            "certificate_hash": "e5996801459626ee6591159bc33e8726a7857eb3"
+          }
+        },
+        {
           "client_id": "998554648295-m8s7fja9issf5gkqtdq0afbqr2sh4k9s.apps.googleusercontent.com",
           "client_type": 3
         }
