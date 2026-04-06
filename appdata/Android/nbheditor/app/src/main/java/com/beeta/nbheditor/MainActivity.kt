@@ -65,6 +65,7 @@ open class MainActivity : AppCompatActivity() {
 
     private var currentFileUri: Uri? = null
     private var textChanged = false
+    private var lastSyncSuccess = false
     private var isTyping = false
     private var aiEnabled = true
     
@@ -94,6 +95,7 @@ open class MainActivity : AppCompatActivity() {
 
     // Sign-in request code
     private val RC_SIGN_IN = 9001
+    private val RC_DRIVE_PERMISSION = 9002
 
     // 6 free OpenRouter models tried in order
     private val OR_MODELS = listOf(
@@ -2098,19 +2100,23 @@ open class MainActivity : AppCompatActivity() {
     private fun updateToolbarTitle() {
         val name = if (currentFileUri != null) getFileName(currentFileUri!!) else "NBH Editor"
         val dot = if (textChanged) " ●" else ""
-        val cloudIcon = if (GoogleSignInHelper.isSignedIn(this)) " ☁" else " ☁"
+        val cloudIcon = if (GoogleSignInHelper.isSignedIn(this)) " ☁" else ""
         val tv = binding.appBarMain.toolbarTitle ?: return
         
         val displayText = "$name$dot$cloudIcon"
         val spannable = android.text.SpannableString(displayText)
         
-        // Color the cloud icon
+        // Color the cloud icon based on sync status
         val cloudStart = displayText.indexOf("☁")
         if (cloudStart >= 0) {
             val cloudColor = if (GoogleSignInHelper.isSignedIn(this)) {
-                0xFF4CAF50.toInt() // Green
+                if (lastSyncSuccess) {
+                    0xFF4CAF50.toInt() // Green - synced successfully
+                } else {
+                    0xFFFF9800.toInt() // Orange - signed in but not synced yet
+                }
             } else {
-                0xFFF44336.toInt() // Red
+                0xFFF44336.toInt() // Red - not signed in
             }
             spannable.setSpan(
                 android.text.style.ForegroundColorSpan(cloudColor),
@@ -2184,13 +2190,24 @@ open class MainActivity : AppCompatActivity() {
                 val fileName = getFileName(uri)
                 lifecycleScope.launch {
                     try {
-                        GoogleSignInHelper.syncFileToCloud(this@MainActivity, text, fileName)
+                        val success = GoogleSignInHelper.syncFileToCloud(this@MainActivity, text, fileName)
+                        if (!success) {
+                            // Check if we need Drive permission
+                            val authException = GoogleSignInHelper.getLastAuthException()
+                            if (authException != null) {
+                                withContext(Dispatchers.Main) {
+                                    startActivityForResult(authException.intent, RC_DRIVE_PERMISSION)
+                                }
+                            }
+                        }
                         withContext(Dispatchers.Main) {
-                            updateToolbarTitle() // Update to green cloud
+                            lastSyncSuccess = success
+                            updateToolbarTitle()
                         }
                     } catch (e: Exception) {
                         withContext(Dispatchers.Main) {
-                            updateToolbarTitle() // Update to red cloud on error
+                            lastSyncSuccess = false
+                            updateToolbarTitle()
                         }
                     }
                 }
@@ -2745,6 +2762,16 @@ open class MainActivity : AppCompatActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         
+        if (requestCode == RC_DRIVE_PERMISSION) {
+            if (resultCode == RESULT_OK) {
+                GoogleSignInHelper.clearAuthException()
+                Toast.makeText(this, "Drive permission granted", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Drive permission denied", Toast.LENGTH_SHORT).show()
+            }
+            return
+        }
+        
         if (requestCode == RC_SIGN_IN) {
             val task = com.google.android.gms.auth.api.signin.GoogleSignIn.getSignedInAccountFromIntent(data)
             try {
@@ -2753,6 +2780,13 @@ open class MainActivity : AppCompatActivity() {
                 lifecycleScope.launch {
                     try {
                         GoogleSignInHelper.saveSignInState(this@MainActivity, account)
+                        
+                        // Check if Drive permission is needed
+                        val authException = GoogleSignInHelper.getLastAuthException()
+                        if (authException != null) {
+                            startActivityForResult(authException.intent, RC_DRIVE_PERMISSION)
+                        }
+                        
                         prefs.edit().putBoolean("login_dialog_shown", true).apply()
                         Toast.makeText(this@MainActivity, "✓ Signed in as ${account.email}", Toast.LENGTH_LONG).show()
                         invalidateOptionsMenu() // Refresh toolbar

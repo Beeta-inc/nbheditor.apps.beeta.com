@@ -6,13 +6,19 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential
+import com.google.api.client.http.javanet.NetHttpTransport
+import com.google.api.client.json.gson.GsonFactory
+import com.google.api.services.drive.Drive
+import com.google.api.services.drive.DriveScopes
+import com.google.api.services.drive.model.File
+import com.google.api.services.drive.model.FileList
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
 
 object GoogleSignInHelper {
     
@@ -23,19 +29,39 @@ object GoogleSignInHelper {
     private const val PREF_USER_PHOTO = "google_user_photo"
     
     private val auth = FirebaseAuth.getInstance()
-    private val firestore = FirebaseFirestore.getInstance()
-    private val storage = FirebaseStorage.getInstance()
+    private var driveService: Drive? = null
+    private var lastAuthException: com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException? = null
+    private const val ROOT_FOLDER_NAME = "nbheditordat"
+    private const val CHAT_FOLDER_NAME = "chat"
+    private const val FILE_FOLDER_NAME = "file"
+    
+    fun getLastAuthException(): com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException? {
+        return lastAuthException
+    }
+    
+    fun clearAuthException() {
+        lastAuthException = null
+    }
     
     fun getSignInClient(context: Context): GoogleSignInClient {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestIdToken(context.getString(R.string.default_web_client_id))
             .requestEmail()
+            .requestScopes(com.google.android.gms.common.api.Scope(DriveScopes.DRIVE_FILE))
             .build()
         return GoogleSignIn.getClient(context, gso)
     }
     
     fun isSignedIn(context: Context): Boolean {
-        return auth.currentUser != null
+        val signedIn = auth.currentUser != null
+        if (signedIn && driveService == null) {
+            // Re-initialize Drive service if user is signed in but service is null
+            val account = GoogleSignIn.getLastSignedInAccount(context)
+            if (account != null) {
+                initializeDriveService(context, account)
+            }
+        }
+        return signedIn
     }
     
     suspend fun saveSignInState(context: Context, account: GoogleSignInAccount) {
@@ -52,7 +78,19 @@ object GoogleSignInHelper {
                 apply()
             }
             
-            Log.d(TAG, "Firebase auth successful")
+            // Initialize Drive service
+            initializeDriveService(context, account)
+            
+            // Setup folder structure - this will trigger permission request if needed
+            withContext(Dispatchers.Main) {
+                setupDriveFolders()
+            }
+            
+            Log.d(TAG, "Firebase auth and Drive setup successful")
+        } catch (e: com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException) {
+            Log.e(TAG, "Drive permission needed", e)
+            lastAuthException = e
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to sign in with Firebase", e)
             throw e
@@ -74,6 +112,7 @@ object GoogleSignInHelper {
     fun signOut(context: Context) {
         auth.signOut()
         getSignInClient(context).signOut()
+        driveService = null
         val prefs = context.getSharedPreferences("nbheditor_prefs", Context.MODE_PRIVATE)
         prefs.edit().apply {
             putBoolean(PREF_SIGNED_IN, false)
@@ -84,74 +123,341 @@ object GoogleSignInHelper {
         }
     }
     
+    private fun initializeDriveService(context: Context, account: GoogleSignInAccount) {
+        val credential = GoogleAccountCredential.usingOAuth2(
+            context, listOf(DriveScopes.DRIVE_FILE)
+        )
+        credential.selectedAccount = account.account
+        
+        driveService = Drive.Builder(
+            NetHttpTransport(),
+            GsonFactory.getDefaultInstance(),
+            credential
+        )
+            .setApplicationName("NBH Editor")
+            .build()
+    }
+    
+    private suspend fun setupDriveFolders() = withContext(Dispatchers.IO) {
+        try {
+            val drive = driveService
+            if (drive == null) {
+                Log.e(TAG, "Drive service is null in setupDriveFolders")
+                return@withContext
+            }
+            
+            Log.d(TAG, "Setting up Drive folders...")
+            
+            // Check if root folder exists
+            var rootFolderId = findFolder(ROOT_FOLDER_NAME, null)
+            if (rootFolderId == null) {
+                rootFolderId = createFolder(ROOT_FOLDER_NAME, null)
+                Log.d(TAG, "Created root folder: $ROOT_FOLDER_NAME with ID: $rootFolderId")
+            } else {
+                Log.d(TAG, "Found existing root folder with ID: $rootFolderId")
+            }
+            
+            if (rootFolderId == null) {
+                Log.e(TAG, "Failed to get or create root folder")
+                return@withContext
+            }
+            
+            // Check if chat folder exists
+            var chatFolderId = findFolder(CHAT_FOLDER_NAME, rootFolderId)
+            if (chatFolderId == null) {
+                chatFolderId = createFolder(CHAT_FOLDER_NAME, rootFolderId)
+                Log.d(TAG, "Created chat folder with ID: $chatFolderId")
+            } else {
+                Log.d(TAG, "Found existing chat folder with ID: $chatFolderId")
+            }
+            
+            // Check if file folder exists
+            var fileFolderId = findFolder(FILE_FOLDER_NAME, rootFolderId)
+            if (fileFolderId == null) {
+                fileFolderId = createFolder(FILE_FOLDER_NAME, rootFolderId)
+                Log.d(TAG, "Created file folder with ID: $fileFolderId")
+            } else {
+                Log.d(TAG, "Found existing file folder with ID: $fileFolderId")
+            }
+            
+            Log.d(TAG, "Drive folder structure ready")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to setup Drive folders", e)
+            e.printStackTrace()
+        }
+    }
+    
+    private suspend fun findFolder(folderName: String, parentId: String?): String? = withContext(Dispatchers.IO) {
+        try {
+            val drive = driveService ?: return@withContext null
+            
+            val query = if (parentId != null) {
+                "name='$folderName' and mimeType='application/vnd.google-apps.folder' and '$parentId' in parents and trashed=false"
+            } else {
+                "name='$folderName' and mimeType='application/vnd.google-apps.folder' and trashed=false"
+            }
+            
+            val result: FileList = drive.files().list()
+                .setQ(query)
+                .setSpaces("drive")
+                .setFields("files(id, name)")
+                .execute()
+            
+            result.files.firstOrNull()?.id
+        } catch (e: com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException) {
+            Log.e(TAG, "User needs to grant Drive permission", e)
+            // Store the exception to handle in UI
+            lastAuthException = e
+            null
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to find folder: $folderName", e)
+            null
+        }
+    }
+    
+    private suspend fun createFolder(folderName: String, parentId: String?): String? = withContext(Dispatchers.IO) {
+        try {
+            val drive = driveService ?: return@withContext null
+            
+            val folderMetadata = File()
+            folderMetadata.name = folderName
+            folderMetadata.mimeType = "application/vnd.google-apps.folder"
+            if (parentId != null) {
+                folderMetadata.parents = listOf(parentId)
+            }
+            
+            val folder = drive.files().create(folderMetadata)
+                .setFields("id")
+                .execute()
+            
+            folder.id
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to create folder: $folderName", e)
+            null
+        }
+    }
+    
     suspend fun syncChatToCloud(context: Context, chatData: String, fileName: String): Boolean = withContext(Dispatchers.IO) {
         try {
-            val userId = auth.currentUser?.uid ?: return@withContext false
+            Log.d(TAG, "Starting chat sync for: $fileName")
             
-            // Store in Firestore
-            val chatDoc = hashMapOf(
-                "userId" to userId,
-                "fileName" to fileName,
-                "content" to chatData,
-                "timestamp" to System.currentTimeMillis()
-            )
+            // Ensure Drive service is initialized
+            if (driveService == null) {
+                Log.d(TAG, "Drive service is null, initializing...")
+                val account = GoogleSignIn.getLastSignedInAccount(context)
+                if (account != null) {
+                    Log.d(TAG, "Found account: ${account.email}")
+                    initializeDriveService(context, account)
+                    setupDriveFolders()
+                } else {
+                    Log.e(TAG, "No signed in account found")
+                    return@withContext false
+                }
+            }
             
-            firestore.collection("users")
-                .document(userId)
-                .collection("chats")
-                .document(fileName)
-                .set(chatDoc)
-                .await()
+            val drive = driveService
+            if (drive == null) {
+                Log.e(TAG, "Drive service is still null after initialization")
+                return@withContext false
+            }
             
-            Log.d(TAG, "Chat synced to Firestore: $fileName")
+            Log.d(TAG, "Finding root folder...")
+            var rootFolderId = findFolder(ROOT_FOLDER_NAME, null)
+            if (rootFolderId == null) {
+                Log.d(TAG, "Root folder not found, creating...")
+                rootFolderId = createFolder(ROOT_FOLDER_NAME, null)
+                if (rootFolderId == null) {
+                    Log.e(TAG, "Failed to create root folder")
+                    return@withContext false
+                }
+                Log.d(TAG, "Created root folder with ID: $rootFolderId")
+            }
+            Log.d(TAG, "Root folder ID: $rootFolderId")
+            
+            Log.d(TAG, "Finding chat folder...")
+            var chatFolderId = findFolder(CHAT_FOLDER_NAME, rootFolderId)
+            if (chatFolderId == null) {
+                Log.d(TAG, "Chat folder not found, creating...")
+                chatFolderId = createFolder(CHAT_FOLDER_NAME, rootFolderId)
+                if (chatFolderId == null) {
+                    Log.e(TAG, "Failed to create chat folder")
+                    return@withContext false
+                }
+                Log.d(TAG, "Created chat folder with ID: $chatFolderId")
+            }
+            Log.d(TAG, "Chat folder ID: $chatFolderId")
+            
+            // Check if file already exists
+            Log.d(TAG, "Checking if chat file exists: $fileName")
+            val existingFileId = findFileInFolder(fileName, chatFolderId)
+            
+            if (existingFileId != null) {
+                // Update existing file
+                Log.d(TAG, "Updating existing chat file with ID: $existingFileId")
+                updateFile(existingFileId, chatData)
+            } else {
+                // Create new file
+                Log.d(TAG, "Creating new chat file: $fileName")
+                val newFileId = createFile(fileName, chatData, chatFolderId)
+                Log.d(TAG, "Created chat file with ID: $newFileId")
+            }
+            
+            Log.d(TAG, "Chat synced to Drive successfully: $fileName")
             true
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to sync chat to cloud", e)
+            Log.e(TAG, "Failed to sync chat to Drive: $fileName", e)
+            e.printStackTrace()
             false
+        }
+    }
+    
+    private suspend fun findFileInFolder(fileName: String, folderId: String): String? = withContext(Dispatchers.IO) {
+        try {
+            val drive = driveService ?: return@withContext null
+            
+            val query = "name='$fileName' and '$folderId' in parents and trashed=false"
+            
+            val result: FileList = drive.files().list()
+                .setQ(query)
+                .setSpaces("drive")
+                .setFields("files(id, name)")
+                .execute()
+            
+            result.files.firstOrNull()?.id
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to find file: $fileName", e)
+            null
+        }
+    }
+    
+    private suspend fun createFile(fileName: String, content: String, folderId: String): String? = withContext(Dispatchers.IO) {
+        try {
+            val drive = driveService ?: return@withContext null
+            
+            val fileMetadata = File()
+            fileMetadata.name = fileName
+            fileMetadata.parents = listOf(folderId)
+            
+            val contentStream = java.io.ByteArrayInputStream(content.toByteArray())
+            
+            val file = drive.files().create(fileMetadata, com.google.api.client.http.InputStreamContent("text/plain", contentStream))
+                .setFields("id")
+                .execute()
+            
+            file.id
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to create file: $fileName", e)
+            null
+        }
+    }
+    
+    private suspend fun updateFile(fileId: String, content: String) = withContext(Dispatchers.IO) {
+        try {
+            val drive = driveService ?: return@withContext
+            
+            val contentStream = java.io.ByteArrayInputStream(content.toByteArray())
+            
+            drive.files().update(fileId, null, com.google.api.client.http.InputStreamContent("text/plain", contentStream))
+                .execute()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to update file: $fileId", e)
         }
     }
     
     suspend fun syncFileToCloud(context: Context, fileContent: String, fileName: String): Boolean = withContext(Dispatchers.IO) {
         try {
-            val userId = auth.currentUser?.uid ?: return@withContext false
+            Log.d(TAG, "Starting file sync for: $fileName")
             
-            // Store in Firestore
-            val fileDoc = hashMapOf(
-                "userId" to userId,
-                "fileName" to fileName,
-                "content" to fileContent,
-                "timestamp" to System.currentTimeMillis()
-            )
+            // Ensure Drive service is initialized
+            if (driveService == null) {
+                Log.d(TAG, "Drive service is null, initializing...")
+                val account = GoogleSignIn.getLastSignedInAccount(context)
+                if (account != null) {
+                    Log.d(TAG, "Found account: ${account.email}")
+                    initializeDriveService(context, account)
+                    setupDriveFolders()
+                } else {
+                    Log.e(TAG, "No signed in account found")
+                    return@withContext false
+                }
+            }
             
-            firestore.collection("users")
-                .document(userId)
-                .collection("files")
-                .document(fileName)
-                .set(fileDoc)
-                .await()
+            val drive = driveService
+            if (drive == null) {
+                Log.e(TAG, "Drive service is still null after initialization")
+                return@withContext false
+            }
             
-            Log.d(TAG, "File synced to Firestore: $fileName")
+            Log.d(TAG, "Finding root folder...")
+            var rootFolderId = findFolder(ROOT_FOLDER_NAME, null)
+            if (rootFolderId == null) {
+                Log.d(TAG, "Root folder not found, creating...")
+                rootFolderId = createFolder(ROOT_FOLDER_NAME, null)
+                if (rootFolderId == null) {
+                    Log.e(TAG, "Failed to create root folder")
+                    return@withContext false
+                }
+                Log.d(TAG, "Created root folder with ID: $rootFolderId")
+            }
+            Log.d(TAG, "Root folder ID: $rootFolderId")
+            
+            Log.d(TAG, "Finding file folder...")
+            var fileFolderId = findFolder(FILE_FOLDER_NAME, rootFolderId)
+            if (fileFolderId == null) {
+                Log.d(TAG, "File folder not found, creating...")
+                fileFolderId = createFolder(FILE_FOLDER_NAME, rootFolderId)
+                if (fileFolderId == null) {
+                    Log.e(TAG, "Failed to create file folder")
+                    return@withContext false
+                }
+                Log.d(TAG, "Created file folder with ID: $fileFolderId")
+            }
+            Log.d(TAG, "File folder ID: $fileFolderId")
+            
+            // Check if file already exists
+            Log.d(TAG, "Checking if file exists: $fileName")
+            val existingFileId = findFileInFolder(fileName, fileFolderId)
+            
+            if (existingFileId != null) {
+                // Update existing file
+                Log.d(TAG, "Updating existing file with ID: $existingFileId")
+                updateFile(existingFileId, fileContent)
+            } else {
+                // Create new file
+                Log.d(TAG, "Creating new file: $fileName")
+                val newFileId = createFile(fileName, fileContent, fileFolderId)
+                Log.d(TAG, "Created file with ID: $newFileId")
+            }
+            
+            Log.d(TAG, "File synced to Drive successfully: $fileName")
             true
         } catch (e: Exception) {
-            Log.e(TAG, "Failed to sync file to cloud", e)
+            Log.e(TAG, "Failed to sync file to Drive: $fileName", e)
+            e.printStackTrace()
             false
         }
     }
     
     suspend fun getAllCloudChats(context: Context): List<Pair<String, String>> = withContext(Dispatchers.IO) {
         try {
-            val userId = auth.currentUser?.uid ?: return@withContext emptyList()
+            val drive = driveService ?: return@withContext emptyList()
             
-            val snapshot = firestore.collection("users")
-                .document(userId)
-                .collection("chats")
-                .get()
-                .await()
+            val rootFolderId = findFolder(ROOT_FOLDER_NAME, null) ?: return@withContext emptyList()
+            val chatFolderId = findFolder(CHAT_FOLDER_NAME, rootFolderId) ?: return@withContext emptyList()
             
-            snapshot.documents.mapNotNull { doc ->
-                val fileName = doc.getString("fileName") ?: return@mapNotNull null
-                val content = doc.getString("content") ?: return@mapNotNull null
-                Pair(fileName, content)
+            val query = "'$chatFolderId' in parents and trashed=false"
+            
+            val result: FileList = drive.files().list()
+                .setQ(query)
+                .setSpaces("drive")
+                .setFields("files(id, name)")
+                .execute()
+            
+            result.files.mapNotNull { file ->
+                val content = downloadFileContent(file.id)
+                if (content != null) {
+                    Pair(file.name, content)
+                } else null
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get cloud chats", e)
@@ -161,22 +467,42 @@ object GoogleSignInHelper {
     
     suspend fun getAllCloudFiles(context: Context): List<Pair<String, String>> = withContext(Dispatchers.IO) {
         try {
-            val userId = auth.currentUser?.uid ?: return@withContext emptyList()
+            val drive = driveService ?: return@withContext emptyList()
             
-            val snapshot = firestore.collection("users")
-                .document(userId)
-                .collection("files")
-                .get()
-                .await()
+            val rootFolderId = findFolder(ROOT_FOLDER_NAME, null) ?: return@withContext emptyList()
+            val fileFolderId = findFolder(FILE_FOLDER_NAME, rootFolderId) ?: return@withContext emptyList()
             
-            snapshot.documents.mapNotNull { doc ->
-                val fileName = doc.getString("fileName") ?: return@mapNotNull null
-                val content = doc.getString("content") ?: return@mapNotNull null
-                Pair(fileName, content)
+            val query = "'$fileFolderId' in parents and trashed=false"
+            
+            val result: FileList = drive.files().list()
+                .setQ(query)
+                .setSpaces("drive")
+                .setFields("files(id, name)")
+                .execute()
+            
+            result.files.mapNotNull { file ->
+                val content = downloadFileContent(file.id)
+                if (content != null) {
+                    Pair(file.name, content)
+                } else null
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get cloud files", e)
             emptyList()
+        }
+    }
+    
+    private suspend fun downloadFileContent(fileId: String): String? = withContext(Dispatchers.IO) {
+        try {
+            val drive = driveService ?: return@withContext null
+            
+            val outputStream = ByteArrayOutputStream()
+            drive.files().get(fileId).executeMediaAndDownloadTo(outputStream)
+            
+            outputStream.toString("UTF-8")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to download file content: $fileId", e)
+            null
         }
     }
 }

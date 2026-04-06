@@ -47,6 +47,12 @@ android {
     buildFeatures {
         viewBinding = true
     }
+    packaging {
+        resources {
+            excludes += "/META-INF/INDEX.LIST"
+            excludes += "/META-INF/DEPENDENCIES"
+        }
+    }
 }
 
 dependencies {
@@ -73,6 +79,13 @@ dependencies {
 
     // Google Sign-In and Drive API
     implementation("com.google.android.gms:play-services-auth:21.0.0")
+    implementation("com.google.apis:google-api-services-drive:v3-rev20240914-2.0.0")
+    implementation("com.google.api-client:google-api-client-android:2.2.0") {
+        exclude(group = "org.apache.httpcomponents")
+    }
+    implementation("com.google.http-client:google-http-client-gson:1.44.1") {
+        exclude(group = "org.apache.httpcomponents")
+    }
     
     // Firebase for free cloud storage
     implementation(platform("com.google.firebase:firebase-bom:34.11.0"))
