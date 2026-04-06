@@ -68,6 +68,7 @@ open class MainActivity : AppCompatActivity() {
     private var lastSyncSuccess = false
     private var isTyping = false
     private var aiEnabled = true
+    private var hasSyncedOnce = false
     
     // Undo stack
     private val undoStack = mutableListOf<String>()
@@ -376,7 +377,6 @@ open class MainActivity : AppCompatActivity() {
 
         // Toolbar title
         binding.appBarMain.toolbarTitle?.apply {
-            setTextColor(white)
             setShadowLayer(0f, 0f, 0f, 0)
             typeface = android.graphics.Typeface.create(typeface, android.graphics.Typeface.BOLD)
         }
@@ -2100,47 +2100,21 @@ open class MainActivity : AppCompatActivity() {
     private fun updateToolbarTitle() {
         val name = if (currentFileUri != null) getFileName(currentFileUri!!) else "NBH Editor"
         val dot = if (textChanged) " ●" else ""
-        val cloudIcon = if (GoogleSignInHelper.isSignedIn(this)) " ☁" else ""
-        val tv = binding.appBarMain.toolbarTitle ?: return
         
-        val displayText = "$name$dot$cloudIcon"
-        val spannable = android.text.SpannableString(displayText)
-        
-        // Color the cloud icon based on sync status
-        val cloudStart = displayText.indexOf("☁")
-        if (cloudStart >= 0) {
-            val cloudColor = if (GoogleSignInHelper.isSignedIn(this)) {
-                if (lastSyncSuccess) {
-                    0xFF4CAF50.toInt() // Green - synced successfully
-                } else {
-                    0xFFFF9800.toInt() // Orange - signed in but not synced yet
-                }
-            } else {
-                0xFFF44336.toInt() // Red - not signed in
-            }
-            spannable.setSpan(
-                android.text.style.ForegroundColorSpan(cloudColor),
-                cloudStart, cloudStart + 1,
-                android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
+        // Determine cloud icon based on sync status
+        val cloudIcon = when {
+            !GoogleSignInHelper.isSignedIn(this) -> " ☁✗" // Not signed in
+            !hasSyncedOnce -> " ☁⚠" // Signed in but not synced yet
+            else -> " ☁" // Successfully synced
         }
         
-        tv.text = spannable
+        val tv = binding.appBarMain.toolbarTitle ?: return
+        val displayText = "$name$dot$cloudIcon"
+        
+        tv.text = displayText
         tv.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
-        tv.paintFlags = tv.paintFlags or android.graphics.Paint.FAKE_BOLD_TEXT_FLAG
         tv.textSize = 19f
         tv.letterSpacing = 0.02f
-        when {
-            isGlassMode -> { /* adaptive color applied by applyAdaptiveGlassUI */ }
-            textChanged -> {
-                tv.setTextColor(resources.getColor(R.color.accent_primary, theme))
-                tv.setShadowLayer(0f, 0f, 0f, 0)
-            }
-            else -> {
-                tv.setTextColor(resources.getColor(R.color.editor_text, theme))
-                tv.setShadowLayer(0f, 0f, 0f, 0)
-            }
-        }
     }
 
     private fun openFileFromUri(uri: Uri) {
@@ -2199,6 +2173,9 @@ open class MainActivity : AppCompatActivity() {
                                     startActivityForResult(authException.intent, RC_DRIVE_PERMISSION)
                                 }
                             }
+                        } else {
+                            // Mark that we've successfully synced at least once
+                            hasSyncedOnce = true
                         }
                         withContext(Dispatchers.Main) {
                             lastSyncSuccess = success
