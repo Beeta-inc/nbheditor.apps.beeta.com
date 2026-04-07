@@ -3009,7 +3009,8 @@ open class MainActivity : AppCompatActivity() {
                 val result = CollaborativeSessionManager.createSession(userId, userName, email, currentContent)
                 result.onSuccess { sessionId ->
                     Toast.makeText(this@MainActivity, "✓ Session created: $sessionId", Toast.LENGTH_LONG).show()
-                    // TODO: Show active session UI and start syncing
+                    showActiveSessionUI(sessionId, isCreator = true)
+                    startCollaborativeSync(sessionId)
                 }.onFailure { e ->
                     Toast.makeText(this@MainActivity, "Failed to create session: ${e.message}", Toast.LENGTH_SHORT).show()
                 }

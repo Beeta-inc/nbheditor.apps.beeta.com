@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "998554648295",
+    "firebase_url": "https://nbheditior-default-rtdb.firebaseio.com",
     "project_id": "nbheditior",
     "storage_bucket": "nbheditior.firebasestorage.app"
   },

@@ -43,15 +43,58 @@ object CollaborativeSessionManager {
     private const val SESSIONS_PATH = "collaborative_sessions"
     private const val SESSION_TIMEOUT = 30 * 60 * 1000L // 30 minutes
     
-    private val database: DatabaseReference = FirebaseDatabase.getInstance().reference
+    // Initialize Firebase Database with fallback URL
+    private val database: DatabaseReference by lazy {
+        try {
+            // Try to get the default instance first
+            FirebaseDatabase.getInstance().reference
+        } catch (e: Exception) {
+            // Fallback: use the confirmed database URL
+            Log.w(TAG, "Using fallback database URL: https://nbheditior-default-rtdb.firebaseio.com")
+            FirebaseDatabase.getInstance("https://nbheditior-default-rtdb.firebaseio.com").reference
+        }
+    }
     private var currentSessionId: String? = null
     private var currentUserId: String? = null
     
+    // Sanitize user ID for Firebase (replace invalid characters)
+    private fun sanitizeUserId(userId: String): String {
+        return userId.replace(".", "_")
+            .replace("#", "_")
+            .replace("$", "_")
+            .replace("[", "_")
+            .replace("]", "_")
+            .replace("/", "_")
+    }
+    
     // Generate session code: ne + 5 random alphanumeric characters
+    private suspend fun generateUniqueSessionCode(): String {
+        var attempts = 0
+        val maxAttempts = 10
+        
+        while (attempts < maxAttempts) {
+            val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+            val code = (1..5).map { chars[Random.nextInt(chars.length)] }.joinToString("")
+            val sessionId = "NE$code"
+            
+            // Check if session ID already exists
+            val exists = database.child(SESSIONS_PATH).child(sessionId).get().await().exists()
+            if (!exists) {
+                return sessionId
+            }
+            
+            attempts++
+            Log.w(TAG, "Session ID collision detected: $sessionId, retrying... ($attempts/$maxAttempts)")
+        }
+        
+        throw Exception("Failed to generate unique session ID after $maxAttempts attempts")
+    }
+    
+    // Legacy function for backward compatibility
     fun generateSessionCode(): String {
         val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
         val code = (1..5).map { chars[Random.nextInt(chars.length)] }.joinToString("")
-        return "ne$code"
+        return "NE$code"
     }
     
     // Create a new collaborative session
@@ -62,9 +105,10 @@ object CollaborativeSessionManager {
         initialContent: String = ""
     ): Result<String> {
         return try {
-            val sessionId = generateSessionCode()
+            val sessionId = generateUniqueSessionCode()
+            val sanitizedUserId = sanitizeUserId(userId)
             val creator = SessionUser(
-                userId = userId,
+                userId = sanitizedUserId,
                 userName = userName,
                 email = email,
                 isCreator = true,
@@ -73,17 +117,17 @@ object CollaborativeSessionManager {
             
             val session = CollaborativeSession(
                 sessionId = sessionId,
-                creatorId = userId,
+                creatorId = sanitizedUserId,
                 content = initialContent,
-                users = mapOf(userId to creator)
+                users = mapOf(sanitizedUserId to creator)
             )
             
             database.child(SESSIONS_PATH).child(sessionId).setValue(session).await()
             currentSessionId = sessionId
-            currentUserId = userId
+            currentUserId = sanitizedUserId
             
             // Start presence tracking
-            startPresenceTracking(sessionId, userId)
+            startPresenceTracking(sessionId, sanitizedUserId)
             
             Log.d(TAG, "Session created: $sessionId")
             Result.success(sessionId)
@@ -101,6 +145,7 @@ object CollaborativeSessionManager {
         email: String
     ): Result<CollaborativeSession> {
         return try {
+            val sanitizedUserId = sanitizeUserId(userId)
             val sessionRef = database.child(SESSIONS_PATH).child(sessionId)
             val snapshot = sessionRef.get().await()
             
@@ -123,21 +168,21 @@ object CollaborativeSessionManager {
             
             // Add user to session
             val newUser = SessionUser(
-                userId = userId,
+                userId = sanitizedUserId,
                 userName = userName,
                 email = email,
                 isCreator = false,
                 lastActive = System.currentTimeMillis()
             )
             
-            sessionRef.child("users").child(userId).setValue(newUser).await()
+            sessionRef.child("users").child(sanitizedUserId).setValue(newUser).await()
             sessionRef.child("lastActivity").setValue(ServerValue.TIMESTAMP).await()
             
             currentSessionId = sessionId
-            currentUserId = userId
+            currentUserId = sanitizedUserId
             
             // Start presence tracking
-            startPresenceTracking(sessionId, userId)
+            startPresenceTracking(sessionId, sanitizedUserId)
             
             Log.d(TAG, "Joined session: $sessionId")
             Result.success(session)
@@ -273,13 +318,14 @@ object CollaborativeSessionManager {
     // Kick user (creator only)
     suspend fun kickUser(sessionId: String, userId: String): Result<Unit> {
         return try {
+            val sanitizedUserId = sanitizeUserId(userId)
             val currentUser = getCurrentUser(sessionId)
             if (currentUser?.isCreator != true) {
                 return Result.failure(Exception("Only creator can kick users"))
             }
             
             database.child(SESSIONS_PATH).child(sessionId)
-                .child("users").child(userId).removeValue().await()
+                .child("users").child(sanitizedUserId).removeValue().await()
             
             Result.success(Unit)
         } catch (e: Exception) {
