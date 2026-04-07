@@ -47,6 +47,7 @@ import com.beeta.nbheditor.databinding.FragmentEditorBinding
 import com.google.android.material.chip.Chip
 import com.google.gson.Gson
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.first
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -3051,15 +3052,33 @@ open class MainActivity : AppCompatActivity() {
         // Switch to editor view
         showEditor()
         
+        // Update toolbar to show session indicator
+        updateToolbarWithSession(sessionId)
+        
+        // Show welcome toast
+        Toast.makeText(this, "✓ Connected to session: $sessionId", Toast.LENGTH_LONG).show()
+        
+        // Show quick info dialog
         val themedContext = androidx.appcompat.view.ContextThemeWrapper(this, R.style.Theme_Nbheditor)
         val dialogView = android.view.LayoutInflater.from(themedContext).inflate(R.layout.dialog_active_session, null)
         
         dialogView.findViewById<TextView>(R.id.tvSessionCode).text = sessionId
         
+        // Add pulse animation to status indicator
+        val pulseView = dialogView.findViewById<ImageView>(R.id.ivSessionPulse)
+        val pulseAnimation = android.animation.ObjectAnimator.ofFloat(pulseView, "alpha", 1f, 0.3f).apply {
+            duration = 1000
+            repeatCount = android.animation.ObjectAnimator.INFINITE
+            repeatMode = android.animation.ObjectAnimator.REVERSE
+        }
+        pulseAnimation.start()
+        
         val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
             .setView(dialogView)
-            .setCancelable(false)
+            .setCancelable(true)
             .create()
+        
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         
         dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnViewUsers)
             .setOnClickListener {
@@ -3071,22 +3090,105 @@ open class MainActivity : AppCompatActivity() {
                 lifecycleScope.launch {
                     CollaborativeSessionManager.leaveSession()
                     contentSyncJob?.cancel()
+                    pulseAnimation.cancel()
                     dialog.dismiss()
                     activeSessionDialog = null
-                    Toast.makeText(this@MainActivity, "Left session", Toast.LENGTH_SHORT).show()
+                    
+                    // Clear editor and go back to home
+                    editorBinding.textArea.setText("")
+                    currentFileUri = null
+                    textChanged = false
+                    updateToolbarTitle()
+                    showHome()
+                    
+                    Toast.makeText(this@MainActivity, "✓ Left session", Toast.LENGTH_SHORT).show()
                 }
             }
         
         dialog.show()
         activeSessionDialog = dialog
         
-        // Auto-dismiss after 5 seconds to show editor
+        // Auto-dismiss after 5 seconds
         lifecycleScope.launch {
             delay(5000)
             if (dialog.isShowing) {
+                pulseAnimation.cancel()
                 dialog.dismiss()
             }
         }
+    }
+    
+    private fun updateToolbarWithSession(sessionId: String) {
+        val name = if (currentFileUri != null) getFileName(currentFileUri!!) else "NBH Editor"
+        val dot = if (textChanged) " ●" else ""
+        
+        // Determine cloud icon based on sync status
+        val cloudIcon = when {
+            !GoogleSignInHelper.isSignedIn(this) -> " ☁✗"
+            !hasSyncedOnce -> " ☁⚠"
+            else -> " ☁"
+        }
+        
+        // Add session indicator
+        val sessionIndicator = " 🔗 $sessionId"
+        
+        val tv = binding.appBarMain.toolbarTitle ?: return
+        val displayText = "$name$dot$cloudIcon$sessionIndicator"
+        
+        tv.text = displayText
+        tv.typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+        tv.textSize = 18f
+        tv.letterSpacing = 0.02f
+        
+        // Make session code clickable to show session controls
+        tv.setOnClickListener {
+            if (CollaborativeSessionManager.isInSession()) {
+                activeSessionDialog?.show() ?: showSessionControlsMenu(sessionId)
+            }
+        }
+    }
+    
+    private fun showSessionControlsMenu(sessionId: String) {
+        val items = arrayOf("View Users", "Copy Session Code", "Leave Session")
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Session: $sessionId")
+            .setItems(items) { _, which ->
+                when (which) {
+                    0 -> {
+                        val isCreator = CollaborativeSessionManager.getCurrentUserId()?.let { userId ->
+                            lifecycleScope.launch {
+                                val session = CollaborativeSessionManager.observeSession(sessionId)
+                                    .first { it != null }
+                                session?.creatorId == userId
+                            }
+                        }
+                        showSessionUsersDialog(sessionId, false)
+                    }
+                    1 -> {
+                        val clipboard = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                        val clip = android.content.ClipData.newPlainText("Session Code", sessionId)
+                        clipboard.setPrimaryClip(clip)
+                        Toast.makeText(this, "✓ Session code copied: $sessionId", Toast.LENGTH_SHORT).show()
+                    }
+                    2 -> {
+                        lifecycleScope.launch {
+                            CollaborativeSessionManager.leaveSession()
+                            contentSyncJob?.cancel()
+                            
+                            // Clear editor and go back to home
+                            editorBinding.textArea.setText("")
+                            currentFileUri = null
+                            textChanged = false
+                            updateToolbarTitle()
+                            showHome()
+                            
+                            Toast.makeText(this@MainActivity, "✓ Left session", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+            }
+            .setNegativeButton("Close", null)
+            .show()
     }
     
     private fun startCollaborativeSync(sessionId: String) {
@@ -3107,8 +3209,8 @@ open class MainActivity : AppCompatActivity() {
             }
         }
         
-        // Listen to local text changes and sync to remote
-        editorBinding.textArea.addTextChangedListener(object : TextWatcher {
+        // Add text watcher for local changes
+        val textWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 isLocalChange = true
@@ -3118,7 +3220,12 @@ open class MainActivity : AppCompatActivity() {
                 }
             }
             override fun afterTextChanged(s: Editable?) {}
-        })
+        }
+        
+        editorBinding.textArea.addTextChangedListener(textWatcher)
+        
+        // Store watcher to remove later
+        editorBinding.textArea.setTag(R.id.nav_collaborative_session, textWatcher)
     }
     
     private fun showSessionUsersDialog(sessionId: String, isCreator: Boolean) {

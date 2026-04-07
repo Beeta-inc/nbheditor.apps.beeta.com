@@ -1,80 +1,128 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="8dp"
-    app:cardCornerRadius="8dp"
-    app:cardElevation="2dp">
+    android:layout_marginStart="12dp"
+    android:layout_marginEnd="12dp"
+    android:layout_marginTop="6dp"
+    android:layout_marginBottom="6dp"
+    android:orientation="horizontal"
+    android:padding="18dp"
+    android:gravity="center_vertical"
+    android:background="?attr/colorSurface"
+    android:elevation="3dp">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="12dp"
-        android:gravity="center_vertical">
+    <!-- Status indicator with avatar -->
+    <FrameLayout
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_marginEnd="14dp">
+
+        <View
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="@android:drawable/presence_online"
+            android:alpha="0.15" />
 
         <ImageView
             android:id="@+id/ivUserStatus"
-            android:layout_width="12dp"
-            android:layout_height="12dp"
+            android:layout_width="14dp"
+            android:layout_height="14dp"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="4dp"
+            android:layout_marginBottom="4dp"
             android:src="@android:drawable/presence_online"
-            android:layout_marginEnd="12dp" />
+            android:tint="?attr/colorPrimary" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="👤"
+            android:textSize="24sp" />
+
+    </FrameLayout>
+
+    <!-- User info section -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
             <TextView
                 android:id="@+id/tvUserName"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
+                android:layout_weight="1"
                 android:text="User Name"
-                android:textSize="16sp"
-                android:textStyle="bold" />
+                android:textSize="17sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnSurface"
+                android:maxLines="1"
+                android:ellipsize="end" />
 
             <TextView
-                android:id="@+id/tvUserEmail"
-                android:layout_width="match_parent"
+                android:id="@+id/tvCreatorBadge"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="user@example.com"
-                android:textSize="12sp"
-                android:textColor="?android:attr/textColorSecondary" />
+                android:text="👑 HOST"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                android:background="?attr/colorPrimary"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:layout_marginStart="8dp"
+                android:visibility="gone"
+                android:elevation="2dp" />
 
         </LinearLayout>
 
         <TextView
-            android:id="@+id/tvCreatorBadge"
-            android:layout_width="wrap_content"
+            android:id="@+id/tvUserEmail"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="👑 Creator"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:textColor="?attr/colorPrimary"
-            android:visibility="gone"
-            android:layout_marginEnd="8dp" />
+            android:text="user@email.com"
+            android:textSize="13sp"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:layout_marginTop="3dp"
+            android:maxLines="1"
+            android:ellipsize="middle" />
 
         <TextView
             android:id="@+id/tvTypingIndicator"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="✍️ Typing..."
+            android:text="✍️ typing..."
             android:textSize="12sp"
             android:textColor="?attr/colorSecondary"
+            android:textStyle="italic"
+            android:layout_marginTop="4dp"
             android:visibility="gone"
-            android:layout_marginEnd="8dp" />
-
-        <ImageButton
-            android:id="@+id/btnKickUser"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:src="@android:drawable/ic_menu_close_clear_cancel"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:visibility="gone"
-            android:contentDescription="Kick user" />
+            android:drawablePadding="4dp" />
 
     </LinearLayout>
 
-</com.google.android.material.card.MaterialCardView>
+    <!-- Kick button -->
+    <ImageButton
+        android:id="@+id/btnKickUser"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_marginStart="12dp"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:tint="?attr/colorError"
+        android:visibility="gone"
+        android:contentDescription="Remove user" />
+
+</LinearLayout>

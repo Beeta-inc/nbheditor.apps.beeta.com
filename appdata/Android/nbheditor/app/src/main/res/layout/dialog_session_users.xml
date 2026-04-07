@@ -4,22 +4,44 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="20dp">
 
-    <TextView
+    <!-- Header -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Session Users"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="?attr/colorPrimary"
-        android:layout_marginBottom="16dp" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="20dp"
+        android:background="#E3F2FD"
+        android:padding="16dp">
 
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="👥 Session Users"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:textColor="#1976D2" />
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@android:drawable/presence_online"
+            android:tint="#1976D2" />
+
+    </LinearLayout>
+
+    <!-- Users list -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvSessionUsers"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:maxHeight="400dp" />
+        android:maxHeight="450dp"
+        android:clipToPadding="false"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnEndSession"
@@ -28,8 +50,8 @@
         android:text="End Session (Creator Only)"
         android:textAllCaps="false"
         android:visibility="gone"
-        android:backgroundTint="?attr/colorError"
-        android:layout_marginTop="16dp"
+        android:backgroundTint="#D32F2F"
+        android:layout_marginTop="12dp"
         app:icon="@android:drawable/ic_delete"
         app:iconGravity="start" />
 
