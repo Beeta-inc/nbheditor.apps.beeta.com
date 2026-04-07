@@ -3032,7 +3032,8 @@ open class MainActivity : AppCompatActivity() {
                     Toast.makeText(this@MainActivity, "✓ Joined session: $sessionId", Toast.LENGTH_LONG).show()
                     // Load session content into editor
                     editorBinding.textArea.setText(session.content)
-                    // TODO: Show active session UI and start syncing
+                    showActiveSessionUI(sessionId, isCreator = false)
+                    startCollaborativeSync(sessionId)
                 }.onFailure { e ->
                     Toast.makeText(this@MainActivity, "Failed to join: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
@@ -3040,5 +3041,122 @@ open class MainActivity : AppCompatActivity() {
                 Toast.makeText(this@MainActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+    
+    // Active session UI
+    private var activeSessionDialog: androidx.appcompat.app.AlertDialog? = null
+    private var contentSyncJob: Job? = null
+    
+    private fun showActiveSessionUI(sessionId: String, isCreator: Boolean) {
+        // Switch to editor view
+        showEditor()
+        
+        val themedContext = androidx.appcompat.view.ContextThemeWrapper(this, R.style.Theme_Nbheditor)
+        val dialogView = android.view.LayoutInflater.from(themedContext).inflate(R.layout.dialog_active_session, null)
+        
+        dialogView.findViewById<TextView>(R.id.tvSessionCode).text = sessionId
+        
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+        
+        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnViewUsers)
+            .setOnClickListener {
+                showSessionUsersDialog(sessionId, isCreator)
+            }
+        
+        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnLeaveSession)
+            .setOnClickListener {
+                lifecycleScope.launch {
+                    CollaborativeSessionManager.leaveSession()
+                    contentSyncJob?.cancel()
+                    dialog.dismiss()
+                    activeSessionDialog = null
+                    Toast.makeText(this@MainActivity, "Left session", Toast.LENGTH_SHORT).show()
+                }
+            }
+        
+        dialog.show()
+        activeSessionDialog = dialog
+        
+        // Auto-dismiss after 5 seconds to show editor
+        lifecycleScope.launch {
+            delay(5000)
+            if (dialog.isShowing) {
+                dialog.dismiss()
+            }
+        }
+    }
+    
+    private fun startCollaborativeSync(sessionId: String) {
+        contentSyncJob?.cancel()
+        
+        var isLocalChange = false
+        
+        // Listen to remote content changes
+        contentSyncJob = lifecycleScope.launch {
+            CollaborativeSessionManager.observeContent(sessionId).collect { content ->
+                if (!isLocalChange) {
+                    // Remote change - update editor
+                    val currentCursor = editorBinding.textArea.selectionStart
+                    editorBinding.textArea.setText(content)
+                    editorBinding.textArea.setSelection(currentCursor.coerceIn(0, content.length))
+                }
+                isLocalChange = false
+            }
+        }
+        
+        // Listen to local text changes and sync to remote
+        editorBinding.textArea.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                isLocalChange = true
+                lifecycleScope.launch {
+                    CollaborativeSessionManager.updateContent(s.toString())
+                    CollaborativeSessionManager.updateCursorPosition(editorBinding.textArea.selectionStart, true)
+                }
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
+    }
+    
+    private fun showSessionUsersDialog(sessionId: String, isCreator: Boolean) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_session_users, null)
+        val recyclerView = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvSessionUsers)
+        
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        val currentUserId = CollaborativeSessionManager.getCurrentUserId() ?: ""
+        val adapter = SessionUsersAdapter(
+            users = emptyList(),
+            currentUserId = currentUserId,
+            isCreator = isCreator,
+            onKickUser = { user ->
+                // Kick user
+                lifecycleScope.launch {
+                    val result = CollaborativeSessionManager.kickUser(sessionId, user.userId)
+                    result.onSuccess {
+                        Toast.makeText(this@MainActivity, "User removed", Toast.LENGTH_SHORT).show()
+                    }.onFailure { e ->
+                        Toast.makeText(this@MainActivity, "Failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        )
+        recyclerView.adapter = adapter
+        
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setPositiveButton("Close", null)
+            .create()
+        
+        // Observe users
+        lifecycleScope.launch {
+            CollaborativeSessionManager.observeUsers(sessionId).collect { users ->
+                adapter.updateUsers(users.values.toList())
+            }
+        }
+        
+        dialog.show()
     }
 }
