@@ -59,3 +59,9 @@ chmod +x nbheditorstart.sh
 
 # Run the editor
 ./nbheditorstart.sh
+
+## License & Copyright
+
+​Copyright © 2023-2026 Beeta Technologies Inc.
+
+​This project is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License v3.0 (GPL-3.0) as published by the Free Software Foundation.
