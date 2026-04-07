@@ -73,6 +73,7 @@ dependencies {
 
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 
     // WorkManager for background update checks
     implementation("androidx.work:work-runtime-ktx:2.9.1")
@@ -92,6 +93,7 @@ dependencies {
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-storage")
+    implementation("com.google.firebase:firebase-database") // Realtime Database for collaborative editing
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

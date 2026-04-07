@@ -22,6 +22,13 @@
             android:title="Save As..." />
     </group>
 
+    <group android:id="@+id/group_collaborative">
+        <item
+            android:id="@+id/nav_collaborative_session"
+            android:icon="@android:drawable/ic_menu_share"
+            android:title="Collaborative Session" />
+    </group>
+
     <group android:id="@+id/group_settings">
         <item
             android:id="@+id/nav_settings"

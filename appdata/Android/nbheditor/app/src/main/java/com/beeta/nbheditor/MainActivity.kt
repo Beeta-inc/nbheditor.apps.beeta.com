@@ -2293,6 +2293,7 @@ open class MainActivity : AppCompatActivity() {
             R.id.nav_theme_dark -> applyThemeMode(AppCompatDelegate.MODE_NIGHT_YES)
             R.id.nav_theme_light -> applyThemeMode(AppCompatDelegate.MODE_NIGHT_NO)
             R.id.nav_theme_glass -> applyGlassMode()
+            R.id.nav_collaborative_session -> showCollaborativeSessionDialog()
             R.id.nav_toggle_ai -> {
                 aiEnabled = !aiEnabled
                 prefs.edit().putBoolean("ai_enabled", aiEnabled).apply()
@@ -2954,5 +2955,89 @@ open class MainActivity : AppCompatActivity() {
             .setMessage(message)
             .setPositiveButton("OK", null)
             .show()
+    }
+    
+    // ── Collaborative Session ─────────────────────────────────────────────────
+    
+    private fun showCollaborativeSessionDialog() {
+        // Check if user is signed in
+        if (!GoogleSignInHelper.isSignedIn(this)) {
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Sign In Required")
+                .setMessage("You need to sign in with Google to use collaborative editing.")
+                .setPositiveButton("Sign In") { _, _ -> startGoogleSignIn() }
+                .setNegativeButton("Cancel", null)
+                .show()
+            return
+        }
+        
+        val themedContext = androidx.appcompat.view.ContextThemeWrapper(this, R.style.Theme_Nbheditor)
+        val dialogView = android.view.LayoutInflater.from(themedContext).inflate(R.layout.dialog_collaborative_session, null)
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+        
+        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCreateSession)
+            .setOnClickListener {
+                dialog.dismiss()
+                createCollaborativeSession()
+            }
+        
+        val etSessionCode = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etSessionCode)
+        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnJoinSession)
+            .setOnClickListener {
+                val code = etSessionCode.text.toString().trim().uppercase()
+                if (code.length == 7 && code.startsWith("NE")) {
+                    dialog.dismiss()
+                    joinCollaborativeSession(code)
+                } else {
+                    Toast.makeText(this, "Invalid session code format (e.g., neAB12X)", Toast.LENGTH_SHORT).show()
+                }
+            }
+        
+        dialog.show()
+    }
+    
+    private fun createCollaborativeSession() {
+        val userName = GoogleSignInHelper.getUserName(this) ?: "Unknown"
+        val email = GoogleSignInHelper.getUserEmail(this) ?: ""
+        val userId = email // Use email as unique user ID
+        val currentContent = editorBinding.textArea.text.toString()
+        
+        lifecycleScope.launch {
+            try {
+                val result = CollaborativeSessionManager.createSession(userId, userName, email, currentContent)
+                result.onSuccess { sessionId ->
+                    Toast.makeText(this@MainActivity, "✓ Session created: $sessionId", Toast.LENGTH_LONG).show()
+                    // TODO: Show active session UI and start syncing
+                }.onFailure { e ->
+                    Toast.makeText(this@MainActivity, "Failed to create session: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@MainActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    
+    private fun joinCollaborativeSession(sessionId: String) {
+        val userName = GoogleSignInHelper.getUserName(this) ?: "Unknown"
+        val email = GoogleSignInHelper.getUserEmail(this) ?: ""
+        val userId = email // Use email as unique user ID
+        
+        lifecycleScope.launch {
+            try {
+                val result = CollaborativeSessionManager.joinSession(sessionId, userId, userName, email)
+                result.onSuccess { session ->
+                    Toast.makeText(this@MainActivity, "✓ Joined session: $sessionId", Toast.LENGTH_LONG).show()
+                    // Load session content into editor
+                    editorBinding.textArea.setText(session.content)
+                    // TODO: Show active session UI and start syncing
+                }.onFailure { e ->
+                    Toast.makeText(this@MainActivity, "Failed to join: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@MainActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 }
