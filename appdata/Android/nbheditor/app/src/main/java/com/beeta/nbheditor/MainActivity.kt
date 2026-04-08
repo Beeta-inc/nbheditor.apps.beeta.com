@@ -3367,15 +3367,147 @@ open class MainActivity : AppCompatActivity() {
         val currentUserId = CollaborativeSessionManager.getCurrentUserId() ?: return
         
         val dialogView = layoutInflater.inflate(R.layout.fragment_collab_chat, null)
+        
+        // Create dialog with custom size
         val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
             .setView(dialogView)
             .create()
         
+        // Make dialog larger
+        dialog.setOnShowListener {
+            val window = dialog.window
+            val displayMetrics = resources.displayMetrics
+            val width = (displayMetrics.widthPixels * 0.95).toInt() // 95% of screen width
+            val height = (displayMetrics.heightPixels * 0.85).toInt() // 85% of screen height
+            window?.setLayout(width, height)
+        }
+        
+        // Apply theme styling
+        val isDark = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
+        
         val rvChatMessages = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvChatMessages)
         val etChatMessage = dialogView.findViewById<EditText>(R.id.etChatMessage)
         val btnSendMessage = dialogView.findViewById<ImageButton>(R.id.btnSendMessage)
-        val btnAskAI = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAskAI)
+        val btnVisibilitySelector = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnVisibilitySelector)
         val btnCreateTaskFromChat = dialogView.findViewById<Button>(R.id.btnCreateTaskFromChat)
+        val btnCloseChat = dialogView.findViewById<ImageButton>(R.id.btnCloseChat)
+        val chatRoot = dialogView.findViewById<RelativeLayout>(R.id.chatRoot)
+        val quickActionsBar = dialogView.findViewById<LinearLayout>(R.id.quickActionsBar)
+        val inputBar = dialogView.findViewById<LinearLayout>(R.id.inputBar)
+        
+        // Close button handler
+        btnCloseChat.setOnClickListener {
+            dialog.dismiss()
+        }
+        
+        // Message visibility state
+        var messageVisibility = "all_users_and_ai" // default
+        var selectedUserIds = mutableSetOf<String>() // for multiple user selection
+        
+        // Apply glass mode styling if enabled
+        if (isGlassMode) {
+            chatRoot.setBackgroundColor(0xBB0A0E14.toInt())
+            rvChatMessages.setBackgroundColor(0x00000000)
+            quickActionsBar.setBackgroundColor(0xCC0D1117.toInt())
+            inputBar.setBackgroundColor(0xCC0D1117.toInt())
+            etChatMessage.apply {
+                setBackgroundColor(0xBB1A1F26.toInt())
+                setTextColor(0xFFFFFFFF.toInt())
+                setHintTextColor(0x88FFFFFF.toInt())
+            }
+            btnVisibilitySelector.apply {
+                backgroundTintList = android.content.res.ColorStateList.valueOf(0xCC1976D2.toInt())
+                setTextColor(0xFFFFFFFF.toInt())
+            }
+        } else if (isDark) {
+            chatRoot.setBackgroundColor(resources.getColor(R.color.editor_bg, theme))
+            rvChatMessages.setBackgroundColor(resources.getColor(R.color.editor_bg, theme))
+            quickActionsBar.setBackgroundColor(resources.getColor(R.color.editor_surface, theme))
+            inputBar.setBackgroundColor(resources.getColor(R.color.editor_surface, theme))
+            etChatMessage.apply {
+                setBackgroundColor(resources.getColor(R.color.editor_surface, theme))
+                setTextColor(resources.getColor(R.color.editor_text, theme))
+                setHintTextColor(resources.getColor(R.color.editor_hint, theme))
+            }
+        } else {
+            // Light mode
+            chatRoot.setBackgroundColor(0xFFF5F5F5.toInt())
+            rvChatMessages.setBackgroundColor(0xFFFFFFFF.toInt())
+            quickActionsBar.setBackgroundColor(0xFFFFFFFF.toInt())
+            inputBar.setBackgroundColor(0xFFFFFFFF.toInt())
+            etChatMessage.apply {
+                setBackgroundColor(0xFFFFFFFF.toInt())
+                setTextColor(0xFF212121.toInt())
+                setHintTextColor(0xFF757575.toInt())
+            }
+        }
+        
+        // Visibility selector click handler
+        btnVisibilitySelector.setOnClickListener {
+            lifecycleScope.launch {
+                // Get all users in session
+                val users = CollaborativeSessionManager.observeUsers(sessionCode).first()
+                val usersList = users.values.filter { it.userId != currentUserId }.toList()
+                
+                val options = mutableListOf<String>()
+                options.add("👥 All Users + 🤖 Beeta AI")
+                options.add("👥 All Users Only")
+                options.add("👤 Selected Users Only")
+                
+                // Add individual users
+                usersList.forEach { user ->
+                    options.add("👤 ${user.userName}")
+                }
+                
+                options.add("🤖 Beeta AI Only")
+                
+                androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                    .setTitle("Who can see this message?")
+                    .setItems(options.toTypedArray()) { _, which ->
+                        when (which) {
+                            0 -> {
+                                messageVisibility = "all_users_and_ai"
+                                selectedUserIds.clear()
+                                btnVisibilitySelector.text = "👥"
+                                Toast.makeText(this@MainActivity, "Visible to: All + AI", Toast.LENGTH_SHORT).show()
+                            }
+                            1 -> {
+                                messageVisibility = "all_users_only"
+                                selectedUserIds.clear()
+                                btnVisibilitySelector.text = "👥"
+                                Toast.makeText(this@MainActivity, "Visible to: All Users", Toast.LENGTH_SHORT).show()
+                            }
+                            2 -> {
+                                // Selected users only - show multi-select dialog
+                                showUserSelectionDialog(usersList) { selectedUsers ->
+                                    messageVisibility = "selected_users"
+                                    selectedUserIds = selectedUsers.toMutableSet()
+                                    btnVisibilitySelector.text = "👤"
+                                    val count = selectedUserIds.size
+                                    Toast.makeText(this@MainActivity, "Visible to: $count user(s)", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                            options.size - 1 -> {
+                                messageVisibility = "ai_only"
+                                selectedUserIds.clear()
+                                btnVisibilitySelector.text = "🤖"
+                                Toast.makeText(this@MainActivity, "Visible to: AI Only", Toast.LENGTH_SHORT).show()
+                            }
+                            else -> {
+                                // Individual user selected
+                                val userIndex = which - 3
+                                val selectedUser = usersList[userIndex]
+                                messageVisibility = "selected_users"
+                                selectedUserIds.clear()
+                                selectedUserIds.add(selectedUser.userId)
+                                btnVisibilitySelector.text = "👤"
+                                Toast.makeText(this@MainActivity, "Visible to: ${selectedUser.userName}", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                    .show()
+            }
+        }
         
         val adapter = CollabChatAdapter(
             messages = emptyList(),
@@ -3441,22 +3573,27 @@ open class MainActivity : AppCompatActivity() {
             val message = etChatMessage.text.toString().trim()
             if (message.isNotEmpty()) {
                 lifecycleScope.launch {
-                    val result = CollaborativeSessionManager.sendChatMessage(message)
-                    if (result.isSuccess) {
-                        etChatMessage.text.clear()
+                    // Check if it's an AI-only message
+                    val isAIMessage = messageVisibility == "ai_only"
+                    
+                    if (isAIMessage) {
+                        // Send to AI and get response
+                        val editorContent = editorBinding.textArea.text.toString()
+                        CollaborativeSessionManager.askAIInChat(message, editorContent)
+                        Toast.makeText(this@MainActivity, "🤖 AI responding...", Toast.LENGTH_SHORT).show()
+                    } else {
+                        // Send regular message
+                        val result = CollaborativeSessionManager.sendChatMessage(message)
+                        if (!result.isSuccess) {
+                            Toast.makeText(this@MainActivity, "Failed to send", Toast.LENGTH_SHORT).show()
+                        }
                     }
-                }
-            }
-        }
-        
-        btnAskAI.setOnClickListener {
-            val question = etChatMessage.text.toString().trim()
-            if (question.isNotEmpty()) {
-                lifecycleScope.launch {
-                    val editorContent = editorBinding.textArea.text.toString()
-                    CollaborativeSessionManager.askAIInChat(question, editorContent)
+                    
                     etChatMessage.text.clear()
-                    Toast.makeText(this@MainActivity, "🤖 AI responding...", Toast.LENGTH_SHORT).show()
+                    // Reset to default visibility
+                    messageVisibility = "all_users_and_ai"
+                    selectedUserIds.clear()
+                    btnVisibilitySelector.text = "👥"
                 }
             }
         }
@@ -3465,14 +3602,48 @@ open class MainActivity : AppCompatActivity() {
             val message = etChatMessage.text.toString().trim()
             if (message.isNotEmpty()) {
                 lifecycleScope.launch {
-                    CollaborativeSessionManager.createTask(message, "", "next")
-                    etChatMessage.text.clear()
-                    Toast.makeText(this@MainActivity, "✓ Task created", Toast.LENGTH_SHORT).show()
+                    val result = CollaborativeSessionManager.createTask(message, "", "next")
+                    if (result.isSuccess) {
+                        etChatMessage.text.clear()
+                        Toast.makeText(this@MainActivity, "✓ Task created", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(this@MainActivity, "Failed: ${result.exceptionOrNull()?.message}", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
         
         dialog.show()
+    }
+    
+    private fun showUserSelectionDialog(users: List<SessionUser>, onSelected: (List<String>) -> Unit) {
+        if (users.isEmpty()) {
+            Toast.makeText(this, "No other users in session", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        val userNames = users.map { it.userName }.toTypedArray()
+        val checkedItems = BooleanArray(users.size) { false }
+        val selectedUsers = mutableListOf<String>()
+        
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Select Users (${users.size} available)")
+            .setMultiChoiceItems(userNames, checkedItems) { _, which, isChecked ->
+                if (isChecked) {
+                    selectedUsers.add(users[which].userId)
+                } else {
+                    selectedUsers.remove(users[which].userId)
+                }
+            }
+            .setPositiveButton("OK") { _, _ ->
+                if (selectedUsers.isNotEmpty()) {
+                    onSelected(selectedUsers)
+                } else {
+                    Toast.makeText(this, "Please select at least one user", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
     
     private fun showSessionUsersDialog(sessionId: String, isCreator: Boolean) {

@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/chatRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="#F5F5F5">
 
-    <!-- Chat Header -->
+    <!-- Chat Header (at top) -->
     <LinearLayout
+        android:id="@+id/chatHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
         android:orientation="horizontal"
         android:padding="16dp"
         android:background="#1976D2"
@@ -34,34 +36,77 @@
             android:textSize="12sp"
             android:layout_marginEnd="12dp" />
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnAskAI"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="🤖 Ask AI"
-            android:textSize="12sp"
-            android:textColor="@android:color/white"
-            android:backgroundTint="#4CAF50"
-            app:cornerRadius="20dp"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:minHeight="36dp" />
-
+        <ImageButton
+            android:id="@+id/btnCloseChat"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="@android:color/white"
+            android:contentDescription="Close chat" />
     </LinearLayout>
 
-    <!-- Messages RecyclerView -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvChatMessages"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:padding="8dp"
-        android:clipToPadding="false" />
-
-    <!-- Quick Actions Bar -->
+    <!-- Input Area (at bottom) -->
     <LinearLayout
+        android:id="@+id/inputBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        android:background="@android:color/white"
+        android:gravity="center_vertical"
+        android:elevation="8dp">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnVisibilitySelector"
+            android:layout_width="wrap_content"
+            android:layout_height="40dp"
+            android:text="👥"
+            android:textSize="16sp"
+            android:minWidth="40dp"
+            android:minHeight="40dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:backgroundTint="#E3F2FD"
+            android:textColor="#1976D2"
+            app:cornerRadius="20dp"
+            app:strokeColor="#1976D2"
+            app:strokeWidth="1dp"
+            android:layout_marginEnd="8dp" />
+
+        <EditText
+            android:id="@+id/etChatMessage"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:hint="Type a message..."
+            android:background="@android:drawable/editbox_background"
+            android:padding="12dp"
+            android:maxLines="4"
+            android:textColor="#212121"
+            android:textColorHint="#757575"
+            android:inputType="textMultiLine|textCapSentences" />
+
+        <ImageButton
+            android:id="@+id/btnSendMessage"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginStart="8dp"
+            android:src="@android:drawable/ic_menu_send"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="#1976D2"
+            android:contentDescription="Send message" />
+    </LinearLayout>
+
+    <!-- Quick Actions Bar (above input) -->
+    <LinearLayout
+        android:id="@+id/quickActionsBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/inputBar"
         android:orientation="horizontal"
         android:padding="8dp"
         android:background="@android:color/white"
@@ -92,37 +137,14 @@
             android:visibility="gone" />
     </LinearLayout>
 
-    <!-- Input Area -->
-    <LinearLayout
+    <!-- Messages RecyclerView (fills space between header and quick actions) -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvChatMessages"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="12dp"
-        android:background="@android:color/white"
-        android:gravity="center_vertical"
-        android:elevation="8dp">
+        android:layout_height="match_parent"
+        android:layout_below="@id/chatHeader"
+        android:layout_above="@id/quickActionsBar"
+        android:padding="8dp"
+        android:clipToPadding="false" />
 
-        <EditText
-            android:id="@+id/etChatMessage"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="Type a message..."
-            android:background="@android:drawable/editbox_background"
-            android:padding="12dp"
-            android:maxLines="4"
-            android:inputType="textMultiLine|textCapSentences" />
-
-        <ImageButton
-            android:id="@+id/btnSendMessage"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginStart="8dp"
-            android:src="@android:drawable/ic_menu_send"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:tint="#1976D2"
-            android:contentDescription="Send message" />
-
-    </LinearLayout>
-
-</LinearLayout>
+</RelativeLayout>
