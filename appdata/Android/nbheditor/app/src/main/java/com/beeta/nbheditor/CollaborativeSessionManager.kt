@@ -26,6 +26,38 @@ data class SessionUser(
     val isTyping: Boolean get() = typing
 }
 
+data class ChatMessage(
+    val messageId: String = "",
+    val userId: String = "",
+    val userName: String = "",
+    val message: String = "",
+    val timestamp: Long = System.currentTimeMillis(),
+    val isAI: Boolean = false
+)
+
+data class TaskItem(
+    val taskId: String = "",
+    val title: String = "",
+    val description: String = "",
+    val status: String = "next", // "next", "current", "completed"
+    val assignedTo: String = "",
+    val createdBy: String = "",
+    val createdAt: Long = System.currentTimeMillis(),
+    val completedAt: Long = 0,
+    val order: Int = 0
+)
+
+data class ProjectSection(
+    val sectionId: String = "",
+    val title: String = "",
+    val content: String = "",
+    val status: String = "next", // "next", "current", "completed"
+    val startLine: Int = 0,
+    val endLine: Int = 0,
+    val assignedTo: String = "",
+    val lastModified: Long = System.currentTimeMillis()
+)
+
 data class EditorChange(
     val userId: String = "",
     val userName: String = "",
@@ -42,7 +74,12 @@ data class CollaborativeSession(
     val lastActivity: Long = System.currentTimeMillis(),
     val content: String = "",
     val users: Map<String, SessionUser> = emptyMap(),
-    val maxUsers: Int = 10
+    val maxUsers: Int = 10,
+    val chatMessages: Map<String, ChatMessage> = emptyMap(),
+    val tasks: Map<String, TaskItem> = emptyMap(),
+    val sections: Map<String, ProjectSection> = emptyMap(),
+    val projectTitle: String = "Untitled Project",
+    val projectDescription: String = ""
 )
 
 object CollaborativeSessionManager {
@@ -401,6 +438,238 @@ object CollaborativeSessionManager {
     
     // Get current user ID
     fun getCurrentUserId(): String? = currentUserId
+    
+    // ── Chat Functions ────────────────────────────────────────────────────────
+    
+    // Send a chat message
+    suspend fun sendChatMessage(message: String, isAI: Boolean = false): Result<String> {
+        return try {
+            val sessionId = currentSessionId ?: return Result.failure(Exception("Not in a session"))
+            val userId = currentUserId ?: return Result.failure(Exception("User ID not found"))
+            
+            val userSnapshot = database.child(SESSIONS_PATH).child(sessionId)
+                .child("users").child(userId).get().await()
+            val user = userSnapshot.getValue(SessionUser::class.java)
+                ?: return Result.failure(Exception("User not found"))
+            
+            val messageId = database.child(SESSIONS_PATH).child(sessionId)
+                .child("chatMessages").push().key ?: return Result.failure(Exception("Failed to generate message ID"))
+            
+            val chatMessage = ChatMessage(
+                messageId = messageId,
+                userId = userId,
+                userName = user.userName,
+                message = message,
+                timestamp = System.currentTimeMillis(),
+                isAI = isAI
+            )
+            
+            database.child(SESSIONS_PATH).child(sessionId)
+                .child("chatMessages").child(messageId).setValue(chatMessage).await()
+            
+            Result.success(messageId)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to send chat message", e)
+            Result.failure(e)
+        }
+    }
+    
+    // Observe chat messages
+    fun observeChatMessages(sessionId: String): Flow<List<ChatMessage>> = callbackFlow {
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val messages = mutableListOf<ChatMessage>()
+                snapshot.children.forEach { child ->
+                    child.getValue(ChatMessage::class.java)?.let { messages.add(it) }
+                }
+                trySend(messages.sortedBy { it.timestamp })
+            }
+            
+            override fun onCancelled(error: DatabaseError) {
+                Log.e(TAG, "Chat observation cancelled", error.toException())
+                close(error.toException())
+            }
+        }
+        
+        val ref = database.child(SESSIONS_PATH).child(sessionId).child("chatMessages")
+        ref.addValueEventListener(listener)
+        
+        awaitClose { ref.removeEventListener(listener) }
+    }
+    
+    // ── Task Functions ────────────────────────────────────────────────────────
+    
+    // Create a task
+    suspend fun createTask(title: String, description: String, status: String = "next"): Result<String> {
+        return try {
+            val sessionId = currentSessionId ?: return Result.failure(Exception("Not in a session"))
+            val userId = currentUserId ?: return Result.failure(Exception("User ID not found"))
+            
+            val taskId = database.child(SESSIONS_PATH).child(sessionId)
+                .child("tasks").push().key ?: return Result.failure(Exception("Failed to generate task ID"))
+            
+            // Get current task count for ordering
+            val tasksSnapshot = database.child(SESSIONS_PATH).child(sessionId)
+                .child("tasks").get().await()
+            val order = tasksSnapshot.childrenCount.toInt()
+            
+            val task = TaskItem(
+                taskId = taskId,
+                title = title,
+                description = description,
+                status = status,
+                createdBy = userId,
+                order = order
+            )
+            
+            database.child(SESSIONS_PATH).child(sessionId)
+                .child("tasks").child(taskId).setValue(task).await()
+            
+            Result.success(taskId)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to create task", e)
+            Result.failure(e)
+        }
+    }
+    
+    // Update task status
+    suspend fun updateTaskStatus(taskId: String, status: String): Result<Unit> {
+        return try {
+            val sessionId = currentSessionId ?: return Result.failure(Exception("Not in a session"))
+            
+            val updates = mutableMapOf<String, Any>("status" to status)
+            if (status == "completed") {
+                updates["completedAt"] = ServerValue.TIMESTAMP
+            }
+            
+            database.child(SESSIONS_PATH).child(sessionId)
+                .child("tasks").child(taskId).updateChildren(updates).await()
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to update task status", e)
+            Result.failure(e)
+        }
+    }
+    
+    // Assign task to user
+    suspend fun assignTask(taskId: String, userId: String): Result<Unit> {
+        return try {
+            val sessionId = currentSessionId ?: return Result.failure(Exception("Not in a session"))
+            
+            database.child(SESSIONS_PATH).child(sessionId)
+                .child("tasks").child(taskId).child("assignedTo").setValue(userId).await()
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to assign task", e)
+            Result.failure(e)
+        }
+    }
+    
+    // Delete task
+    suspend fun deleteTask(taskId: String): Result<Unit> {
+        return try {
+            val sessionId = currentSessionId ?: return Result.failure(Exception("Not in a session"))
+            
+            database.child(SESSIONS_PATH).child(sessionId)
+                .child("tasks").child(taskId).removeValue().await()
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to delete task", e)
+            Result.failure(e)
+        }
+    }
+    
+    // Observe tasks
+    fun observeTasks(sessionId: String): Flow<List<TaskItem>> = callbackFlow {
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val tasks = mutableListOf<TaskItem>()
+                snapshot.children.forEach { child ->
+                    child.getValue(TaskItem::class.java)?.let { tasks.add(it) }
+                }
+                trySend(tasks.sortedBy { it.order })
+            }
+            
+            override fun onCancelled(error: DatabaseError) {
+                Log.e(TAG, "Tasks observation cancelled", error.toException())
+                close(error.toException())
+            }
+        }
+        
+        val ref = database.child(SESSIONS_PATH).child(sessionId).child("tasks")
+        ref.addValueEventListener(listener)
+        
+        awaitClose { ref.removeEventListener(listener) }
+    }
+    
+    // ── Section Functions ─────────────────────────────────────────────────────
+    
+    // Create a section
+    suspend fun createSection(title: String, content: String, startLine: Int, endLine: Int): Result<String> {
+        return try {
+            val sessionId = currentSessionId ?: return Result.failure(Exception("Not in a session"))
+            
+            val sectionId = database.child(SESSIONS_PATH).child(sessionId)
+                .child("sections").push().key ?: return Result.failure(Exception("Failed to generate section ID"))
+            
+            val section = ProjectSection(
+                sectionId = sectionId,
+                title = title,
+                content = content,
+                startLine = startLine,
+                endLine = endLine
+            )
+            
+            database.child(SESSIONS_PATH).child(sessionId)
+                .child("sections").child(sectionId).setValue(section).await()
+            
+            Result.success(sectionId)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to create section", e)
+            Result.failure(e)
+        }
+    }
+    
+    // Update section status
+    suspend fun updateSectionStatus(sectionId: String, status: String): Result<Unit> {
+        return try {
+            val sessionId = currentSessionId ?: return Result.failure(Exception("Not in a session"))
+            
+            database.child(SESSIONS_PATH).child(sessionId)
+                .child("sections").child(sectionId).child("status").setValue(status).await()
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to update section status", e)
+            Result.failure(e)
+        }
+    }
+    
+    // Observe sections
+    fun observeSections(sessionId: String): Flow<List<ProjectSection>> = callbackFlow {
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val sections = mutableListOf<ProjectSection>()
+                snapshot.children.forEach { child ->
+                    child.getValue(ProjectSection::class.java)?.let { sections.add(it) }
+                }
+                trySend(sections.sortedBy { it.startLine })
+            }
+            
+            override fun onCancelled(error: DatabaseError) {
+                Log.e(TAG, "Sections observation cancelled", error.toException())
+                close(error.toException())
+            }
+        }
+        
+        val ref = database.child(SESSIONS_PATH).child(sessionId).child("sections")
+        ref.addValueEventListener(listener)
+        
+        awaitClose { ref.removeEventListener(listener) }
+    }
     
     // Save session content to temp cache
     fun saveToTempCache(context: Context, content: String) {

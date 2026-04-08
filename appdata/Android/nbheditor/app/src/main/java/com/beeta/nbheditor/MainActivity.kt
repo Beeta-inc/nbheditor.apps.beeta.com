@@ -3312,12 +3312,14 @@ open class MainActivity : AppCompatActivity() {
                 lifecycleScope.launch {
                     CollaborativeSessionManager.updateContent(s.toString())
                     CollaborativeSessionManager.updateCursorPosition(editorBinding.textArea.selectionStart, true)
+                    android.util.Log.d("CollabSync", "Set typing=true for current user")
                 }
                 
                 // Set typing to false after 2 seconds of inactivity
                 typingJob = lifecycleScope.launch {
                     delay(2000)
                     CollaborativeSessionManager.updateCursorPosition(editorBinding.textArea.selectionStart, false)
+                    android.util.Log.d("CollabSync", "Set typing=false for current user")
                 }
             }
             override fun afterTextChanged(s: Editable?) {}
@@ -3420,7 +3422,13 @@ open class MainActivity : AppCompatActivity() {
         // Observe users and update list in real-time
         val usersJob = lifecycleScope.launch {
             CollaborativeSessionManager.observeUsers(sessionId).collect { users ->
-                adapter.updateUsers(users.values.toList())
+                android.util.Log.d("SessionDialog", "Received users update: ${users.size} users")
+                users.values.forEach { user ->
+                    android.util.Log.d("SessionDialog", "  User: ${user.userName}, typing=${user.typing}")
+                }
+                withContext(Dispatchers.Main) {
+                    adapter.updateUsers(users.values.toList())
+                }
             }
         }
         

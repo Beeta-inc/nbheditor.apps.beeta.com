@@ -39,14 +39,23 @@ class SessionUsersAdapter(
         // Show creator badge
         holder.tvCreatorBadge.visibility = if (user.isCreator) View.VISIBLE else View.GONE
         
-        // Show typing indicator
-        holder.tvTypingIndicator.visibility = if (user.isTyping) View.VISIBLE else View.GONE
+        // Show typing indicator - check both isTyping and typing fields
+        val isTyping = user.isTyping || user.typing
+        holder.tvTypingIndicator.visibility = if (isTyping) View.VISIBLE else View.GONE
+        
+        // Debug log
+        android.util.Log.d("SessionUsers", "User ${user.userName}: typing=$isTyping, isTyping=${user.isTyping}, typing=${user.typing}")
         
         // Show online/offline status
         val isActive = System.currentTimeMillis() - user.lastActive < 60000 // Active in last minute
         holder.ivUserStatus.setImageResource(
             if (isActive) android.R.drawable.presence_online
             else android.R.drawable.presence_busy
+        )
+        
+        // Tint the status icon
+        holder.ivUserStatus.setColorFilter(
+            if (isActive) 0xFF4CAF50.toInt() else 0xFFFF5252.toInt()
         )
         
         // Show kick button only for creator and not for themselves
@@ -64,6 +73,10 @@ class SessionUsersAdapter(
     override fun getItemCount() = users.size
 
     fun updateUsers(newUsers: List<SessionUser>) {
+        android.util.Log.d("SessionUsers", "Updating users list: ${newUsers.size} users")
+        newUsers.forEach { user ->
+            android.util.Log.d("SessionUsers", "  - ${user.userName}: typing=${user.typing}, isTyping=${user.isTyping}")
+        }
         users = newUsers
         notifyDataSetChanged()
     }
