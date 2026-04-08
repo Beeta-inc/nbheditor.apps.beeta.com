@@ -13,11 +13,18 @@ data class SessionUser(
     val userId: String = "",
     val userName: String = "",
     val email: String = "",
-    val isCreator: Boolean = false,
+    val creator: Boolean = false,
     val cursorPosition: Int = 0,
-    val isTyping: Boolean = false,
+    val typing: Boolean = false,
     val lastActive: Long = System.currentTimeMillis()
-)
+) {
+    // Compatibility properties for code that uses isCreator/isTyping
+    @get:Exclude
+    val isCreator: Boolean get() = creator
+    
+    @get:Exclude
+    val isTyping: Boolean get() = typing
+}
 
 data class EditorChange(
     val userId: String = "",
@@ -111,7 +118,7 @@ object CollaborativeSessionManager {
                 userId = sanitizedUserId,
                 userName = userName,
                 email = email,
-                isCreator = true,
+                creator = true,
                 lastActive = System.currentTimeMillis()
             )
             
@@ -171,7 +178,7 @@ object CollaborativeSessionManager {
                 userId = sanitizedUserId,
                 userName = userName,
                 email = email,
-                isCreator = false,
+                creator = false,
                 lastActive = System.currentTimeMillis()
             )
             
@@ -239,7 +246,7 @@ object CollaborativeSessionManager {
             
             val updates = mapOf(
                 "cursorPosition" to position,
-                "isTyping" to isTyping,
+                "typing" to isTyping,
                 "lastActive" to ServerValue.TIMESTAMP
             )
             
