@@ -32,7 +32,10 @@ data class ChatMessage(
     val userName: String = "",
     val message: String = "",
     val timestamp: Long = System.currentTimeMillis(),
-    val isAI: Boolean = false
+    val isAI: Boolean = false,
+    val isImportant: Boolean = false,
+    val linkedTaskId: String? = null,
+    val reminderId: String? = null
 )
 
 data class TaskItem(
@@ -442,7 +445,12 @@ object CollaborativeSessionManager {
     // ── Chat Functions ────────────────────────────────────────────────────────
     
     // Send a chat message
-    suspend fun sendChatMessage(message: String, isAI: Boolean = false): Result<String> {
+    suspend fun sendChatMessage(
+        message: String, 
+        isAI: Boolean = false,
+        isImportant: Boolean = false,
+        linkedTaskId: String? = null
+    ): Result<String> {
         return try {
             val sessionId = currentSessionId ?: return Result.failure(Exception("Not in a session"))
             val userId = currentUserId ?: return Result.failure(Exception("User ID not found"))
@@ -461,7 +469,9 @@ object CollaborativeSessionManager {
                 userName = user.userName,
                 message = message,
                 timestamp = System.currentTimeMillis(),
-                isAI = isAI
+                isAI = isAI,
+                isImportant = isImportant,
+                linkedTaskId = linkedTaskId
             )
             
             database.child(SESSIONS_PATH).child(sessionId)
@@ -644,6 +654,89 @@ object CollaborativeSessionManager {
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to update section status", e)
+            Result.failure(e)
+        }
+    }
+    
+    // Convert chat message to task
+    suspend fun createTaskFromMessage(messageId: String): Result<String> {
+        return try {
+            val sessionId = currentSessionId ?: return Result.failure(Exception("Not in a session"))
+            
+            val messageSnapshot = database.child(SESSIONS_PATH).child(sessionId)
+                .child("chatMessages").child(messageId).get().await()
+            val message = messageSnapshot.getValue(ChatMessage::class.java)
+                ?: return Result.failure(Exception("Message not found"))
+            
+            val result = createTask(message.message, "", "next")
+            if (result.isSuccess) {
+                val taskId = result.getOrNull()!!
+                database.child(SESSIONS_PATH).child(sessionId)
+                    .child("chatMessages").child(messageId)
+                    .child("linkedTaskId").setValue(taskId).await()
+                Result.success(taskId)
+            } else {
+                result
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to create task from message", e)
+            Result.failure(e)
+        }
+    }
+    
+    // Mark message as important
+    suspend fun markMessageImportant(messageId: String, important: Boolean): Result<Unit> {
+        return try {
+            val sessionId = currentSessionId ?: return Result.failure(Exception("Not in a session"))
+            
+            database.child(SESSIONS_PATH).child(sessionId)
+                .child("chatMessages").child(messageId)
+                .child("isImportant").setValue(important).await()
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to mark message", e)
+            Result.failure(e)
+        }
+    }
+    
+    // Set reminder for message
+    suspend fun setMessageReminder(messageId: String, reminderTime: Long): Result<String> {
+        return try {
+            val sessionId = currentSessionId ?: return Result.failure(Exception("Not in a session"))
+            val userId = currentUserId ?: return Result.failure(Exception("User ID not found"))
+            
+            val reminderId = "reminder_${System.currentTimeMillis()}"
+            
+            val reminderData = mapOf(
+                "messageId" to messageId,
+                "time" to reminderTime,
+                "userId" to userId
+            )
+            
+            database.child(SESSIONS_PATH).child(sessionId)
+                .child("reminders").child(reminderId).setValue(reminderData).await()
+            
+            database.child(SESSIONS_PATH).child(sessionId)
+                .child("chatMessages").child(messageId)
+                .child("reminderId").setValue(reminderId).await()
+            
+            Result.success(reminderId)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to set reminder", e)
+            Result.failure(e)
+        }
+    }
+    
+    // Ask AI in chat context (placeholder for AI integration)
+    suspend fun askAIInChat(question: String, context: String): Result<String> {
+        return try {
+            // TODO: Integrate with your existing AI system
+            val aiResponse = "AI: Processing your question..."
+            sendChatMessage(aiResponse, isAI = true)
+            Result.success(aiResponse)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to ask AI", e)
             Result.failure(e)
         }
     }

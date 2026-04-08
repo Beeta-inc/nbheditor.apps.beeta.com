@@ -12,7 +12,10 @@ import java.util.*
 
 class CollabChatAdapter(
     private var messages: List<ChatMessage>,
-    private val currentUserId: String
+    private val currentUserId: String,
+    private val onMarkImportant: (ChatMessage) -> Unit = {},
+    private val onCreateTask: (ChatMessage) -> Unit = {},
+    private val onSetReminder: (ChatMessage) -> Unit = {}
 ) : RecyclerView.Adapter<CollabChatAdapter.MessageViewHolder>() {
 
     class MessageViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -20,6 +23,12 @@ class CollabChatAdapter(
         val tvSenderName: TextView = view.findViewById(R.id.tvSenderName)
         val tvMessage: TextView = view.findViewById(R.id.tvMessage)
         val tvTimestamp: TextView = view.findViewById(R.id.tvTimestamp)
+        val tvImportantBadge: TextView = view.findViewById(R.id.tvImportantBadge)
+        val tvLinkedTaskBadge: TextView = view.findViewById(R.id.tvLinkedTaskBadge)
+        val messageActions: LinearLayout = view.findViewById(R.id.messageActions)
+        val btnMarkImportant: TextView = view.findViewById(R.id.btnMarkImportant)
+        val btnCreateTask: TextView = view.findViewById(R.id.btnCreateTask)
+        val btnSetReminder: TextView = view.findViewById(R.id.btnSetReminder)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MessageViewHolder {
@@ -44,6 +53,10 @@ class CollabChatAdapter(
             holder.tvSenderName.setTextColor(0xFF1976D2.toInt())
         }
         
+        // Show badges
+        holder.tvImportantBadge.visibility = if (message.isImportant) View.VISIBLE else View.GONE
+        holder.tvLinkedTaskBadge.visibility = if (message.linkedTaskId != null) View.VISIBLE else View.GONE
+        
         // Format timestamp
         val sdf = SimpleDateFormat("HH:mm", Locale.getDefault())
         holder.tvTimestamp.text = sdf.format(Date(message.timestamp))
@@ -64,6 +77,29 @@ class CollabChatAdapter(
             holder.messageContainer.setBackgroundColor(0xFFFFFFFF.toInt())
         }
         holder.messageContainer.layoutParams = layoutParams
+        
+        // Long press to show actions
+        holder.messageContainer.setOnLongClickListener {
+            val isVisible = holder.messageActions.visibility == View.VISIBLE
+            holder.messageActions.visibility = if (isVisible) View.GONE else View.VISIBLE
+            true
+        }
+        
+        // Action buttons
+        holder.btnMarkImportant.setOnClickListener {
+            onMarkImportant(message)
+            holder.messageActions.visibility = View.GONE
+        }
+        
+        holder.btnCreateTask.setOnClickListener {
+            onCreateTask(message)
+            holder.messageActions.visibility = View.GONE
+        }
+        
+        holder.btnSetReminder.setOnClickListener {
+            onSetReminder(message)
+            holder.messageActions.visibility = View.GONE
+        }
     }
 
     override fun getItemCount() = messages.size

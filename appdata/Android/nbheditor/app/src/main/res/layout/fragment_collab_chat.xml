@@ -25,6 +25,15 @@
             android:textStyle="bold"
             android:textColor="@android:color/white" />
 
+        <TextView
+            android:id="@+id/tvChatStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🟢 Active"
+            android:textColor="@android:color/white"
+            android:textSize="12sp"
+            android:layout_marginEnd="12dp" />
+
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnAskAI"
             android:layout_width="wrap_content"
@@ -48,6 +57,40 @@
         android:layout_weight="1"
         android:padding="8dp"
         android:clipToPadding="false" />
+
+    <!-- Quick Actions Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:background="@android:color/white"
+        android:gravity="center_vertical">
+
+        <Button
+            android:id="@+id/btnCreateTaskFromChat"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="✓ Create Task"
+            android:textSize="12sp"
+            android:backgroundTint="#FF9800"
+            android:textColor="@android:color/white"
+            android:paddingHorizontal="12dp" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/tvTypingIndicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textSize="11sp"
+            android:textColor="#757575"
+            android:visibility="gone" />
+    </LinearLayout>
 
     <!-- Input Area -->
     <LinearLayout
