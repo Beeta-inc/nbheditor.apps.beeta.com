@@ -3055,67 +3055,156 @@ open class MainActivity : AppCompatActivity() {
         // Update toolbar to show session indicator
         updateToolbarWithSession(sessionId)
         
-        // Show welcome toast
-        Toast.makeText(this, "✓ Connected to session: $sessionId", Toast.LENGTH_LONG).show()
+        // Show brief toast notification
+        Toast.makeText(this, "✓ Connected to session: $sessionId", Toast.LENGTH_SHORT).show()
         
-        // Show quick info dialog
-        val themedContext = androidx.appcompat.view.ContextThemeWrapper(this, R.style.Theme_Nbheditor)
-        val dialogView = android.view.LayoutInflater.from(themedContext).inflate(R.layout.dialog_active_session, null)
+        // Show compact session info bar at top of editor (non-blocking)
+        showSessionInfoBar(sessionId, isCreator)
         
-        dialogView.findViewById<TextView>(R.id.tvSessionCode).text = sessionId
-        
-        // Add pulse animation to status indicator
-        val pulseView = dialogView.findViewById<ImageView>(R.id.ivSessionPulse)
-        val pulseAnimation = android.animation.ObjectAnimator.ofFloat(pulseView, "alpha", 1f, 0.3f).apply {
-            duration = 1000
-            repeatCount = android.animation.ObjectAnimator.INFINITE
-            repeatMode = android.animation.ObjectAnimator.REVERSE
+        // Start syncing
+        startCollaborativeSync(sessionId)
+    }
+    
+    private fun showSessionInfoBar(sessionId: String, isCreator: Boolean) {
+        // Remove any existing session info bar first
+        val existingBar = editorBinding.root.findViewWithTag<View>("session_info_bar")
+        if (existingBar != null) {
+            (existingBar.parent as? android.view.ViewGroup)?.removeView(existingBar)
         }
-        pulseAnimation.start()
         
-        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
-            .setView(dialogView)
-            .setCancelable(true)
-            .create()
+        // Create a compact info bar that shows below the editor toolbar
+        val infoBar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(24, 12, 24, 12)
+            setBackgroundColor(0xFF1976D2.toInt())
+            elevation = 4f
+            id = View.generateViewId()
+            tag = "session_info_bar"
+        }
         
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        // Session icon and code
+        val sessionInfo = TextView(this).apply {
+            text = "🔗 $sessionId"
+            setTextColor(0xFFFFFFFF.toInt())
+            textSize = 13f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        }
+        infoBar.addView(sessionInfo)
         
-        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnViewUsers)
-            .setOnClickListener {
+        // View Users button
+        val btnUsers = com.google.android.material.button.MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+            text = "👥 Users"
+            setTextColor(0xFFFFFFFF.toInt())
+            strokeColor = android.content.res.ColorStateList.valueOf(0xFFFFFFFF.toInt())
+            strokeWidth = 2
+            backgroundTintList = android.content.res.ColorStateList.valueOf(0x00000000)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                marginEnd = 8
+            }
+            minWidth = 0
+            minimumWidth = 0
+            textSize = 11f
+            setPadding(20, 4, 20, 4)
+            setOnClickListener {
                 showSessionUsersDialog(sessionId, isCreator)
             }
+        }
+        infoBar.addView(btnUsers)
         
-        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnLeaveSession)
-            .setOnClickListener {
-                lifecycleScope.launch {
-                    CollaborativeSessionManager.leaveSession()
-                    contentSyncJob?.cancel()
-                    pulseAnimation.cancel()
-                    dialog.dismiss()
-                    activeSessionDialog = null
-                    
-                    // Clear editor and go back to home
-                    editorBinding.textArea.setText("")
-                    currentFileUri = null
-                    textChanged = false
-                    updateToolbarTitle()
-                    showHome()
-                    
-                    Toast.makeText(this@MainActivity, "✓ Left session", Toast.LENGTH_SHORT).show()
-                }
+        // Copy code button
+        val btnCopy = com.google.android.material.button.MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+            text = "📋"
+            setTextColor(0xFFFFFFFF.toInt())
+            strokeColor = android.content.res.ColorStateList.valueOf(0xFFFFFFFF.toInt())
+            strokeWidth = 2
+            backgroundTintList = android.content.res.ColorStateList.valueOf(0x00000000)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                marginEnd = 8
             }
-        
-        dialog.show()
-        activeSessionDialog = dialog
-        
-        // Auto-dismiss after 5 seconds
-        lifecycleScope.launch {
-            delay(5000)
-            if (dialog.isShowing) {
-                pulseAnimation.cancel()
-                dialog.dismiss()
+            minWidth = 0
+            minimumWidth = 0
+            textSize = 13f
+            setPadding(16, 4, 16, 4)
+            setOnClickListener {
+                val clipboard = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                val clip = android.content.ClipData.newPlainText("Session Code", sessionId)
+                clipboard.setPrimaryClip(clip)
+                Toast.makeText(this@MainActivity, "✓ Copied: $sessionId", Toast.LENGTH_SHORT).show()
             }
         }
+        infoBar.addView(btnCopy)
+        
+        // Leave button
+        val btnLeave = com.google.android.material.button.MaterialButton(this).apply {
+            text = "Leave"
+            setTextColor(0xFFFFFFFF.toInt())
+            backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFD32F2F.toInt())
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            minWidth = 0
+            minimumWidth = 0
+            textSize = 11f
+            setPadding(20, 4, 20, 4)
+            setOnClickListener {
+                androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                    .setTitle("Leave Session?")
+                    .setMessage("Are you sure you want to leave this collaborative session?")
+                    .setPositiveButton("Leave") { _, _ ->
+                        lifecycleScope.launch {
+                            CollaborativeSessionManager.leaveSession()
+                            contentSyncJob?.cancel()
+                            
+                            // Remove info bar
+                            (infoBar.parent as? android.view.ViewGroup)?.removeView(infoBar)
+                            
+                            // Clear editor and go back to home
+                            editorBinding.textArea.setText("")
+                            currentFileUri = null
+                            textChanged = false
+                            updateToolbarTitle()
+                            showHome()
+                            
+                            Toast.makeText(this@MainActivity, "✓ Left session", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+        }
+        infoBar.addView(btnLeave)
+        
+        // Add info bar to the constraint layout with proper constraints
+        val constraintLayout = editorBinding.root as androidx.constraintlayout.widget.ConstraintLayout
+        constraintLayout.addView(infoBar)
+        
+        // Set constraints to position it between toolbar divider and editor container
+        val constraintSet = androidx.constraintlayout.widget.ConstraintSet()
+        constraintSet.clone(constraintLayout)
+        constraintSet.connect(infoBar.id, androidx.constraintlayout.widget.ConstraintSet.TOP, 
+            editorBinding.editorToolbarDivider.id, androidx.constraintlayout.widget.ConstraintSet.BOTTOM)
+        constraintSet.connect(infoBar.id, androidx.constraintlayout.widget.ConstraintSet.START, 
+            androidx.constraintlayout.widget.ConstraintSet.PARENT_ID, androidx.constraintlayout.widget.ConstraintSet.START)
+        constraintSet.connect(infoBar.id, androidx.constraintlayout.widget.ConstraintSet.END, 
+            androidx.constraintlayout.widget.ConstraintSet.PARENT_ID, androidx.constraintlayout.widget.ConstraintSet.END)
+        constraintSet.constrainWidth(infoBar.id, androidx.constraintlayout.widget.ConstraintSet.MATCH_CONSTRAINT)
+        constraintSet.constrainHeight(infoBar.id, androidx.constraintlayout.widget.ConstraintSet.WRAP_CONTENT)
+        
+        // Update editor container to be below the info bar
+        constraintSet.clear(editorBinding.editorContainer.id, androidx.constraintlayout.widget.ConstraintSet.TOP)
+        constraintSet.connect(editorBinding.editorContainer.id, androidx.constraintlayout.widget.ConstraintSet.TOP,
+            infoBar.id, androidx.constraintlayout.widget.ConstraintSet.BOTTOM)
+        
+        constraintSet.applyTo(constraintLayout)
     }
     
     private fun updateToolbarWithSession(sessionId: String) {
@@ -3140,10 +3229,10 @@ open class MainActivity : AppCompatActivity() {
         tv.textSize = 18f
         tv.letterSpacing = 0.02f
         
-        // Make session code clickable to show session controls
+        // Make toolbar clickable to show quick session menu
         tv.setOnClickListener {
             if (CollaborativeSessionManager.isInSession()) {
-                activeSessionDialog?.show() ?: showSessionControlsMenu(sessionId)
+                showSessionControlsMenu(sessionId)
             }
         }
     }
@@ -3195,6 +3284,7 @@ open class MainActivity : AppCompatActivity() {
         contentSyncJob?.cancel()
         
         var isLocalChange = false
+        var typingJob: Job? = null
         
         // Listen to remote content changes
         contentSyncJob = lifecycleScope.launch {
@@ -3214,15 +3304,33 @@ open class MainActivity : AppCompatActivity() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 isLocalChange = true
+                
+                // Cancel previous typing job
+                typingJob?.cancel()
+                
+                // Update content and set typing to true
                 lifecycleScope.launch {
                     CollaborativeSessionManager.updateContent(s.toString())
                     CollaborativeSessionManager.updateCursorPosition(editorBinding.textArea.selectionStart, true)
+                }
+                
+                // Set typing to false after 2 seconds of inactivity
+                typingJob = lifecycleScope.launch {
+                    delay(2000)
+                    CollaborativeSessionManager.updateCursorPosition(editorBinding.textArea.selectionStart, false)
                 }
             }
             override fun afterTextChanged(s: Editable?) {}
         }
         
         editorBinding.textArea.addTextChangedListener(textWatcher)
+        
+        // Also track cursor position changes without text changes
+        editorBinding.textArea.setOnClickListener {
+            lifecycleScope.launch {
+                CollaborativeSessionManager.updateCursorPosition(editorBinding.textArea.selectionStart, false)
+            }
+        }
         
         // Store watcher to remove later
         editorBinding.textArea.setTag(R.id.nav_collaborative_session, textWatcher)
@@ -3231,23 +3339,42 @@ open class MainActivity : AppCompatActivity() {
     private fun showSessionUsersDialog(sessionId: String, isCreator: Boolean) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_session_users, null)
         val recyclerView = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvSessionUsers)
+        val btnEndSession = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnEndSession)
         
         recyclerView.layoutManager = LinearLayoutManager(this)
         val currentUserId = CollaborativeSessionManager.getCurrentUserId() ?: ""
+        
+        // Check if current user is the creator
+        var isCurrentUserCreator = false
+        lifecycleScope.launch {
+            val session = CollaborativeSessionManager.observeSession(sessionId).first { it != null }
+            isCurrentUserCreator = session?.creatorId == currentUserId
+            
+            // Show/hide end session button based on creator status
+            btnEndSession.visibility = if (isCurrentUserCreator) View.VISIBLE else View.GONE
+        }
+        
         val adapter = SessionUsersAdapter(
             users = emptyList(),
             currentUserId = currentUserId,
             isCreator = isCreator,
             onKickUser = { user ->
-                // Kick user
-                lifecycleScope.launch {
-                    val result = CollaborativeSessionManager.kickUser(sessionId, user.userId)
-                    result.onSuccess {
-                        Toast.makeText(this@MainActivity, "User removed", Toast.LENGTH_SHORT).show()
-                    }.onFailure { e ->
-                        Toast.makeText(this@MainActivity, "Failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                // Confirm before kicking
+                androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle("Remove User?")
+                    .setMessage("Remove ${user.userName} from this session?")
+                    .setPositiveButton("Remove") { _, _ ->
+                        lifecycleScope.launch {
+                            val result = CollaborativeSessionManager.kickUser(sessionId, user.userId)
+                            result.onSuccess {
+                                Toast.makeText(this@MainActivity, "✓ ${user.userName} removed", Toast.LENGTH_SHORT).show()
+                            }.onFailure { e ->
+                                Toast.makeText(this@MainActivity, "Failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                            }
+                        }
                     }
-                }
+                    .setNegativeButton("Cancel", null)
+                    .show()
             }
         )
         recyclerView.adapter = adapter
@@ -3257,11 +3384,49 @@ open class MainActivity : AppCompatActivity() {
             .setPositiveButton("Close", null)
             .create()
         
-        // Observe users
-        lifecycleScope.launch {
+        // End session button (creator only)
+        btnEndSession.setOnClickListener {
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("End Session?")
+                .setMessage("This will end the session for all users. Are you sure?")
+                .setPositiveButton("End Session") { _, _ ->
+                    lifecycleScope.launch {
+                        val result = CollaborativeSessionManager.endSession(sessionId)
+                        result.onSuccess {
+                            dialog.dismiss()
+                            contentSyncJob?.cancel()
+                            
+                            // Remove info bar
+                            val infoBar = editorBinding.root.findViewWithTag<View>("session_info_bar")
+                            (infoBar?.parent as? android.view.ViewGroup)?.removeView(infoBar)
+                            
+                            // Clear editor and go back to home
+                            editorBinding.textArea.setText("")
+                            currentFileUri = null
+                            textChanged = false
+                            updateToolbarTitle()
+                            showHome()
+                            
+                            Toast.makeText(this@MainActivity, "✓ Session ended", Toast.LENGTH_SHORT).show()
+                        }.onFailure { e ->
+                            Toast.makeText(this@MainActivity, "Failed: ${e.message}", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
+        }
+        
+        // Observe users and update list in real-time
+        val usersJob = lifecycleScope.launch {
             CollaborativeSessionManager.observeUsers(sessionId).collect { users ->
                 adapter.updateUsers(users.values.toList())
             }
+        }
+        
+        // Cancel observation when dialog is dismissed
+        dialog.setOnDismissListener {
+            usersJob.cancel()
         }
         
         dialog.show()
