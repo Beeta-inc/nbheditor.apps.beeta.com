@@ -3116,6 +3116,29 @@ open class MainActivity : AppCompatActivity() {
         }
         infoBar.addView(btnUsers)
         
+        // Chat button
+        val btnChat = com.google.android.material.button.MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+            text = "💬 Chat"
+            setTextColor(0xFFFFFFFF.toInt())
+            strokeColor = android.content.res.ColorStateList.valueOf(0xFFFFFFFF.toInt())
+            strokeWidth = 2
+            backgroundTintList = android.content.res.ColorStateList.valueOf(0x00000000)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                marginEnd = 8
+            }
+            minWidth = 0
+            minimumWidth = 0
+            textSize = 11f
+            setPadding(20, 4, 20, 4)
+            setOnClickListener {
+                showCollabChatDialog()
+            }
+        }
+        infoBar.addView(btnChat)
+        
         // Copy code button
         val btnCopy = com.google.android.material.button.MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
             text = "📋"
@@ -3238,12 +3261,13 @@ open class MainActivity : AppCompatActivity() {
     }
     
     private fun showSessionControlsMenu(sessionId: String) {
-        val items = arrayOf("View Users", "Copy Session Code", "Leave Session")
+        val items = arrayOf("💬 Team Chat", "👥 View Users", "📋 Copy Session Code", "🚪 Leave Session")
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("Session: $sessionId")
             .setItems(items) { _, which ->
                 when (which) {
-                    0 -> {
+                    0 -> showCollabChatDialog()
+                    1 -> {
                         val isCreator = CollaborativeSessionManager.getCurrentUserId()?.let { userId ->
                             lifecycleScope.launch {
                                 val session = CollaborativeSessionManager.observeSession(sessionId)
@@ -3253,13 +3277,13 @@ open class MainActivity : AppCompatActivity() {
                         }
                         showSessionUsersDialog(sessionId, false)
                     }
-                    1 -> {
+                    2 -> {
                         val clipboard = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                         val clip = android.content.ClipData.newPlainText("Session Code", sessionId)
                         clipboard.setPrimaryClip(clip)
                         Toast.makeText(this, "✓ Session code copied: $sessionId", Toast.LENGTH_SHORT).show()
                     }
-                    2 -> {
+                    3 -> {
                         lifecycleScope.launch {
                             CollaborativeSessionManager.leaveSession()
                             contentSyncJob?.cancel()
@@ -3336,6 +3360,119 @@ open class MainActivity : AppCompatActivity() {
         
         // Store watcher to remove later
         editorBinding.textArea.setTag(R.id.nav_collaborative_session, textWatcher)
+    }
+    
+    private fun showCollabChatDialog() {
+        val sessionCode = CollaborativeSessionManager.getCurrentSessionId() ?: return
+        val currentUserId = CollaborativeSessionManager.getCurrentUserId() ?: return
+        
+        val dialogView = layoutInflater.inflate(R.layout.fragment_collab_chat, null)
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+        
+        val rvChatMessages = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvChatMessages)
+        val etChatMessage = dialogView.findViewById<EditText>(R.id.etChatMessage)
+        val btnSendMessage = dialogView.findViewById<ImageButton>(R.id.btnSendMessage)
+        val btnAskAI = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAskAI)
+        val btnCreateTaskFromChat = dialogView.findViewById<Button>(R.id.btnCreateTaskFromChat)
+        
+        val adapter = CollabChatAdapter(
+            messages = emptyList(),
+            currentUserId = currentUserId,
+            onMarkImportant = { message ->
+                lifecycleScope.launch {
+                    val result = CollaborativeSessionManager.markMessageImportant(
+                        message.messageId,
+                        !message.isImportant
+                    )
+                    if (result.isSuccess) {
+                        Toast.makeText(this@MainActivity, 
+                            if (message.isImportant) "Unmarked" else "⭐ Marked important", 
+                            Toast.LENGTH_SHORT).show()
+                    }
+                }
+            },
+            onCreateTask = { message ->
+                lifecycleScope.launch {
+                    val result = CollaborativeSessionManager.createTaskFromMessage(message.messageId)
+                    if (result.isSuccess) {
+                        Toast.makeText(this@MainActivity, "✓ Task created", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            },
+            onSetReminder = { message ->
+                val options = arrayOf("In 1 hour", "In 3 hours", "Tomorrow")
+                androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle("Set Reminder")
+                    .setItems(options) { _, which ->
+                        val reminderTime = when (which) {
+                            0 -> System.currentTimeMillis() + 3600000
+                            1 -> System.currentTimeMillis() + 10800000
+                            else -> System.currentTimeMillis() + 86400000
+                        }
+                        lifecycleScope.launch {
+                            val result = CollaborativeSessionManager.setMessageReminder(
+                                message.messageId,
+                                reminderTime
+                            )
+                            if (result.isSuccess) {
+                                Toast.makeText(this@MainActivity, "⏰ Reminder set", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                    .show()
+            }
+        )
+        
+        rvChatMessages.layoutManager = LinearLayoutManager(this)
+        rvChatMessages.adapter = adapter
+        
+        lifecycleScope.launch {
+            CollaborativeSessionManager.observeChatMessages(sessionCode).collect { messages ->
+                adapter.updateMessages(messages)
+                if (messages.isNotEmpty()) {
+                    rvChatMessages.scrollToPosition(messages.size - 1)
+                }
+            }
+        }
+        
+        btnSendMessage.setOnClickListener {
+            val message = etChatMessage.text.toString().trim()
+            if (message.isNotEmpty()) {
+                lifecycleScope.launch {
+                    val result = CollaborativeSessionManager.sendChatMessage(message)
+                    if (result.isSuccess) {
+                        etChatMessage.text.clear()
+                    }
+                }
+            }
+        }
+        
+        btnAskAI.setOnClickListener {
+            val question = etChatMessage.text.toString().trim()
+            if (question.isNotEmpty()) {
+                lifecycleScope.launch {
+                    val editorContent = editorBinding.textArea.text.toString()
+                    CollaborativeSessionManager.askAIInChat(question, editorContent)
+                    etChatMessage.text.clear()
+                    Toast.makeText(this@MainActivity, "🤖 AI responding...", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        
+        btnCreateTaskFromChat.setOnClickListener {
+            val message = etChatMessage.text.toString().trim()
+            if (message.isNotEmpty()) {
+                lifecycleScope.launch {
+                    CollaborativeSessionManager.createTask(message, "", "next")
+                    etChatMessage.text.clear()
+                    Toast.makeText(this@MainActivity, "✓ Task created", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+        
+        dialog.show()
     }
     
     private fun showSessionUsersDialog(sessionId: String, isCreator: Boolean) {
