@@ -35,7 +35,9 @@ data class ChatMessage(
     val isAI: Boolean = false,
     val isImportant: Boolean = false,
     val linkedTaskId: String? = null,
-    val reminderId: String? = null
+    val reminderId: String? = null,
+    val targetType: String = "everyone", // "everyone", "ai_only", "everyone_and_ai", "selected_users"
+    val targetUserIds: List<String> = emptyList()
 )
 
 data class TaskItem(
@@ -253,10 +255,12 @@ object CollaborativeSessionManager {
             // Check if session is empty and delete if so
             val snapshot = sessionRef.child("users").get().await()
             if (!snapshot.exists() || !snapshot.hasChildren()) {
+                // Last user left - delete entire session
                 sessionRef.removeValue().await()
                 Log.d(TAG, "Session deleted (no users left): $sessionId")
             }
             
+            // Clear local state
             currentSessionId = null
             currentUserId = null
             
@@ -389,10 +393,14 @@ object CollaborativeSessionManager {
                 return Result.failure(Exception("Only creator can end session"))
             }
             
+            // Delete entire session from Firebase
             database.child(SESSIONS_PATH).child(sessionId).removeValue().await()
+            
+            // Clear local state
             currentSessionId = null
             currentUserId = null
             
+            Log.d(TAG, "Session ended and deleted: $sessionId")
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to end session", e)
@@ -449,7 +457,9 @@ object CollaborativeSessionManager {
         message: String, 
         isAI: Boolean = false,
         isImportant: Boolean = false,
-        linkedTaskId: String? = null
+        linkedTaskId: String? = null,
+        targetType: String = "everyone",
+        targetUserIds: List<String> = emptyList()
     ): Result<String> {
         return try {
             val sessionId = currentSessionId ?: return Result.failure(Exception("Not in a session"))
@@ -471,7 +481,9 @@ object CollaborativeSessionManager {
                 timestamp = System.currentTimeMillis(),
                 isAI = isAI,
                 isImportant = isImportant,
-                linkedTaskId = linkedTaskId
+                linkedTaskId = linkedTaskId,
+                targetType = targetType,
+                targetUserIds = targetUserIds
             )
             
             database.child(SESSIONS_PATH).child(sessionId)
@@ -728,11 +740,13 @@ object CollaborativeSessionManager {
         }
     }
     
-    // Ask AI in chat context (placeholder for AI integration)
-    suspend fun askAIInChat(question: String, context: String): Result<String> {
+    // Ask AI in chat context - integrated with existing AI system
+    suspend fun askAIInChat(question: String, context: String, aiCallback: suspend (String) -> String?): Result<String> {
         return try {
-            // TODO: Integrate with your existing AI system
-            val aiResponse = "AI: Processing your question..."
+            // Call the AI with the question and context
+            val aiResponse = aiCallback(question) ?: "Sorry, I couldn't process that request."
+            
+            // Send AI response to chat
             sendChatMessage(aiResponse, isAI = true)
             Result.success(aiResponse)
         } catch (e: Exception) {
@@ -801,5 +815,13 @@ object CollaborativeSessionManager {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to clear temp cache", e)
         }
+    }
+    
+    // Clear all session data (call when ending/leaving session)
+    fun clearSessionCache(context: Context) {
+        clearTempCache(context)
+        currentSessionId = null
+        currentUserId = null
+        Log.d(TAG, "Cleared all session cache")
     }
 }

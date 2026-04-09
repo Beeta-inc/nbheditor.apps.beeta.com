@@ -1203,8 +1203,13 @@ open class MainActivity : AppCompatActivity() {
                                 
                                 try {
                                     et.text?.insert(pos, textToInsert) ?: et.setText(textToInsert)
+                                    // Move cursor to end of inserted text
+                                    et.setSelection((pos + textToInsert.length).coerceAtMost(et.text?.length ?: 0))
                                 } catch (_: Exception) {}
                             }
+                            
+                            // Clear the hint after successful insertion
+                            speechTarget?.hint = ""
                         }
                         
                         // Restart immediately - no delay
@@ -1223,8 +1228,7 @@ open class MainActivity : AppCompatActivity() {
                         if (!text.isNullOrBlank()) {
                             showVoiceStatusSpeaking()
                             updateVoiceActivity()
-                            // Show partial text in hint
-                            speechTarget?.hint = "Hearing: ${text.take(40)}..."
+                            // Don't show hint - text will be inserted on final results
                         }
                     }
                 }
@@ -2960,6 +2964,168 @@ open class MainActivity : AppCompatActivity() {
     
     // ── Collaborative Session ─────────────────────────────────────────────────
     
+    private fun createLoadingDialog(title: String, message: String): androidx.appcompat.app.AlertDialog {
+        val dialogView = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(60, 40, 60, 40)
+            gravity = Gravity.CENTER
+        }
+        
+        // Animated progress indicator
+        val progressBar = android.widget.ProgressBar(this).apply {
+            isIndeterminate = true
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                bottomMargin = 24
+            }
+        }
+        
+        // Title
+        val titleView = TextView(this).apply {
+            text = title
+            textSize = 18f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                bottomMargin = 16
+            }
+        }
+        
+        // Message with animated steps
+        val messageView = TextView(this).apply {
+            text = message.split("\n").firstOrNull() ?: message
+            textSize = 14f
+            gravity = Gravity.CENTER
+            alpha = 0.8f
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+        
+        dialogView.addView(progressBar)
+        dialogView.addView(titleView)
+        dialogView.addView(messageView)
+        
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+        
+        // Animate through steps
+        val steps = message.split("\n")
+        var currentStep = 0
+        val stepHandler = Handler(Looper.getMainLooper())
+        val stepRunnable = object : Runnable {
+            override fun run() {
+                if (currentStep < steps.size && dialog.isShowing) {
+                    messageView.animate()
+                        .alpha(0f)
+                        .setDuration(200)
+                        .withEndAction {
+                            messageView.text = "✓ ${steps[currentStep]}"
+                            messageView.animate()
+                                .alpha(0.8f)
+                                .setDuration(200)
+                                .start()
+                            currentStep++
+                            stepHandler.postDelayed(this, 600)
+                        }
+                        .start()
+                } else if (dialog.isShowing) {
+                    // Cycle back to first step
+                    currentStep = 0
+                    stepHandler.postDelayed(this, 600)
+                }
+            }
+        }
+        
+        // Apply glass mode styling if enabled
+        dialog.setOnShowListener {
+            dialog.window?.apply {
+                setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+                
+                val bgColor = if (isGlassMode) {
+                    0xDD0D1117.toInt()
+                } else {
+                    val isDark = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
+                    if (isDark) 0xFF1E1E1E.toInt() else 0xFFFFFFFF.toInt()
+                }
+                
+                val textColor = if (isGlassMode || (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES)) {
+                    0xFFFFFFFF.toInt()
+                } else {
+                    0xFF212121.toInt()
+                }
+                
+                dialogView.setBackgroundColor(bgColor)
+                dialogView.background = android.graphics.drawable.GradientDrawable().apply {
+                    setColor(bgColor)
+                    cornerRadius = 24f
+                    if (isGlassMode) {
+                        setStroke(2, 0x33FFFFFF)
+                    }
+                }
+                
+                titleView.setTextColor(textColor)
+                messageView.setTextColor(textColor)
+                
+                // Tint progress bar
+                progressBar.indeterminateTintList = android.content.res.ColorStateList.valueOf(
+                    resources.getColor(R.color.accent_primary, theme)
+                )
+            }
+            
+            // Fade in animation
+            dialogView.alpha = 0f
+            dialogView.scaleX = 0.9f
+            dialogView.scaleY = 0.9f
+            dialogView.animate()
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setDuration(300)
+                .setInterpolator(android.view.animation.OvershootInterpolator())
+                .start()
+            
+            // Start step animation
+            stepHandler.postDelayed(stepRunnable, 600)
+        }
+        
+        dialog.setOnDismissListener {
+            stepHandler.removeCallbacks(stepRunnable)
+        }
+        
+        return dialog
+    }
+    
+    private fun showSuccessToast(message: String) {
+        val toast = Toast.makeText(this, message, Toast.LENGTH_LONG)
+        toast.show()
+        
+        // Add haptic feedback
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val vibrator = getSystemService(android.content.Context.VIBRATOR_SERVICE) as? android.os.Vibrator
+            vibrator?.vibrate(android.os.VibrationEffect.createOneShot(50, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+            @Suppress("DEPRECATION")
+            (getSystemService(android.content.Context.VIBRATOR_SERVICE) as? android.os.Vibrator)?.vibrate(50)
+        }
+    }
+    
+    private fun showErrorDialog(title: String, message: String) {
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("❌ $title")
+            .setMessage(message)
+            .setPositiveButton("OK", null)
+            .show()
+    }
+    
     private fun showCollaborativeSessionDialog() {
         // Check if user is signed in
         if (!GoogleSignInHelper.isSignedIn(this)) {
@@ -3005,18 +3171,33 @@ open class MainActivity : AppCompatActivity() {
         val userId = email // Use email as unique user ID
         val currentContent = editorBinding.textArea.text.toString()
         
+        // Show loading dialog with animation
+        val loadingDialog = createLoadingDialog(
+            title = "Creating Session...",
+            message = "Setting up collaborative workspace\nGenerating session code\nInitializing real-time sync"
+        )
+        loadingDialog.show()
+        
         lifecycleScope.launch {
             try {
                 val result = CollaborativeSessionManager.createSession(userId, userName, email, currentContent)
+                
+                // Add slight delay to show the loading animation
+                delay(800)
+                
+                loadingDialog.dismiss()
+                
                 result.onSuccess { sessionId ->
-                    Toast.makeText(this@MainActivity, "✓ Session created: $sessionId", Toast.LENGTH_LONG).show()
+                    // Show success animation
+                    showSuccessToast("✓ Session created: $sessionId")
                     showActiveSessionUI(sessionId, isCreator = true)
                     startCollaborativeSync(sessionId)
                 }.onFailure { e ->
-                    Toast.makeText(this@MainActivity, "Failed to create session: ${e.message}", Toast.LENGTH_SHORT).show()
+                    showErrorDialog("Failed to create session", e.message ?: "Unknown error")
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                loadingDialog.dismiss()
+                showErrorDialog("Error", e.message ?: "Unknown error")
             }
         }
     }
@@ -3026,20 +3207,35 @@ open class MainActivity : AppCompatActivity() {
         val email = GoogleSignInHelper.getUserEmail(this) ?: ""
         val userId = email // Use email as unique user ID
         
+        // Show loading dialog
+        val loadingDialog = createLoadingDialog(
+            title = "Joining Session...",
+            message = "Connecting to $sessionId\nSyncing content\nLoading chat history"
+        )
+        loadingDialog.show()
+        
         lifecycleScope.launch {
             try {
                 val result = CollaborativeSessionManager.joinSession(sessionId, userId, userName, email)
+                
+                // Add slight delay to show the loading animation
+                delay(800)
+                
+                loadingDialog.dismiss()
+                
                 result.onSuccess { session ->
-                    Toast.makeText(this@MainActivity, "✓ Joined session: $sessionId", Toast.LENGTH_LONG).show()
+                    // Show success animation
+                    showSuccessToast("✓ Joined session: $sessionId")
                     // Load session content into editor
                     editorBinding.textArea.setText(session.content)
                     showActiveSessionUI(sessionId, isCreator = false)
                     startCollaborativeSync(sessionId)
                 }.onFailure { e ->
-                    Toast.makeText(this@MainActivity, "Failed to join: ${e.message}", Toast.LENGTH_SHORT).show()
+                    showErrorDialog("Failed to join session", e.message ?: "Unknown error")
                 }
             } catch (e: Exception) {
-                Toast.makeText(this@MainActivity, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                loadingDialog.dismiss()
+                showErrorDialog("Error", e.message ?: "Unknown error")
             }
         }
     }
@@ -3184,18 +3380,46 @@ open class MainActivity : AppCompatActivity() {
                     .setMessage("Are you sure you want to leave this collaborative session?")
                     .setPositiveButton("Leave") { _, _ ->
                         lifecycleScope.launch {
+                            // Show loading
+                            val progressDialog = androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                                .setMessage("Leaving session...")
+                                .setCancelable(false)
+                                .create()
+                            progressDialog.show()
+                            
                             CollaborativeSessionManager.leaveSession()
                             contentSyncJob?.cancel()
                             
-                            // Remove info bar
-                            (infoBar.parent as? android.view.ViewGroup)?.removeView(infoBar)
+                            // Clear all session cache and close dialogs
+                            CollaborativeSessionManager.clearSessionCache(this@MainActivity)
+                            activeSessionDialog?.dismiss()
+                            activeSessionDialog = null
                             
-                            // Clear editor and go back to home
-                            editorBinding.textArea.setText("")
-                            currentFileUri = null
-                            textChanged = false
-                            updateToolbarTitle()
-                            showHome()
+                            progressDialog.dismiss()
+                            
+                            // Remove info bar with animation
+                            infoBar.animate()
+                                .alpha(0f)
+                                .translationY(-infoBar.height.toFloat())
+                                .setDuration(300)
+                                .withEndAction {
+                                    (infoBar.parent as? android.view.ViewGroup)?.removeView(infoBar)
+                                }
+                                .start()
+                            
+                            // Clear editor and go back to home with animation
+                            editorBinding.textArea.animate()
+                                .alpha(0f)
+                                .setDuration(200)
+                                .withEndAction {
+                                    editorBinding.textArea.setText("")
+                                    currentFileUri = null
+                                    textChanged = false
+                                    updateToolbarTitle()
+                                    showHome()
+                                    editorBinding.textArea.alpha = 1f
+                                }
+                                .start()
                             
                             Toast.makeText(this@MainActivity, "✓ Left session", Toast.LENGTH_SHORT).show()
                         }
@@ -3228,6 +3452,18 @@ open class MainActivity : AppCompatActivity() {
             infoBar.id, androidx.constraintlayout.widget.ConstraintSet.BOTTOM)
         
         constraintSet.applyTo(constraintLayout)
+        
+        // Animate info bar sliding in from top
+        infoBar.alpha = 0f
+        infoBar.translationY = -infoBar.height.toFloat()
+        infoBar.post {
+            infoBar.animate()
+                .alpha(1f)
+                .translationY(0f)
+                .setDuration(400)
+                .setInterpolator(android.view.animation.DecelerateInterpolator())
+                .start()
+        }
     }
     
     private fun updateToolbarWithSession(sessionId: String) {
@@ -3284,19 +3520,47 @@ open class MainActivity : AppCompatActivity() {
                         Toast.makeText(this, "✓ Session code copied: $sessionId", Toast.LENGTH_SHORT).show()
                     }
                     3 -> {
-                        lifecycleScope.launch {
-                            CollaborativeSessionManager.leaveSession()
-                            contentSyncJob?.cancel()
-                            
-                            // Clear editor and go back to home
-                            editorBinding.textArea.setText("")
-                            currentFileUri = null
-                            textChanged = false
-                            updateToolbarTitle()
-                            showHome()
-                            
-                            Toast.makeText(this@MainActivity, "✓ Left session", Toast.LENGTH_SHORT).show()
-                        }
+                        androidx.appcompat.app.AlertDialog.Builder(this)
+                            .setTitle("Leave Session?")
+                            .setMessage("Are you sure you want to leave this collaborative session?")
+                            .setPositiveButton("Leave") { _, _ ->
+                                lifecycleScope.launch {
+                                    // Show loading
+                                    val progressDialog = androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                                        .setMessage("Leaving session...")
+                                        .setCancelable(false)
+                                        .create()
+                                    progressDialog.show()
+                                    
+                                    CollaborativeSessionManager.leaveSession()
+                                    contentSyncJob?.cancel()
+                                    
+                                    // Clear all session cache and close dialogs
+                                    CollaborativeSessionManager.clearSessionCache(this@MainActivity)
+                                    activeSessionDialog?.dismiss()
+                                    activeSessionDialog = null
+                                    
+                                    progressDialog.dismiss()
+                                    
+                                    // Clear editor and go back to home with animation
+                                    editorBinding.textArea.animate()
+                                        .alpha(0f)
+                                        .setDuration(200)
+                                        .withEndAction {
+                                            editorBinding.textArea.setText("")
+                                            currentFileUri = null
+                                            textChanged = false
+                                            updateToolbarTitle()
+                                            showHome()
+                                            editorBinding.textArea.alpha = 1f
+                                        }
+                                        .start()
+                                    
+                                    Toast.makeText(this@MainActivity, "✓ Left session", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                            .setNegativeButton("Cancel", null)
+                            .show()
                     }
                 }
             }
@@ -3382,126 +3646,155 @@ open class MainActivity : AppCompatActivity() {
             window?.setLayout(width, height)
         }
         
-        // Apply theme styling
-        val isDark = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
-        
+        // Get UI elements
         val rvChatMessages = dialogView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvChatMessages)
         val etChatMessage = dialogView.findViewById<EditText>(R.id.etChatMessage)
         val btnSendMessage = dialogView.findViewById<ImageButton>(R.id.btnSendMessage)
-        val btnVisibilitySelector = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnVisibilitySelector)
         val btnCreateTaskFromChat = dialogView.findViewById<Button>(R.id.btnCreateTaskFromChat)
         val btnCloseChat = dialogView.findViewById<ImageButton>(R.id.btnCloseChat)
         val chatRoot = dialogView.findViewById<RelativeLayout>(R.id.chatRoot)
         val quickActionsBar = dialogView.findViewById<LinearLayout>(R.id.quickActionsBar)
         val inputBar = dialogView.findViewById<LinearLayout>(R.id.inputBar)
+        val chatHeader = dialogView.findViewById<LinearLayout>(R.id.chatHeader)
+        val tvTargetDisplay = dialogView.findViewById<TextView>(R.id.tvTargetDisplay)
+        val targetSelectorBar = dialogView.findViewById<LinearLayout>(R.id.targetSelectorBar)
         
-        // Close button handler
-        btnCloseChat.setOnClickListener {
-            dialog.dismiss()
-        }
-        
-        // Message visibility state
-        var messageVisibility = "all_users_and_ai" // default
-        var selectedUserIds = mutableSetOf<String>() // for multiple user selection
-        
-        // Apply glass mode styling if enabled
+        // Apply glass mode styling if enabled (inherit from main editor)
         if (isGlassMode) {
+            // Glass mode - transparent with blur effect
             chatRoot.setBackgroundColor(0xBB0A0E14.toInt())
             rvChatMessages.setBackgroundColor(0x00000000)
+            chatHeader.setBackgroundColor(0xCC1976D2.toInt())
             quickActionsBar.setBackgroundColor(0xCC0D1117.toInt())
             inputBar.setBackgroundColor(0xCC0D1117.toInt())
+            targetSelectorBar.setBackgroundColor(0xBB1A1F26.toInt())
             etChatMessage.apply {
                 setBackgroundColor(0xBB1A1F26.toInt())
                 setTextColor(0xFFFFFFFF.toInt())
                 setHintTextColor(0x88FFFFFF.toInt())
             }
-            btnVisibilitySelector.apply {
-                backgroundTintList = android.content.res.ColorStateList.valueOf(0xCC1976D2.toInt())
-                setTextColor(0xFFFFFFFF.toInt())
-            }
-        } else if (isDark) {
-            chatRoot.setBackgroundColor(resources.getColor(R.color.editor_bg, theme))
-            rvChatMessages.setBackgroundColor(resources.getColor(R.color.editor_bg, theme))
-            quickActionsBar.setBackgroundColor(resources.getColor(R.color.editor_surface, theme))
-            inputBar.setBackgroundColor(resources.getColor(R.color.editor_surface, theme))
-            etChatMessage.apply {
-                setBackgroundColor(resources.getColor(R.color.editor_surface, theme))
-                setTextColor(resources.getColor(R.color.editor_text, theme))
-                setHintTextColor(resources.getColor(R.color.editor_hint, theme))
-            }
+            btnSendMessage.setColorFilter(0xFF64B5F6.toInt())
+            btnCloseChat.setColorFilter(0xFFFFFFFF.toInt())
         } else {
-            // Light mode
-            chatRoot.setBackgroundColor(0xFFF5F5F5.toInt())
-            rvChatMessages.setBackgroundColor(0xFFFFFFFF.toInt())
-            quickActionsBar.setBackgroundColor(0xFFFFFFFF.toInt())
-            inputBar.setBackgroundColor(0xFFFFFFFF.toInt())
-            etChatMessage.apply {
-                setBackgroundColor(0xFFFFFFFF.toInt())
-                setTextColor(0xFF212121.toInt())
-                setHintTextColor(0xFF757575.toInt())
+            // Normal mode - follow system theme
+            val isDark = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
+            
+            if (isDark) {
+                chatRoot.setBackgroundColor(resources.getColor(R.color.editor_bg, theme))
+                rvChatMessages.setBackgroundColor(resources.getColor(R.color.editor_bg, theme))
+                chatHeader.setBackgroundColor(0xFF1976D2.toInt())
+                quickActionsBar.setBackgroundColor(resources.getColor(R.color.editor_surface, theme))
+                inputBar.setBackgroundColor(resources.getColor(R.color.editor_surface, theme))
+                targetSelectorBar.setBackgroundColor(resources.getColor(R.color.editor_surface, theme))
+                etChatMessage.apply {
+                    setBackgroundColor(resources.getColor(R.color.editor_surface, theme))
+                    setTextColor(resources.getColor(R.color.editor_text, theme))
+                    setHintTextColor(resources.getColor(R.color.editor_hint, theme))
+                }
+            } else {
+                // Light mode
+                chatRoot.setBackgroundColor(0xFFF5F5F5.toInt())
+                rvChatMessages.setBackgroundColor(0xFFFFFFFF.toInt())
+                chatHeader.setBackgroundColor(0xFF1976D2.toInt())
+                quickActionsBar.setBackgroundColor(0xFFFFFFFF.toInt())
+                inputBar.setBackgroundColor(0xFFFFFFFF.toInt())
+                targetSelectorBar.setBackgroundColor(0xFFF5F5F5.toInt())
+                etChatMessage.apply {
+                    setBackgroundColor(0xFFFFFFFF.toInt())
+                    setTextColor(0xFF212121.toInt())
+                    setHintTextColor(0xFF757575.toInt())
+                }
             }
         }
         
-        // Visibility selector click handler
-        btnVisibilitySelector.setOnClickListener {
+        // Fade-in animation for dialog
+        dialogView.alpha = 0f
+        dialogView.animate()
+            .alpha(1f)
+            .setDuration(250)
+            .start()
+        
+        // Close button handler with animation
+        btnCloseChat.setOnClickListener {
+            dialogView.animate()
+                .alpha(0f)
+                .setDuration(200)
+                .withEndAction { dialog.dismiss() }
+                .start()
+        }
+        
+        // Message visibility state
+        var messageVisibility = "everyone" // default
+        var selectedUserIds = mutableSetOf<String>() // for multiple user selection
+        
+        // Target selector click handler
+        tvTargetDisplay.setOnClickListener {
+            // Animate click
+            tvTargetDisplay.animate()
+                .scaleX(0.95f)
+                .scaleY(0.95f)
+                .setDuration(100)
+                .withEndAction {
+                    tvTargetDisplay.animate()
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .setDuration(100)
+                        .start()
+                }
+                .start()
+            
             lifecycleScope.launch {
                 // Get all users in session
                 val users = CollaborativeSessionManager.observeUsers(sessionCode).first()
                 val usersList = users.values.filter { it.userId != currentUserId }.toList()
                 
                 val options = mutableListOf<String>()
-                options.add("👥 All Users + 🤖 Beeta AI")
-                options.add("👥 All Users Only")
-                options.add("👤 Selected Users Only")
+                options.add("👥 Everyone")
+                options.add("🤖 Beeta AI only")
+                options.add("👥 Everyone + 🤖 AI")
+                options.add("👤 Selected Users")
                 
                 // Add individual users
                 usersList.forEach { user ->
                     options.add("👤 ${user.userName}")
                 }
                 
-                options.add("🤖 Beeta AI Only")
-                
                 androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
-                    .setTitle("Who can see this message?")
+                    .setTitle("Send message to:")
                     .setItems(options.toTypedArray()) { _, which ->
                         when (which) {
                             0 -> {
-                                messageVisibility = "all_users_and_ai"
+                                messageVisibility = "everyone"
                                 selectedUserIds.clear()
-                                btnVisibilitySelector.text = "👥"
-                                Toast.makeText(this@MainActivity, "Visible to: All + AI", Toast.LENGTH_SHORT).show()
+                                tvTargetDisplay.text = "Everyone"
                             }
                             1 -> {
-                                messageVisibility = "all_users_only"
+                                messageVisibility = "ai_only"
                                 selectedUserIds.clear()
-                                btnVisibilitySelector.text = "👥"
-                                Toast.makeText(this@MainActivity, "Visible to: All Users", Toast.LENGTH_SHORT).show()
+                                tvTargetDisplay.text = "Beeta AI only"
                             }
                             2 -> {
+                                messageVisibility = "everyone_and_ai"
+                                selectedUserIds.clear()
+                                tvTargetDisplay.text = "Everyone + AI"
+                            }
+                            3 -> {
                                 // Selected users only - show multi-select dialog
                                 showUserSelectionDialog(usersList) { selectedUsers ->
                                     messageVisibility = "selected_users"
                                     selectedUserIds = selectedUsers.toMutableSet()
-                                    btnVisibilitySelector.text = "👤"
                                     val count = selectedUserIds.size
-                                    Toast.makeText(this@MainActivity, "Visible to: $count user(s)", Toast.LENGTH_SHORT).show()
+                                    tvTargetDisplay.text = "$count user(s)"
                                 }
-                            }
-                            options.size - 1 -> {
-                                messageVisibility = "ai_only"
-                                selectedUserIds.clear()
-                                btnVisibilitySelector.text = "🤖"
-                                Toast.makeText(this@MainActivity, "Visible to: AI Only", Toast.LENGTH_SHORT).show()
                             }
                             else -> {
                                 // Individual user selected
-                                val userIndex = which - 3
+                                val userIndex = which - 4
                                 val selectedUser = usersList[userIndex]
                                 messageVisibility = "selected_users"
                                 selectedUserIds.clear()
                                 selectedUserIds.add(selectedUser.userId)
-                                btnVisibilitySelector.text = "👤"
-                                Toast.makeText(this@MainActivity, "Visible to: ${selectedUser.userName}", Toast.LENGTH_SHORT).show()
+                                tvTargetDisplay.text = selectedUser.userName
                             }
                         }
                     }
@@ -3562,45 +3855,192 @@ open class MainActivity : AppCompatActivity() {
         
         lifecycleScope.launch {
             CollaborativeSessionManager.observeChatMessages(sessionCode).collect { messages ->
+                val oldCount = adapter.itemCount
                 adapter.updateMessages(messages)
+                
                 if (messages.isNotEmpty()) {
-                    rvChatMessages.scrollToPosition(messages.size - 1)
+                    // Smooth scroll to bottom
+                    rvChatMessages.smoothScrollToPosition(messages.size - 1)
+                    
+                    // Animate new message if count increased
+                    if (messages.size > oldCount) {
+                        val lastPosition = messages.size - 1
+                        rvChatMessages.post {
+                            val viewHolder = rvChatMessages.findViewHolderForAdapterPosition(lastPosition)
+                            viewHolder?.itemView?.apply {
+                                alpha = 0f
+                                translationX = 50f
+                                animate()
+                                    .alpha(1f)
+                                    .translationX(0f)
+                                    .setDuration(300)
+                                    .setInterpolator(android.view.animation.DecelerateInterpolator())
+                                    .start()
+                            }
+                        }
+                    }
                 }
             }
         }
         
+        // @mention detection in input
+        etChatMessage.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val text = s.toString()
+                
+                // Detect @mentions
+                when {
+                    text.startsWith("@ai ", ignoreCase = true) -> {
+                        messageVisibility = "ai_only"
+                        tvTargetDisplay.text = "Beeta AI only"
+                        etChatMessage.setText(text.substring(4))
+                        etChatMessage.setSelection(etChatMessage.text.length)
+                    }
+                    text.startsWith("@all ", ignoreCase = true) -> {
+                        messageVisibility = "everyone"
+                        tvTargetDisplay.text = "Everyone"
+                        etChatMessage.setText(text.substring(5))
+                        etChatMessage.setSelection(etChatMessage.text.length)
+                    }
+                    text.startsWith("@") && text.contains(" ") -> {
+                        // Check for username mention
+                        val mention = text.substring(1, text.indexOf(" "))
+                        lifecycleScope.launch {
+                            val users = CollaborativeSessionManager.observeUsers(sessionCode).first()
+                            val matchedUser = users.values.find { 
+                                it.userName.equals(mention, ignoreCase = true) 
+                            }
+                            if (matchedUser != null) {
+                                messageVisibility = "selected_users"
+                                selectedUserIds.clear()
+                                selectedUserIds.add(matchedUser.userId)
+                                tvTargetDisplay.text = matchedUser.userName
+                                etChatMessage.setText(text.substring(text.indexOf(" ") + 1))
+                                etChatMessage.setSelection(etChatMessage.text.length)
+                            }
+                        }
+                    }
+                }
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
+        
         btnSendMessage.setOnClickListener {
             val message = etChatMessage.text.toString().trim()
             if (message.isNotEmpty()) {
+                // Animate send button
+                btnSendMessage.animate()
+                    .scaleX(0.8f)
+                    .scaleY(0.8f)
+                    .setDuration(100)
+                    .withEndAction {
+                        btnSendMessage.animate()
+                            .scaleX(1f)
+                            .scaleY(1f)
+                            .setDuration(100)
+                            .start()
+                    }
+                    .start()
+                
                 lifecycleScope.launch {
-                    // Check if it's an AI-only message
-                    val isAIMessage = messageVisibility == "ai_only"
+                    // Check if message should go to AI
+                    val shouldSendToAI = messageVisibility == "ai_only" || messageVisibility == "everyone_and_ai" || messageVisibility == "everyone"
                     
-                    if (isAIMessage) {
-                        // Send to AI and get response
-                        val editorContent = editorBinding.textArea.text.toString()
-                        CollaborativeSessionManager.askAIInChat(message, editorContent)
-                        Toast.makeText(this@MainActivity, "🤖 AI responding...", Toast.LENGTH_SHORT).show()
-                    } else {
-                        // Send regular message
-                        val result = CollaborativeSessionManager.sendChatMessage(message)
+                    // Send regular message first (if not AI-only)
+                    if (messageVisibility != "ai_only") {
+                        val targetType = when (messageVisibility) {
+                            "everyone" -> "everyone"
+                            "everyone_and_ai" -> "everyone_and_ai"
+                            "selected_users" -> "selected_users"
+                            else -> "everyone"
+                        }
+                        
+                        val result = CollaborativeSessionManager.sendChatMessage(
+                            message = message,
+                            targetType = targetType,
+                            targetUserIds = selectedUserIds.toList()
+                        )
                         if (!result.isSuccess) {
                             Toast.makeText(this@MainActivity, "Failed to send", Toast.LENGTH_SHORT).show()
                         }
                     }
                     
+                    // Send to AI if needed
+                    if (shouldSendToAI) {
+                        Toast.makeText(this@MainActivity, "🤖 AI is thinking...", Toast.LENGTH_SHORT).show()
+                        val editorContent = editorBinding.textArea.text.toString()
+                        
+                        // Use existing AI system
+                        CollaborativeSessionManager.askAIInChat(message, editorContent) { question ->
+                            // Build context-aware prompt
+                            val prompt = if (editorContent.isNotBlank()) {
+                                "Context from editor:\n${editorContent.take(500)}\n\nUser question: $question\n\nProvide a helpful response:"
+                            } else {
+                                question
+                            }
+                            callAI(prompt, maxTokens = 512)
+                        }
+                    }
+                    
                     etChatMessage.text.clear()
                     // Reset to default visibility
-                    messageVisibility = "all_users_and_ai"
+                    messageVisibility = "everyone"
                     selectedUserIds.clear()
-                    btnVisibilitySelector.text = "👥"
+                    tvTargetDisplay.text = "Everyone"
                 }
             }
+        }
+        
+        // Media attachment buttons
+        val btnAttachImage = dialogView.findViewById<ImageButton>(R.id.btnAttachImage)
+        val btnAttachDocument = dialogView.findViewById<ImageButton>(R.id.btnAttachDocument)
+        val btnAttachVoice = dialogView.findViewById<ImageButton>(R.id.btnAttachVoice)
+        val btnAttachVideo = dialogView.findViewById<ImageButton>(R.id.btnAttachVideo)
+        
+        btnAttachImage?.setOnClickListener {
+            val intent = Intent(Intent.ACTION_PICK).apply { type = "image/*" }
+            // TODO: Handle image attachment
+            Toast.makeText(this, "📷 Image attachment coming soon", Toast.LENGTH_SHORT).show()
+        }
+        
+        btnAttachDocument?.setOnClickListener {
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "*/*"
+            }
+            // TODO: Handle document attachment
+            Toast.makeText(this, "📄 Document attachment coming soon", Toast.LENGTH_SHORT).show()
+        }
+        
+        btnAttachVoice?.setOnClickListener {
+            // Start voice recording
+            Toast.makeText(this, "🎤 Voice recording coming soon", Toast.LENGTH_SHORT).show()
+        }
+        
+        btnAttachVideo?.setOnClickListener {
+            val intent = Intent(Intent.ACTION_PICK).apply { type = "video/*" }
+            // TODO: Handle video attachment
+            Toast.makeText(this, "🎥 Video attachment coming soon", Toast.LENGTH_SHORT).show()
         }
         
         btnCreateTaskFromChat.setOnClickListener {
             val message = etChatMessage.text.toString().trim()
             if (message.isNotEmpty()) {
+                // Animate button
+                btnCreateTaskFromChat.animate()
+                    .scaleX(0.9f)
+                    .scaleY(0.9f)
+                    .setDuration(100)
+                    .withEndAction {
+                        btnCreateTaskFromChat.animate()
+                            .scaleX(1f)
+                            .scaleY(1f)
+                            .setDuration(100)
+                            .start()
+                    }
+                    .start()
+                
                 lifecycleScope.launch {
                     val result = CollaborativeSessionManager.createTask(message, "", "next")
                     if (result.isSuccess) {
@@ -3701,23 +4141,51 @@ open class MainActivity : AppCompatActivity() {
                 .setMessage("This will end the session for all users. Are you sure?")
                 .setPositiveButton("End Session") { _, _ ->
                     lifecycleScope.launch {
+                        // Show loading animation
+                        val progressDialog = androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                            .setMessage("Ending session...")
+                            .setCancelable(false)
+                            .create()
+                        progressDialog.show()
+                        
                         val result = CollaborativeSessionManager.endSession(sessionId)
+                        progressDialog.dismiss()
+                        
                         result.onSuccess {
                             dialog.dismiss()
                             contentSyncJob?.cancel()
                             
-                            // Remove info bar
+                            // Clear all session cache and close dialogs
+                            CollaborativeSessionManager.clearSessionCache(this@MainActivity)
+                            activeSessionDialog?.dismiss()
+                            activeSessionDialog = null
+                            
+                            // Remove info bar with animation
                             val infoBar = editorBinding.root.findViewWithTag<View>("session_info_bar")
-                            (infoBar?.parent as? android.view.ViewGroup)?.removeView(infoBar)
+                            infoBar?.animate()
+                                ?.alpha(0f)
+                                ?.translationY(-infoBar.height.toFloat())
+                                ?.setDuration(300)
+                                ?.withEndAction {
+                                    (infoBar.parent as? android.view.ViewGroup)?.removeView(infoBar)
+                                }
+                                ?.start()
                             
-                            // Clear editor and go back to home
-                            editorBinding.textArea.setText("")
-                            currentFileUri = null
-                            textChanged = false
-                            updateToolbarTitle()
-                            showHome()
+                            // Clear editor and go back to home with animation
+                            editorBinding.textArea.animate()
+                                .alpha(0f)
+                                .setDuration(200)
+                                .withEndAction {
+                                    editorBinding.textArea.setText("")
+                                    currentFileUri = null
+                                    textChanged = false
+                                    updateToolbarTitle()
+                                    showHome()
+                                    editorBinding.textArea.alpha = 1f
+                                }
+                                .start()
                             
-                            Toast.makeText(this@MainActivity, "✓ Session ended", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@MainActivity, "✓ Session ended and deleted", Toast.LENGTH_SHORT).show()
                         }.onFailure { e ->
                             Toast.makeText(this@MainActivity, "Failed: ${e.message}", Toast.LENGTH_SHORT).show()
                         }

@@ -46,59 +46,85 @@
             android:contentDescription="Close chat" />
     </LinearLayout>
 
+    <!-- Target Selector (above input) -->
+    <LinearLayout
+        android:id="@+id/targetSelectorBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        android:background="#F5F5F5"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="To:"
+            android:textSize="12sp"
+            android:textColor="#757575"
+            android:layout_marginEnd="8dp" />
+
+        <TextView
+            android:id="@+id/tvTargetDisplay"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Everyone"
+            android:textSize="14sp"
+            android:textColor="#1976D2"
+            android:textStyle="bold"
+            android:background="?attr/selectableItemBackground"
+            android:padding="4dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="👉 tap to change"
+            android:textSize="10sp"
+            android:textColor="#9E9E9E" />
+    </LinearLayout>
+
     <!-- Input Area (at bottom) -->
     <LinearLayout
         android:id="@+id/inputBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:orientation="horizontal"
-        android:padding="12dp"
+        android:layout_above="@id/targetSelectorBar"
+        android:orientation="vertical"
         android:background="@android:color/white"
-        android:gravity="center_vertical"
         android:elevation="8dp">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnVisibilitySelector"
-            android:layout_width="wrap_content"
-            android:layout_height="40dp"
-            android:text="👥"
-            android:textSize="16sp"
-            android:minWidth="40dp"
-            android:minHeight="40dp"
-            android:insetTop="0dp"
-            android:insetBottom="0dp"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:backgroundTint="#E3F2FD"
-            android:textColor="#1976D2"
-            app:cornerRadius="20dp"
-            app:strokeColor="#1976D2"
-            app:strokeWidth="1dp"
-            android:layout_marginEnd="8dp" />
-
-        <EditText
-            android:id="@+id/etChatMessage"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:hint="Type a message..."
-            android:background="@android:drawable/editbox_background"
+            android:orientation="horizontal"
             android:padding="12dp"
-            android:maxLines="4"
-            android:textColor="#212121"
-            android:textColorHint="#757575"
-            android:inputType="textMultiLine|textCapSentences" />
+            android:gravity="center_vertical">
 
-        <ImageButton
-            android:id="@+id/btnSendMessage"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginStart="8dp"
-            android:src="@android:drawable/ic_menu_send"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:tint="#1976D2"
-            android:contentDescription="Send message" />
+            <EditText
+                android:id="@+id/etChatMessage"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Type @ai, @all, @username or message..."
+                android:background="@android:drawable/editbox_background"
+                android:padding="12dp"
+                android:maxLines="4"
+                android:textColor="#212121"
+                android:textColorHint="#757575"
+                android:inputType="textMultiLine|textCapSentences" />
+
+            <ImageButton
+                android:id="@+id/btnSendMessage"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginStart="8dp"
+                android:src="@android:drawable/ic_menu_send"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:tint="#1976D2"
+                android:contentDescription="Send message" />
+        </LinearLayout>
     </LinearLayout>
 
     <!-- Quick Actions Bar (above input) -->
@@ -121,6 +147,46 @@
             android:backgroundTint="#FF9800"
             android:textColor="@android:color/white"
             android:paddingHorizontal="12dp" />
+
+        <ImageButton
+            android:id="@+id/btnAttachImage"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="8dp"
+            android:src="@android:drawable/ic_menu_gallery"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="#4CAF50"
+            android:contentDescription="Attach image" />
+
+        <ImageButton
+            android:id="@+id/btnAttachDocument"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="4dp"
+            android:src="@android:drawable/ic_menu_agenda"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="#2196F3"
+            android:contentDescription="Attach document" />
+
+        <ImageButton
+            android:id="@+id/btnAttachVoice"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="4dp"
+            android:src="@android:drawable/ic_btn_speak_now"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="#FF5722"
+            android:contentDescription="Record voice" />
+
+        <ImageButton
+            android:id="@+id/btnAttachVideo"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_marginStart="4dp"
+            android:src="@android:drawable/ic_menu_camera"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="#9C27B0"
+            android:contentDescription="Attach video" />
 
         <View
             android:layout_width="0dp"
