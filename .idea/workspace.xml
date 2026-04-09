@@ -66,9 +66,11 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0de2c8aa-c6b7-419c-b7cd-e9cbf2927e27" name="Changes" comment=" collaborative session ui improvement">
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/layout/fragment_collab_chat.xml" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/layout/fragment_collab_chat.xml" afterDir="false" />
+    <list default="true" id="0de2c8aa-c6b7-419c-b7cd-e9cbf2927e27" name="Changes" comment=" collaborative session ui improvement and added features">
+      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.bin" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/resourceHashesCache.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/resourceHashesCache.bin" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -374,14 +376,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1774176942839</updated>
-    </task>
-    <task id="LOCAL-00054" summary="improved Glass ui opacity and visibility">
-      <option name="closed" value="true" />
-      <created>1774687541747</created>
-      <option name="number" value="00054" />
-      <option name="presentableId" value="LOCAL-00054" />
-      <option name="project" value="LOCAL" />
-      <updated>1774687541747</updated>
     </task>
     <task id="LOCAL-00055" summary="fixed broken ui">
       <option name="closed" value="true" />
@@ -767,7 +761,15 @@
       <option name="project" value="LOCAL" />
       <updated>1775726226524</updated>
     </task>
-    <option name="localTasksCounter" value="103" />
+    <task id="LOCAL-00103" summary=" collaborative session ui improvement and added features">
+      <option name="closed" value="true" />
+      <created>1775726806766</created>
+      <option name="number" value="00103" />
+      <option name="presentableId" value="LOCAL-00103" />
+      <option name="project" value="LOCAL" />
+      <updated>1775726806766</updated>
+    </task>
+    <option name="localTasksCounter" value="104" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -782,7 +784,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="fixed broken ui and bug fixes" />
     <MESSAGE value="bug fixes" />
     <MESSAGE value="bug fixes and ui update" />
     <MESSAGE value="voice mode fixed" />
@@ -807,7 +808,8 @@
     <MESSAGE value=" collaborative session ui fixed and new features added" />
     <MESSAGE value=" collaborative session ui fixes" />
     <MESSAGE value=" collaborative session ui improvement" />
-    <option name="LAST_COMMIT_MESSAGE" value=" collaborative session ui improvement" />
+    <MESSAGE value=" collaborative session ui improvement and added features" />
+    <option name="LAST_COMMIT_MESSAGE" value=" collaborative session ui improvement and added features" />
   </component>
   <component name="play_dynamic_filters_status">
     <option name="appIdToCheckInfo">

@@ -3337,12 +3337,8 @@ open class MainActivity : AppCompatActivity() {
         }
         infoBar.addView(btnLeave)
         
-        // Wrap the editor container in a vertical LinearLayout overlay so we never
-        // mutate the ConstraintLayout constraints (which would break the editor on removal).
-        // Instead, prepend the info bar inside editorContainer's parent FrameLayout wrapper.
         val constraintLayout = editorBinding.root as androidx.constraintlayout.widget.ConstraintLayout
 
-        // Use a FrameLayout overlay anchored to the divider bottom — no constraint mutation needed
         val overlayWrapper = android.widget.FrameLayout(this).apply {
             id = View.generateViewId()
             tag = "session_info_bar_wrapper"
@@ -3358,6 +3354,15 @@ open class MainActivity : AppCompatActivity() {
             }
         )
         overlayWrapper.addView(infoBar)
+
+        // Push editor_container below the info bar
+        val cs = androidx.constraintlayout.widget.ConstraintSet()
+        cs.clone(constraintLayout)
+        cs.connect(editorBinding.editorContainer.id,
+            androidx.constraintlayout.widget.ConstraintSet.TOP,
+            overlayWrapper.id,
+            androidx.constraintlayout.widget.ConstraintSet.BOTTOM)
+        cs.applyTo(constraintLayout)
         
         // Animate info bar sliding in from top
         infoBar.alpha = 0f
@@ -3373,13 +3378,22 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun removeSessionInfoBar() {
-        val wrapper = editorBinding.root.findViewWithTag<View>("session_info_bar_wrapper")
-        wrapper?.animate()
-            ?.alpha(0f)
-            ?.translationY(-wrapper.height.toFloat())
-            ?.setDuration(300)
-            ?.withEndAction { (wrapper.parent as? android.view.ViewGroup)?.removeView(wrapper) }
-            ?.start()
+        val wrapper = editorBinding.root.findViewWithTag<View>("session_info_bar_wrapper") ?: return
+        // Restore editor_container top to editorToolbarDivider before removing wrapper
+        val constraintLayout = editorBinding.root as androidx.constraintlayout.widget.ConstraintLayout
+        val cs = androidx.constraintlayout.widget.ConstraintSet()
+        cs.clone(constraintLayout)
+        cs.connect(editorBinding.editorContainer.id,
+            androidx.constraintlayout.widget.ConstraintSet.TOP,
+            editorBinding.editorToolbarDivider.id,
+            androidx.constraintlayout.widget.ConstraintSet.BOTTOM)
+        cs.applyTo(constraintLayout)
+        wrapper.animate()
+            .alpha(0f)
+            .translationY(-wrapper.height.toFloat())
+            .setDuration(300)
+            .withEndAction { (wrapper.parent as? android.view.ViewGroup)?.removeView(wrapper) }
+            .start()
     }
     
     private fun updateToolbarWithSession(sessionId: String) {
