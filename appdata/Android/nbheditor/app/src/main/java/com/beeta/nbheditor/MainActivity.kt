@@ -300,7 +300,14 @@ open class MainActivity : AppCompatActivity() {
         if (isGlassMode) GlassTextAdapter.stop()
     }
 
-    private var isGlassMode = false
+    var isGlassMode = false
+        private set
+
+    fun isGlassModePublic() = isGlassMode
+
+    fun getEditorText(): String = editorBinding.textArea.text.toString()
+
+    suspend fun callAIPublic(prompt: String, maxTokens: Int = 512): String? = callAI(prompt, maxTokens)
 
     private fun applyThemeModeNoRecreate(mode: Int) {
         AppCompatDelegate.setDefaultNightMode(mode)
@@ -1142,147 +1149,10 @@ open class MainActivity : AppCompatActivity() {
             lastVoiceActivityTime = System.currentTimeMillis()
             scheduleAutoStop()
             
-            speechRecognizer?.setRecognitionListener(object : RecognitionListener {
-                override fun onReadyForSpeech(params: android.os.Bundle?) {
-                    runOnUiThread {
-                        isListening = true
-                        setMicActive(true)
-                        updateVoiceButtonIcon(true)
-                        showVoiceStatusNoSpeech()
-                        updateVoiceActivity()
-                    }
-                }
-                
-                override fun onBeginningOfSpeech() {
-                    runOnUiThread {
-                        showVoiceStatusSpeaking()
-                        updateVoiceActivity()
-                    }
-                }
-                
-                override fun onRmsChanged(rmsdB: Float) {
-                    // Update visual feedback based on volume
-                    runOnUiThread {
-                        if (!isListening) return@runOnUiThread
-                        
-                        if (rmsdB > 3.0f) {
-                            showVoiceStatusSpeaking()
-                            updateVoiceActivity()
-                        } else {
-                            showVoiceStatusNoSpeech()
-                        }
-                    }
-                }
-                
-                override fun onBufferReceived(buffer: ByteArray?) {}
-                
-                override fun onEndOfSpeech() {
-                    runOnUiThread {
-                        // Keep listening - don't restart, just ignore this callback
-                        if (isListening) {
-                            showVoiceStatusNoSpeech()
-                        }
-                    }
-                }
-                
-                override fun onResults(results: android.os.Bundle) {
-                    runOnUiThread {
-                        val text = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                            ?.firstOrNull()?.trim()
-                        
-                        if (!text.isNullOrBlank()) {
-                            updateVoiceActivity()
-                            val et = speechTarget
-                            if (et != null) {
-                                val pos = et.selectionStart.coerceAtLeast(0)
-                                val textToInsert = if (pos > 0 && et.text?.getOrNull(pos - 1)?.isWhitespace() == false) {
-                                    " $text"
-                                } else {
-                                    text
-                                }
-                                
-                                try {
-                                    et.text?.insert(pos, textToInsert) ?: et.setText(textToInsert)
-                                    // Move cursor to end of inserted text
-                                    et.setSelection((pos + textToInsert.length).coerceAtMost(et.text?.length ?: 0))
-                                } catch (_: Exception) {}
-                            }
-                            
-                            // Clear the hint after successful insertion
-                            speechTarget?.hint = ""
-                        }
-                        
-                        // Restart immediately - no delay
-                        if (isListening) {
-                            showVoiceStatusNoSpeech()
-                            restartListening()
-                        }
-                    }
-                }
-                
-                override fun onPartialResults(partial: android.os.Bundle?) {
-                    runOnUiThread {
-                        val text = partial
-                            ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                            ?.firstOrNull()?.trim()
-                        if (!text.isNullOrBlank()) {
-                            showVoiceStatusSpeaking()
-                            updateVoiceActivity()
-                            // Don't show hint - text will be inserted on final results
-                        }
-                    }
-                }
-                
-                override fun onError(error: Int) {
-                    runOnUiThread {
-                        when (error) {
-                            SpeechRecognizer.ERROR_AUDIO -> {
-                                Toast.makeText(this@MainActivity, "Audio error", Toast.LENGTH_SHORT).show()
-                                stopVoiceInput()
-                                return@runOnUiThread
-                            }
-                            SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> {
-                                Toast.makeText(this@MainActivity, "Microphone permission required", Toast.LENGTH_SHORT).show()
-                                stopVoiceInput()
-                                return@runOnUiThread
-                            }
-                            SpeechRecognizer.ERROR_NO_MATCH,
-                            SpeechRecognizer.ERROR_SPEECH_TIMEOUT,
-                            SpeechRecognizer.ERROR_NETWORK,
-                            SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> {
-                                // Normal errors - restart with small delay to avoid rapid loops
-                            }
-                        }
-                        
-                        // Small delay only on errors to prevent rapid error loops
-                        if (isListening) {
-                            showVoiceStatusNoSpeech()
-                            voiceHandler.postDelayed({
-                                if (isListening) {
-                                    restartListening()
-                                }
-                            }, 100)
-                        }
-                    }
-                }
-                
-                override fun onEvent(eventType: Int, params: android.os.Bundle?) {}
-            })
-
-            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
-                putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 90000)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 90000)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 90000)
-                putExtra("android.speech.extra.DICTATION_MODE", true)
-            }
+            speechRecognizer?.setRecognitionListener(buildRecognitionListener())
             
             try {
-                speechRecognizer?.startListening(intent)
+                speechRecognizer?.startListening(buildRecognizerIntent())
             } catch (e: Exception) {
                 Toast.makeText(this, "Could not start voice input: ${e.message}", Toast.LENGTH_SHORT).show()
                 scheduleCleanup()
@@ -1292,44 +1162,89 @@ open class MainActivity : AppCompatActivity() {
     
     private fun restartListening() {
         if (!isListening) return
-        
+        // Destroy and recreate to avoid Android's internal state getting stuck
+        try { speechRecognizer?.stopListening() } catch (_: Exception) {}
+        try { speechRecognizer?.cancel() } catch (_: Exception) {}
+        try { speechRecognizer?.destroy() } catch (_: Exception) {}
+        speechRecognizer = null
+
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) { stopVoiceInput(); return }
         try {
-            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
-                putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 90000)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 90000)
-                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 90000)
-                putExtra("android.speech.extra.DICTATION_MODE", true)
-            }
-            speechRecognizer?.startListening(intent)
-        } catch (e: Exception) {
-            if (isListening) {
-                voiceHandler.postDelayed({
-                    if (isListening) {
-                        try {
-                            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-                                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-                                putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
-                                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-                                putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
-                                putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
-                                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 90000)
-                                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 90000)
-                                putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 90000)
-                                putExtra("android.speech.extra.DICTATION_MODE", true)
-                            }
-                            speechRecognizer?.startListening(intent)
-                        } catch (_: Exception) {
-                            stopVoiceInput()
-                        }
-                    }
-                }, 1000)
+            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this)
+        } catch (_: Exception) { stopVoiceInput(); return }
+
+        speechRecognizer?.setRecognitionListener(buildRecognitionListener())
+        try {
+            speechRecognizer?.startListening(buildRecognizerIntent())
+        } catch (_: Exception) {
+            voiceHandler.postDelayed({ if (isListening) restartListening() }, 500)
+        }
+    }
+
+    private fun buildRecognizerIntent() = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+        putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+        putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+        putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+        putExtra(RecognizerIntent.EXTRA_CALLING_PACKAGE, packageName)
+        putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 90000)
+        putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 90000)
+        putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 90000)
+        putExtra("android.speech.extra.DICTATION_MODE", true)
+    }
+
+    private fun buildRecognitionListener() = object : RecognitionListener {
+        override fun onReadyForSpeech(params: android.os.Bundle?) {
+            runOnUiThread { isListening = true; setMicActive(true); updateVoiceButtonIcon(true); showVoiceStatusNoSpeech(); updateVoiceActivity() }
+        }
+        override fun onBeginningOfSpeech() { runOnUiThread { showVoiceStatusSpeaking(); updateVoiceActivity() } }
+        override fun onRmsChanged(rmsdB: Float) {
+            runOnUiThread {
+                if (!isListening) return@runOnUiThread
+                if (rmsdB > 3.0f) { showVoiceStatusSpeaking(); updateVoiceActivity() } else showVoiceStatusNoSpeech()
             }
         }
+        override fun onBufferReceived(buffer: ByteArray?) {}
+        override fun onEndOfSpeech() { runOnUiThread { if (isListening) showVoiceStatusNoSpeech() } }
+        override fun onResults(results: android.os.Bundle) {
+            runOnUiThread {
+                val text = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()?.trim()
+                if (!text.isNullOrBlank()) {
+                    updateVoiceActivity()
+                    val et = speechTarget
+                    if (et != null) {
+                        val pos = et.selectionStart.coerceAtLeast(0)
+                        val toInsert = if (pos > 0 && et.text?.getOrNull(pos - 1)?.isWhitespace() == false) " $text" else text
+                        try {
+                            et.text?.insert(pos, toInsert) ?: et.setText(toInsert)
+                            et.setSelection((pos + toInsert.length).coerceAtMost(et.text?.length ?: 0))
+                        } catch (_: Exception) {}
+                    }
+                    speechTarget?.hint = ""
+                }
+                if (isListening) { showVoiceStatusNoSpeech(); restartListening() }
+            }
+        }
+        override fun onPartialResults(partial: android.os.Bundle?) {
+            runOnUiThread {
+                val text = partial?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()?.trim()
+                if (!text.isNullOrBlank()) { showVoiceStatusSpeaking(); updateVoiceActivity() }
+            }
+        }
+        override fun onError(error: Int) {
+            runOnUiThread {
+                when (error) {
+                    SpeechRecognizer.ERROR_AUDIO -> { Toast.makeText(this@MainActivity, "Audio error", Toast.LENGTH_SHORT).show(); stopVoiceInput(); return@runOnUiThread }
+                    SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> { Toast.makeText(this@MainActivity, "Microphone permission required", Toast.LENGTH_SHORT).show(); stopVoiceInput(); return@runOnUiThread }
+                    else -> {}
+                }
+                if (isListening) {
+                    showVoiceStatusNoSpeech()
+                    voiceHandler.postDelayed({ if (isListening) restartListening() }, 100)
+                }
+            }
+        }
+        override fun onEvent(eventType: Int, params: android.os.Bundle?) {}
     }
     
     private fun updateVoiceActivity() {
@@ -3263,7 +3178,7 @@ open class MainActivity : AppCompatActivity() {
     
     private fun showSessionInfoBar(sessionId: String, isCreator: Boolean) {
         // Remove any existing session info bar first
-        val existingBar = editorBinding.root.findViewWithTag<View>("session_info_bar")
+        val existingBar = editorBinding.root.findViewWithTag<View>("session_info_bar_wrapper")
         if (existingBar != null) {
             (existingBar.parent as? android.view.ViewGroup)?.removeView(existingBar)
         }
@@ -3397,15 +3312,7 @@ open class MainActivity : AppCompatActivity() {
                             
                             progressDialog.dismiss()
                             
-                            // Remove info bar with animation
-                            infoBar.animate()
-                                .alpha(0f)
-                                .translationY(-infoBar.height.toFloat())
-                                .setDuration(300)
-                                .withEndAction {
-                                    (infoBar.parent as? android.view.ViewGroup)?.removeView(infoBar)
-                                }
-                                .start()
+                            removeSessionInfoBar()
                             
                             // Clear editor and go back to home with animation
                             editorBinding.textArea.animate()
@@ -3430,32 +3337,31 @@ open class MainActivity : AppCompatActivity() {
         }
         infoBar.addView(btnLeave)
         
-        // Add info bar to the constraint layout with proper constraints
+        // Wrap the editor container in a vertical LinearLayout overlay so we never
+        // mutate the ConstraintLayout constraints (which would break the editor on removal).
+        // Instead, prepend the info bar inside editorContainer's parent FrameLayout wrapper.
         val constraintLayout = editorBinding.root as androidx.constraintlayout.widget.ConstraintLayout
-        constraintLayout.addView(infoBar)
-        
-        // Set constraints to position it between toolbar divider and editor container
-        val constraintSet = androidx.constraintlayout.widget.ConstraintSet()
-        constraintSet.clone(constraintLayout)
-        constraintSet.connect(infoBar.id, androidx.constraintlayout.widget.ConstraintSet.TOP, 
-            editorBinding.editorToolbarDivider.id, androidx.constraintlayout.widget.ConstraintSet.BOTTOM)
-        constraintSet.connect(infoBar.id, androidx.constraintlayout.widget.ConstraintSet.START, 
-            androidx.constraintlayout.widget.ConstraintSet.PARENT_ID, androidx.constraintlayout.widget.ConstraintSet.START)
-        constraintSet.connect(infoBar.id, androidx.constraintlayout.widget.ConstraintSet.END, 
-            androidx.constraintlayout.widget.ConstraintSet.PARENT_ID, androidx.constraintlayout.widget.ConstraintSet.END)
-        constraintSet.constrainWidth(infoBar.id, androidx.constraintlayout.widget.ConstraintSet.MATCH_CONSTRAINT)
-        constraintSet.constrainHeight(infoBar.id, androidx.constraintlayout.widget.ConstraintSet.WRAP_CONTENT)
-        
-        // Update editor container to be below the info bar
-        constraintSet.clear(editorBinding.editorContainer.id, androidx.constraintlayout.widget.ConstraintSet.TOP)
-        constraintSet.connect(editorBinding.editorContainer.id, androidx.constraintlayout.widget.ConstraintSet.TOP,
-            infoBar.id, androidx.constraintlayout.widget.ConstraintSet.BOTTOM)
-        
-        constraintSet.applyTo(constraintLayout)
+
+        // Use a FrameLayout overlay anchored to the divider bottom — no constraint mutation needed
+        val overlayWrapper = android.widget.FrameLayout(this).apply {
+            id = View.generateViewId()
+            tag = "session_info_bar_wrapper"
+        }
+        constraintLayout.addView(overlayWrapper,
+            androidx.constraintlayout.widget.ConstraintLayout.LayoutParams(
+                androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.MATCH_PARENT,
+                androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.WRAP_CONTENT
+            ).also { lp ->
+                lp.topToBottom = editorBinding.editorToolbarDivider.id
+                lp.startToStart = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
+                lp.endToEnd = androidx.constraintlayout.widget.ConstraintLayout.LayoutParams.PARENT_ID
+            }
+        )
+        overlayWrapper.addView(infoBar)
         
         // Animate info bar sliding in from top
         infoBar.alpha = 0f
-        infoBar.translationY = -infoBar.height.toFloat()
+        infoBar.translationY = -200f
         infoBar.post {
             infoBar.animate()
                 .alpha(1f)
@@ -3464,6 +3370,16 @@ open class MainActivity : AppCompatActivity() {
                 .setInterpolator(android.view.animation.DecelerateInterpolator())
                 .start()
         }
+    }
+
+    private fun removeSessionInfoBar() {
+        val wrapper = editorBinding.root.findViewWithTag<View>("session_info_bar_wrapper")
+        wrapper?.animate()
+            ?.alpha(0f)
+            ?.translationY(-wrapper.height.toFloat())
+            ?.setDuration(300)
+            ?.withEndAction { (wrapper.parent as? android.view.ViewGroup)?.removeView(wrapper) }
+            ?.start()
     }
     
     private fun updateToolbarWithSession(sessionId: String) {
@@ -3541,6 +3457,8 @@ open class MainActivity : AppCompatActivity() {
                                     activeSessionDialog = null
                                     
                                     progressDialog.dismiss()
+                                    
+                                    removeSessionInfoBar()
                                     
                                     // Clear editor and go back to home with animation
                                     editorBinding.textArea.animate()
@@ -3627,22 +3545,35 @@ open class MainActivity : AppCompatActivity() {
     }
     
     private fun showCollabChatDialog() {
+        CollaborativeSessionManager.getCurrentSessionId() ?: return
+        CollaborativeSessionManager.getCurrentUserId() ?: return
+
+        val fragment = CollabChatFragment.newInstance()
+        supportFragmentManager.beginTransaction()
+            .setCustomAnimations(
+                android.R.anim.slide_in_left, android.R.anim.slide_out_right,
+                android.R.anim.slide_in_left, android.R.anim.slide_out_right
+            )
+            .replace(binding.appBarMain.contentMain.fragmentContainer.id, fragment)
+            .addToBackStack("collab_chat")
+            .commit()
+        binding.appBarMain.contentMain.fragmentContainer.visibility = View.VISIBLE
+    }
+
+    @Suppress("UNUSED_PARAMETER")
+    private fun showCollabChatDialogLegacy() {
         val sessionCode = CollaborativeSessionManager.getCurrentSessionId() ?: return
         val currentUserId = CollaborativeSessionManager.getCurrentUserId() ?: return
-        
+
         val dialogView = layoutInflater.inflate(R.layout.fragment_collab_chat, null)
-        
-        // Create dialog with custom size
         val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
             .setView(dialogView)
             .create()
-        
-        // Make dialog larger
         dialog.setOnShowListener {
             val window = dialog.window
             val displayMetrics = resources.displayMetrics
-            val width = (displayMetrics.widthPixels * 0.95).toInt() // 95% of screen width
-            val height = (displayMetrics.heightPixels * 0.85).toInt() // 85% of screen height
+            val width = (displayMetrics.widthPixels * 0.95).toInt()
+            val height = (displayMetrics.heightPixels * 0.85).toInt()
             window?.setLayout(width, height)
         }
         
@@ -4160,16 +4091,7 @@ open class MainActivity : AppCompatActivity() {
                             activeSessionDialog?.dismiss()
                             activeSessionDialog = null
                             
-                            // Remove info bar with animation
-                            val infoBar = editorBinding.root.findViewWithTag<View>("session_info_bar")
-                            infoBar?.animate()
-                                ?.alpha(0f)
-                                ?.translationY(-infoBar.height.toFloat())
-                                ?.setDuration(300)
-                                ?.withEndAction {
-                                    (infoBar.parent as? android.view.ViewGroup)?.removeView(infoBar)
-                                }
-                                ?.start()
+                            removeSessionInfoBar()
                             
                             // Clear editor and go back to home with animation
                             editorBinding.textArea.animate()
