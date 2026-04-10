@@ -36,8 +36,11 @@ data class ChatMessage(
     val isImportant: Boolean = false,
     val linkedTaskId: String? = null,
     val reminderId: String? = null,
-    val targetType: String = "everyone", // "everyone", "ai_only", "everyone_and_ai", "selected_users"
-    val targetUserIds: List<String> = emptyList()
+    val targetType: String = "everyone",
+    val targetUserIds: List<String> = emptyList(),
+    // attachment fields — null means plain text message
+    val attachmentUri: String? = null,   // content URI or file path
+    val attachmentType: String? = null   // "image", "video", "audio", "document"
 )
 
 data class TaskItem(
@@ -270,7 +273,6 @@ object CollaborativeSessionManager {
         }
     }
     
-    // Update editor content
     suspend fun updateContent(content: String) {
         try {
             val sessionId = currentSessionId ?: return
@@ -278,25 +280,24 @@ object CollaborativeSessionManager {
             database.child(SESSIONS_PATH).child(sessionId).child("lastActivity")
                 .setValue(ServerValue.TIMESTAMP).await()
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) return  // debounce cancel — ignore
             Log.e(TAG, "Failed to update content", e)
         }
     }
-    
-    // Update cursor position
+
     suspend fun updateCursorPosition(position: Int, isTyping: Boolean) {
         try {
             val sessionId = currentSessionId ?: return
             val userId = currentUserId ?: return
-            
             val updates = mapOf(
                 "cursorPosition" to position,
                 "typing" to isTyping,
                 "lastActive" to ServerValue.TIMESTAMP
             )
-            
             database.child(SESSIONS_PATH).child(sessionId)
                 .child("users").child(userId).updateChildren(updates).await()
         } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) return  // debounce cancel — ignore
             Log.e(TAG, "Failed to update cursor", e)
         }
     }
@@ -366,7 +367,7 @@ object CollaborativeSessionManager {
         awaitClose { ref.removeEventListener(listener) }
     }
     
-    // Kick user (creator only)
+    // Kick user (creator only) — writes a kicked flag the target client observes
     suspend fun kickUser(sessionId: String, userId: String): Result<Unit> {
         return try {
             val sanitizedUserId = sanitizeUserId(userId)
@@ -374,15 +375,30 @@ object CollaborativeSessionManager {
             if (currentUser?.isCreator != true) {
                 return Result.failure(Exception("Only creator can kick users"))
             }
-            
+            // Write kicked flag first so the client sees it before removal
+            database.child(SESSIONS_PATH).child(sessionId)
+                .child("kicked").child(sanitizedUserId).setValue(true).await()
             database.child(SESSIONS_PATH).child(sessionId)
                 .child("users").child(sanitizedUserId).removeValue().await()
-            
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to kick user", e)
             Result.failure(e)
         }
+    }
+
+    // Observe whether the current user has been kicked
+    fun observeKicked(sessionId: String, userId: String): Flow<Boolean> = callbackFlow {
+        val sanitized = sanitizeUserId(userId)
+        val ref = database.child(SESSIONS_PATH).child(sessionId).child("kicked").child(sanitized)
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                trySend(snapshot.getValue(Boolean::class.java) == true)
+            }
+            override fun onCancelled(error: DatabaseError) { close(error.toException()) }
+        }
+        ref.addValueEventListener(listener)
+        awaitClose { ref.removeEventListener(listener) }
     }
     
     // End session (creator only)
@@ -454,12 +470,14 @@ object CollaborativeSessionManager {
     
     // Send a chat message
     suspend fun sendChatMessage(
-        message: String, 
+        message: String,
         isAI: Boolean = false,
         isImportant: Boolean = false,
         linkedTaskId: String? = null,
         targetType: String = "everyone",
-        targetUserIds: List<String> = emptyList()
+        targetUserIds: List<String> = emptyList(),
+        attachmentUri: String? = null,
+        attachmentType: String? = null
     ): Result<String> {
         return try {
             val sessionId = currentSessionId ?: return Result.failure(Exception("Not in a session"))
@@ -483,7 +501,9 @@ object CollaborativeSessionManager {
                 isImportant = isImportant,
                 linkedTaskId = linkedTaskId,
                 targetType = targetType,
-                targetUserIds = targetUserIds
+                targetUserIds = targetUserIds,
+                attachmentUri = attachmentUri,
+                attachmentType = attachmentType
             )
             
             database.child(SESSIONS_PATH).child(sessionId)

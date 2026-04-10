@@ -29,6 +29,10 @@ class CollabChatFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var adapter: CollabChatAdapter
+    // "everyone"  = all users, NO AI
+    // "ai_only"   = AI only
+    // "everyone_and_ai" = all users + AI
+    // "selected_users"  = specific users
     private var messageVisibility = "everyone"
     private var selectedUserIds = mutableSetOf<String>()
     private var mediaRecorder: MediaRecorder? = null
@@ -39,7 +43,7 @@ class CollabChatFragment : Fragment() {
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let { uri ->
                 val name = getFileName(uri)
-                sendAttachment("[📷 Image: $name]", uri.toString())
+                sendAttachment(name, uri.toString(), "image")
             }
         }
     }
@@ -48,7 +52,7 @@ class CollabChatFragment : Fragment() {
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let { uri ->
                 val name = getFileName(uri)
-                sendAttachment("[📄 Document: $name]", uri.toString())
+                sendAttachment(name, uri.toString(), "document")
             }
         }
     }
@@ -57,7 +61,7 @@ class CollabChatFragment : Fragment() {
         if (result.resultCode == Activity.RESULT_OK) {
             result.data?.data?.let { uri ->
                 val name = getFileName(uri)
-                sendAttachment("[🎥 Video: $name]", uri.toString())
+                sendAttachment(name, uri.toString(), "video")
             }
         }
     }
@@ -71,12 +75,10 @@ class CollabChatFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         val sessionCode = CollaborativeSessionManager.getCurrentSessionId() ?: run {
-            parentFragmentManager.popBackStack()
-            return
+            parentFragmentManager.popBackStack(); return
         }
         val currentUserId = CollaborativeSessionManager.getCurrentUserId() ?: run {
-            parentFragmentManager.popBackStack()
-            return
+            parentFragmentManager.popBackStack(); return
         }
 
         applyTheme()
@@ -87,11 +89,8 @@ class CollabChatFragment : Fragment() {
         setupCreateTask()
         observeMessages(sessionCode)
 
-        binding.btnCloseChat.setOnClickListener {
-            parentFragmentManager.popBackStack()
-        }
+        binding.btnCloseChat.setOnClickListener { parentFragmentManager.popBackStack() }
 
-        // Slide-in animation
         view.translationX = view.width.toFloat()
         view.animate().translationX(0f).setDuration(300)
             .setInterpolator(android.view.animation.DecelerateInterpolator()).start()
@@ -100,7 +99,6 @@ class CollabChatFragment : Fragment() {
     private fun applyTheme() {
         val activity = requireActivity() as MainActivity
         val isGlass = activity.isGlassModePublic()
-
         if (isGlass) {
             binding.chatRoot.setBackgroundColor(0xBB0A0E14.toInt())
             binding.rvChatMessages.setBackgroundColor(0x00000000)
@@ -153,18 +151,16 @@ class CollabChatFragment : Fragment() {
         adapter = CollabChatAdapter(
             messages = emptyList(),
             currentUserId = currentUserId,
-            onMarkImportant = { message ->
+            onMarkImportant = { msg ->
+                lifecycleScope.launch { CollaborativeSessionManager.markMessageImportant(msg.messageId, !msg.isImportant) }
+            },
+            onCreateTask = { msg ->
                 lifecycleScope.launch {
-                    CollaborativeSessionManager.markMessageImportant(message.messageId, !message.isImportant)
+                    if (CollaborativeSessionManager.createTaskFromMessage(msg.messageId).isSuccess)
+                        Toast.makeText(requireContext(), "✓ Task created", Toast.LENGTH_SHORT).show()
                 }
             },
-            onCreateTask = { message ->
-                lifecycleScope.launch {
-                    val result = CollaborativeSessionManager.createTaskFromMessage(message.messageId)
-                    if (result.isSuccess) Toast.makeText(requireContext(), "✓ Task created", Toast.LENGTH_SHORT).show()
-                }
-            },
-            onSetReminder = { message ->
+            onSetReminder = { msg ->
                 val options = arrayOf("In 1 hour", "In 3 hours", "Tomorrow")
                 androidx.appcompat.app.AlertDialog.Builder(requireContext())
                     .setTitle("Set Reminder")
@@ -175,7 +171,7 @@ class CollabChatFragment : Fragment() {
                             else -> System.currentTimeMillis() + 86_400_000L
                         }
                         lifecycleScope.launch {
-                            CollaborativeSessionManager.setMessageReminder(message.messageId, time)
+                            CollaborativeSessionManager.setMessageReminder(msg.messageId, time)
                             Toast.makeText(requireContext(), "⏰ Reminder set", Toast.LENGTH_SHORT).show()
                         }
                     }.show()
@@ -190,41 +186,48 @@ class CollabChatFragment : Fragment() {
             lifecycleScope.launch {
                 val users = CollaborativeSessionManager.observeUsers(sessionCode).first()
                 val others = users.values.filter { it.userId != currentUserId }.toList()
-                val options = mutableListOf("👥 Everyone", "🤖 Beeta AI only", "👥 Everyone + 🤖 AI", "👤 Selected Users")
+                // Options: @all = everyone (no AI), @ai = AI only, @all+ai = everyone+AI, specific users
+                val options = mutableListOf(
+                    "👥 @all — Everyone (no AI)",
+                    "🤖 @ai — Beeta AI only",
+                    "👥+🤖 Everyone + AI",
+                    "👤 Select specific users"
+                )
                 others.forEach { options.add("👤 ${it.userName}") }
 
                 androidx.appcompat.app.AlertDialog.Builder(requireContext())
                     .setTitle("Send message to:")
                     .setItems(options.toTypedArray()) { _, which ->
                         when (which) {
-                            0 -> { messageVisibility = "everyone"; selectedUserIds.clear(); binding.tvTargetDisplay.text = "Everyone" }
-                            1 -> { messageVisibility = "ai_only"; selectedUserIds.clear(); binding.tvTargetDisplay.text = "Beeta AI only" }
-                            2 -> { messageVisibility = "everyone_and_ai"; selectedUserIds.clear(); binding.tvTargetDisplay.text = "Everyone + AI" }
+                            0 -> { messageVisibility = "everyone"; selectedUserIds.clear(); binding.tvTargetDisplay.text = "@all" }
+                            1 -> { messageVisibility = "ai_only"; selectedUserIds.clear(); binding.tvTargetDisplay.text = "@ai" }
+                            2 -> { messageVisibility = "everyone_and_ai"; selectedUserIds.clear(); binding.tvTargetDisplay.text = "@all + AI" }
                             3 -> showUserSelectionDialog(others)
                             else -> {
                                 val user = others[which - 4]
                                 messageVisibility = "selected_users"
                                 selectedUserIds = mutableSetOf(user.userId)
-                                binding.tvTargetDisplay.text = user.userName
+                                binding.tvTargetDisplay.text = "@${user.userName}"
                             }
                         }
                     }.show()
             }
         }
 
-        // @mention detection
+        // @mention detection — @all = everyone only (no AI), @ai = AI only
         binding.etChatMessage.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 val text = s.toString()
                 when {
                     text.startsWith("@ai ", ignoreCase = true) -> {
-                        messageVisibility = "ai_only"; binding.tvTargetDisplay.text = "Beeta AI only"
+                        messageVisibility = "ai_only"; binding.tvTargetDisplay.text = "@ai"
                         binding.etChatMessage.setText(text.substring(4))
                         binding.etChatMessage.setSelection(binding.etChatMessage.text.length)
                     }
                     text.startsWith("@all ", ignoreCase = true) -> {
-                        messageVisibility = "everyone"; binding.tvTargetDisplay.text = "Everyone"
+                        // @all = everyone, NO AI
+                        messageVisibility = "everyone"; binding.tvTargetDisplay.text = "@all"
                         binding.etChatMessage.setText(text.substring(5))
                         binding.etChatMessage.setSelection(binding.etChatMessage.text.length)
                     }
@@ -236,7 +239,7 @@ class CollabChatFragment : Fragment() {
                             if (matched != null) {
                                 messageVisibility = "selected_users"
                                 selectedUserIds = mutableSetOf(matched.userId)
-                                binding.tvTargetDisplay.text = matched.userName
+                                binding.tvTargetDisplay.text = "@${matched.userName}"
                                 binding.etChatMessage.setText(text.substring(text.indexOf(" ") + 1))
                                 binding.etChatMessage.setSelection(binding.etChatMessage.text.length)
                             }
@@ -255,6 +258,7 @@ class CollabChatFragment : Fragment() {
             if (message.isEmpty()) return@setOnClickListener
 
             lifecycleScope.launch {
+                // Send to users (not for ai_only)
                 if (messageVisibility != "ai_only") {
                     CollaborativeSessionManager.sendChatMessage(
                         message = message,
@@ -262,7 +266,8 @@ class CollabChatFragment : Fragment() {
                         targetUserIds = selectedUserIds.toList()
                     )
                 }
-                if (messageVisibility in listOf("ai_only", "everyone_and_ai", "everyone")) {
+                // Send to AI only when explicitly requested (NOT for plain @all)
+                if (messageVisibility in listOf("ai_only", "everyone_and_ai")) {
                     Toast.makeText(requireContext(), "🤖 AI is thinking...", Toast.LENGTH_SHORT).show()
                     val editorContent = activity.getEditorText()
                     CollaborativeSessionManager.askAIInChat(message, editorContent) { question ->
@@ -275,7 +280,7 @@ class CollabChatFragment : Fragment() {
                 binding.etChatMessage.text.clear()
                 messageVisibility = "everyone"
                 selectedUserIds.clear()
-                binding.tvTargetDisplay.text = "Everyone"
+                binding.tvTargetDisplay.text = "@all"
             }
         }
     }
@@ -284,18 +289,15 @@ class CollabChatFragment : Fragment() {
         binding.btnAttachImage.setOnClickListener {
             imagePickerLauncher.launch(Intent(Intent.ACTION_PICK).apply { type = "image/*" })
         }
-
         binding.btnAttachDocument.setOnClickListener {
             documentPickerLauncher.launch(Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
                 addCategory(Intent.CATEGORY_OPENABLE)
                 type = "*/*"
             })
         }
-
         binding.btnAttachVoice.setOnClickListener {
             if (isRecording) stopVoiceRecording() else startVoiceRecording()
         }
-
         binding.btnAttachVideo.setOnClickListener {
             videoPickerLauncher.launch(Intent(Intent.ACTION_PICK).apply { type = "video/*" })
         }
@@ -304,8 +306,7 @@ class CollabChatFragment : Fragment() {
     private fun startVoiceRecording() {
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO)
             != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), 201)
-            return
+            requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), 201); return
         }
         try {
             voiceFile = File(requireContext().cacheDir, "voice_${System.currentTimeMillis()}.3gp")
@@ -316,11 +317,10 @@ class CollabChatFragment : Fragment() {
                 setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
                 setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
                 setOutputFile(voiceFile!!.absolutePath)
-                prepare()
-                start()
+                prepare(); start()
             }
             isRecording = true
-            binding.btnAttachVoice.setColorFilter(0xFFFF5722.toInt())
+            binding.btnAttachVoice.setColorFilter(0xFFFF0000.toInt())
             Toast.makeText(requireContext(), "🎤 Recording... tap again to stop", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             Toast.makeText(requireContext(), "Recording failed: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -329,25 +329,23 @@ class CollabChatFragment : Fragment() {
 
     private fun stopVoiceRecording() {
         try {
-            mediaRecorder?.stop()
-            mediaRecorder?.release()
-            mediaRecorder = null
+            mediaRecorder?.stop(); mediaRecorder?.release(); mediaRecorder = null
             isRecording = false
             binding.btnAttachVoice.setColorFilter(0xFFFF5722.toInt())
-            voiceFile?.let { file ->
-                sendAttachment("[🎤 Voice message: ${file.name}]", file.absolutePath)
-            }
+            voiceFile?.let { file -> sendAttachment(file.name, file.absolutePath, "audio") }
         } catch (e: Exception) {
-            Toast.makeText(requireContext(), "Stop recording failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "Stop failed: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun sendAttachment(label: String, path: String) {
+    private fun sendAttachment(name: String, uriStr: String, type: String) {
         lifecycleScope.launch {
             CollaborativeSessionManager.sendChatMessage(
-                message = label,
+                message = name,
                 targetType = messageVisibility,
-                targetUserIds = selectedUserIds.toList()
+                targetUserIds = selectedUserIds.toList(),
+                attachmentUri = uriStr,
+                attachmentType = type
             )
             Toast.makeText(requireContext(), "✓ Sent", Toast.LENGTH_SHORT).show()
         }
@@ -358,8 +356,7 @@ class CollabChatFragment : Fragment() {
             val message = binding.etChatMessage.text.toString().trim()
             if (message.isEmpty()) return@setOnClickListener
             lifecycleScope.launch {
-                val result = CollaborativeSessionManager.createTask(message, "", "next")
-                if (result.isSuccess) {
+                if (CollaborativeSessionManager.createTask(message, "", "next").isSuccess) {
                     binding.etChatMessage.text.clear()
                     Toast.makeText(requireContext(), "✓ Task created", Toast.LENGTH_SHORT).show()
                 }
@@ -408,13 +405,11 @@ class CollabChatFragment : Fragment() {
             .setNegativeButton("Cancel", null).show()
     }
 
-    private fun getFileName(uri: android.net.Uri): String {
-        return try {
-            requireContext().contentResolver.query(
-                uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null
-            )?.use { c -> if (c.moveToFirst()) c.getString(0) else null } ?: uri.lastPathSegment ?: "file"
-        } catch (_: Exception) { uri.lastPathSegment ?: "file" }
-    }
+    private fun getFileName(uri: android.net.Uri): String = try {
+        requireContext().contentResolver.query(
+            uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null
+        )?.use { c -> if (c.moveToFirst()) c.getString(0) else null } ?: uri.lastPathSegment ?: "file"
+    } catch (_: Exception) { uri.lastPathSegment ?: "file" }
 
     override fun onDestroyView() {
         super.onDestroyView()

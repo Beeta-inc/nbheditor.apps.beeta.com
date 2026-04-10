@@ -3502,59 +3502,87 @@ open class MainActivity : AppCompatActivity() {
     
     private fun startCollaborativeSync(sessionId: String) {
         contentSyncJob?.cancel()
-        
-        var isLocalChange = false
-        var typingJob: Job? = null
-        
+
+        var suppressWatcher = false
+        val syncHandler = android.os.Handler(android.os.Looper.getMainLooper())
+        var syncRunnable: Runnable? = null
+        var cursorRunnable: Runnable? = null
+
         // Listen to remote content changes
         contentSyncJob = lifecycleScope.launch {
             CollaborativeSessionManager.observeContent(sessionId).collect { content ->
-                if (!isLocalChange) {
-                    // Remote change - update editor
-                    val currentCursor = editorBinding.textArea.selectionStart
+                if (!suppressWatcher) {
+                    suppressWatcher = true          // block watcher during setText
+                    val cursor = editorBinding.textArea.selectionStart
                     editorBinding.textArea.setText(content)
-                    editorBinding.textArea.setSelection(currentCursor.coerceIn(0, content.length))
+                    editorBinding.textArea.setSelection(cursor.coerceIn(0, content.length))
+                    suppressWatcher = false
                 }
-                isLocalChange = false
             }
         }
-        
-        // Add text watcher for local changes
+
+        // Observe kick
+        val currentUserId = CollaborativeSessionManager.getCurrentUserId()
+        if (currentUserId != null) {
+            lifecycleScope.launch {
+                CollaborativeSessionManager.observeKicked(sessionId, currentUserId).collect { kicked ->
+                    if (kicked) {
+                        CollaborativeSessionManager.leaveSession()
+                        contentSyncJob?.cancel()
+                        CollaborativeSessionManager.clearSessionCache(this@MainActivity)
+                        removeSessionInfoBar()
+                        editorBinding.textArea.setText("")
+                        this@MainActivity.currentFileUri = null
+                        textChanged = false
+                        updateToolbarTitle()
+                        showHome()
+                        Toast.makeText(this@MainActivity, "You were removed from the session", Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
+
         val textWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                isLocalChange = true
-                
-                // Cancel previous typing job
-                typingJob?.cancel()
-                
-                // Update content and set typing to true
+                if (suppressWatcher) return          // remote setText — ignore
+                val snapshot = s.toString()
+
+                // Debounce content push: cancel previous, schedule new after 500ms
+                syncRunnable?.let { syncHandler.removeCallbacks(it) }
+                syncRunnable = Runnable {
+                    lifecycleScope.launch {
+                        CollaborativeSessionManager.updateContent(snapshot)
+                    }
+                }
+                syncHandler.postDelayed(syncRunnable!!, 500)
+
+                // Debounce cursor: set typing=true now, typing=false after 2s of silence
+                cursorRunnable?.let { syncHandler.removeCallbacks(it) }
+                val pos = editorBinding.textArea.selectionStart
                 lifecycleScope.launch {
-                    CollaborativeSessionManager.updateContent(s.toString())
-                    CollaborativeSessionManager.updateCursorPosition(editorBinding.textArea.selectionStart, true)
-                    android.util.Log.d("CollabSync", "Set typing=true for current user")
+                    CollaborativeSessionManager.updateCursorPosition(pos, true)
                 }
-                
-                // Set typing to false after 2 seconds of inactivity
-                typingJob = lifecycleScope.launch {
-                    delay(2000)
-                    CollaborativeSessionManager.updateCursorPosition(editorBinding.textArea.selectionStart, false)
-                    android.util.Log.d("CollabSync", "Set typing=false for current user")
+                cursorRunnable = Runnable {
+                    lifecycleScope.launch {
+                        CollaborativeSessionManager.updateCursorPosition(
+                            editorBinding.textArea.selectionStart, false
+                        )
+                    }
                 }
+                syncHandler.postDelayed(cursorRunnable!!, 2000)
             }
             override fun afterTextChanged(s: Editable?) {}
         }
-        
+
         editorBinding.textArea.addTextChangedListener(textWatcher)
-        
-        // Also track cursor position changes without text changes
         editorBinding.textArea.setOnClickListener {
             lifecycleScope.launch {
-                CollaborativeSessionManager.updateCursorPosition(editorBinding.textArea.selectionStart, false)
+                CollaborativeSessionManager.updateCursorPosition(
+                    editorBinding.textArea.selectionStart, false
+                )
             }
         }
-        
-        // Store watcher to remove later
         editorBinding.textArea.setTag(R.id.nav_collaborative_session, textWatcher)
     }
     

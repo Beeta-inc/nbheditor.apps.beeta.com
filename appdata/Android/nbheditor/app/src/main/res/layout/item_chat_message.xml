@@ -14,8 +14,9 @@
         android:padding="12dp"
         android:elevation="2dp"
         android:layout_gravity="start"
-        android:maxWidth="280dp">
+        android:maxWidth="300dp">
 
+        <!-- Sender + badges row -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -52,6 +53,7 @@
                 android:layout_marginStart="4dp" />
         </LinearLayout>
 
+        <!-- Text message -->
         <TextView
             android:id="@+id/tvMessage"
             android:layout_width="wrap_content"
@@ -60,6 +62,94 @@
             android:textSize="14sp"
             android:textColor="#212121"
             android:layout_marginTop="4dp" />
+
+        <!-- Image preview (shown for image attachments) -->
+        <ImageView
+            android:id="@+id/ivMediaPreview"
+            android:layout_width="240dp"
+            android:layout_height="160dp"
+            android:layout_marginTop="8dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            android:background="#11000000"
+            android:contentDescription="Media preview" />
+
+        <!-- Non-image attachment card (document / audio / video) -->
+        <LinearLayout
+            android:id="@+id/attachmentCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="#1A1976D2"
+            android:padding="10dp"
+            android:layout_marginTop="8dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tvAttachmentIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="📄"
+                android:textSize="24sp"
+                android:layout_marginEnd="10dp" />
+
+            <TextView
+                android:id="@+id/tvAttachmentName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="filename.pdf"
+                android:textSize="13sp"
+                android:textColor="#1976D2"
+                android:maxLines="2"
+                android:ellipsize="middle" />
+        </LinearLayout>
+
+        <!-- Open / Download buttons (shown when attachment present) -->
+        <LinearLayout
+            android:id="@+id/mediaActionBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="6dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/btnOpenMedia"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="▶ Open"
+                android:textSize="12sp"
+                android:textColor="#1976D2"
+                android:textStyle="bold"
+                android:padding="6dp"
+                android:gravity="center"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="#22000000" />
+
+            <TextView
+                android:id="@+id/btnDownloadMedia"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="⬇ Save"
+                android:textSize="12sp"
+                android:textColor="#4CAF50"
+                android:textStyle="bold"
+                android:padding="6dp"
+                android:gravity="center"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/tvTimestamp"
@@ -70,9 +160,9 @@
             android:textColor="#757575"
             android:layout_marginTop="4dp"
             android:layout_gravity="end" />
-
     </LinearLayout>
 
+    <!-- Long-press actions -->
     <LinearLayout
         android:id="@+id/messageActions"
         android:layout_width="wrap_content"
