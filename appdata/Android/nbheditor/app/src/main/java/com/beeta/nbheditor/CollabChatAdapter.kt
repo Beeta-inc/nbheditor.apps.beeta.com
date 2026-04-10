@@ -7,7 +7,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.BitmapShader
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Shader
 import android.graphics.drawable.GradientDrawable
@@ -17,7 +16,6 @@ import android.util.LruCache
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -52,11 +50,11 @@ class CollabChatAdapter(
 
     class MessageViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val tvSenderName: TextView = view.findViewById(R.id.tvSenderName)
-        val bubbleRow: LinearLayout = view.findViewById(R.id.bubbleRow)
-        val avatarCard: FrameLayout = view.findViewById(R.id.avatarCard)
+        val avatarCard: android.widget.FrameLayout = view.findViewById(R.id.avatarCard)
         val avatarBg: View = view.findViewById(R.id.avatarBg)
         val tvAvatarInitial: TextView = view.findViewById(R.id.tvAvatarInitial)
         val ivAvatar: ImageView = view.findViewById(R.id.ivAvatar)
+        val avatarSpacer: View = view.findViewById(R.id.avatarSpacer)
         val messageContainer: LinearLayout = view.findViewById(R.id.messageContainer)
         val tvMessage: TextView = view.findViewById(R.id.tvMessage)
         val tvTimestamp: TextView = view.findViewById(R.id.tvTimestamp)
@@ -85,51 +83,43 @@ class CollabChatAdapter(
         val isMe = msg.userId == currentUserId
         val ctx = holder.itemView.context
 
-        // ── Layout direction: outgoing = right, incoming = left ───────────────
-        val rowLp = holder.bubbleRow.layoutParams as LinearLayout.LayoutParams
         if (isMe) {
-            // Push entire row to the right
-            rowLp.gravity = android.view.Gravity.END
-            holder.bubbleRow.layoutParams = rowLp
-            holder.avatarCard.visibility = View.GONE
+            // ── Outgoing ──────────────────────────────────────────────────────
             holder.tvSenderName.visibility = View.GONE
-            holder.tvReadTick.visibility = View.VISIBLE
+            holder.avatarCard.visibility = View.GONE
+            // Spacer takes all remaining space, pushing bubble to the right
+            holder.avatarSpacer.visibility = View.VISIBLE
+            (holder.avatarSpacer.layoutParams as LinearLayout.LayoutParams).weight = 1f
             holder.messageContainer.background = ctx.getDrawable(R.drawable.bg_bubble_out)
+            holder.tvReadTick.visibility = View.VISIBLE
             holder.tvMessage.setTextColor(0xFF1A1A1A.toInt())
         } else {
-            rowLp.gravity = android.view.Gravity.START
-            holder.bubbleRow.layoutParams = rowLp
+            // ── Incoming ──────────────────────────────────────────────────────
+            holder.avatarSpacer.visibility = View.GONE
             holder.avatarCard.visibility = View.VISIBLE
             holder.tvReadTick.visibility = View.GONE
             holder.tvMessage.setTextColor(0xFF1A1A1A.toInt())
 
+            val color: Int
             if (msg.isAI) {
-                // AI bubble
-                holder.tvSenderName.visibility = View.VISIBLE
-                holder.tvSenderName.text = "✦ Beeta AI"
-                holder.tvSenderName.setTextColor(0xFF4C6EF5.toInt())
-                holder.tvSenderName.setPadding(dpToPx(ctx, 44), 0, 0, dpToPx(ctx, 2))
+                color = 0xFF4C6EF5.toInt()
                 holder.messageContainer.background = ctx.getDrawable(R.drawable.bg_bubble_ai)
+                holder.tvSenderName.visibility = View.VISIBLE
+                holder.tvSenderName.text = "Beeta AI"
+                holder.tvSenderName.setTextColor(color)
                 // AI avatar: beetaai.png
-                setAvatarColor(holder, 0xFF4C6EF5.toInt())
+                setAvatarBgColor(holder.avatarBg, color)
                 holder.tvAvatarInitial.visibility = View.GONE
                 holder.ivAvatar.visibility = View.VISIBLE
-                try {
-                    val bmp = BitmapFactory.decodeResource(ctx.resources, R.drawable.beetaai)
-                    holder.ivAvatar.setImageBitmap(circleCrop(bmp))
-                } catch (_: Exception) {
-                    holder.ivAvatar.setImageResource(R.drawable.beetaai)
-                }
+                val bmp = BitmapFactory.decodeResource(ctx.resources, R.drawable.beetaai)
+                holder.ivAvatar.setImageBitmap(circleCrop(bmp))
             } else {
-                // Human incoming bubble
-                val color = senderColors[Math.abs(msg.userId.hashCode()) % senderColors.size]
+                color = senderColors[Math.abs(msg.userId.hashCode()) % senderColors.size]
+                holder.messageContainer.background = ctx.getDrawable(R.drawable.bg_bubble_in)
                 holder.tvSenderName.visibility = View.VISIBLE
                 holder.tvSenderName.text = msg.userName
                 holder.tvSenderName.setTextColor(color)
-                holder.tvSenderName.setPadding(dpToPx(ctx, 44), 0, 0, dpToPx(ctx, 2))
-                holder.messageContainer.background = ctx.getDrawable(R.drawable.bg_bubble_in)
-                setAvatarColor(holder, color)
-
+                setAvatarBgColor(holder.avatarBg, color)
                 val photoUrl = photoMap[msg.userId]
                 if (!photoUrl.isNullOrBlank()) {
                     holder.tvAvatarInitial.visibility = View.INVISIBLE
@@ -164,7 +154,7 @@ class CollabChatAdapter(
                 else -> {
                     holder.ivMediaPreview.visibility = View.GONE
                     holder.attachmentCard.visibility = View.VISIBLE
-                    holder.tvAttachmentIcon.text = when (type) { "audio" -> "🎤"; "video" -> "🎥"; else -> docIcon(uri) }
+                    holder.tvAttachmentIcon.text = when (type) { "audio" -> "Mic"; "video" -> "Vid"; else -> docIcon(uri) }
                     holder.tvAttachmentName.text = uri.substringAfterLast("/")
                 }
             }
@@ -192,11 +182,11 @@ class CollabChatAdapter(
     override fun getItemCount() = messages.size
     fun updateMessages(new: List<ChatMessage>) { messages = new; notifyDataSetChanged() }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
-
-    private fun setAvatarColor(holder: MessageViewHolder, color: Int) {
-        val bg = GradientDrawable().apply { shape = GradientDrawable.OVAL; setColor(color) }
-        holder.avatarBg.background = bg
+    private fun setAvatarBgColor(view: View, color: Int) {
+        val d = GradientDrawable()
+        d.shape = GradientDrawable.OVAL
+        d.setColor(color)
+        view.background = d
     }
 
     private fun loadAvatar(ctx: Context, url: String, holder: MessageViewHolder) {
@@ -209,7 +199,9 @@ class CollabChatAdapter(
         }
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val conn = URL(url).openConnection().apply { connectTimeout = 5000; readTimeout = 5000 }
+                val conn = URL(url).openConnection()
+                conn.connectTimeout = 5000
+                conn.readTimeout = 5000
                 val bmp = BitmapFactory.decodeStream(conn.getInputStream())
                 val circle = circleCrop(bmp)
                 bitmapCache.put(url, circle)
@@ -238,8 +230,6 @@ class CollabChatAdapter(
         return out
     }
 
-    private fun dpToPx(ctx: Context, dp: Int) = (dp * ctx.resources.displayMetrics.density).toInt()
-
     private fun loadImage(iv: ImageView, uriStr: String) {
         try {
             val uri = Uri.parse(uriStr)
@@ -264,27 +254,30 @@ class CollabChatAdapter(
             val name = uriStr.substringAfterLast("/").ifBlank { "attachment_${System.currentTimeMillis()}" }
             (ctx.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(
                 DownloadManager.Request(Uri.parse(uriStr)).apply {
-                    setTitle(name); setDescription("Saving from NBH Chat")
+                    setTitle(name)
+                    setDescription("Saving from NBH Chat")
                     setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                     setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, name)
-                    setMimeType(mimeFor(uriStr, type)); setAllowedOverMetered(true)
+                    setMimeType(mimeFor(uriStr, type))
+                    setAllowedOverMetered(true)
                 }
             )
-            Toast.makeText(ctx, "⬇ Saving to Downloads...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(ctx, "Saving to Downloads...", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) { Toast.makeText(ctx, "Save failed: ${e.message}", Toast.LENGTH_SHORT).show() }
     }
 
     private fun docIcon(uri: String) = when {
-        uri.endsWith(".pdf", true) -> "📕"
-        uri.endsWith(".doc", true) || uri.endsWith(".docx", true) -> "📘"
-        uri.endsWith(".xls", true) || uri.endsWith(".xlsx", true) -> "📗"
-        uri.endsWith(".ppt", true) || uri.endsWith(".pptx", true) -> "📙"
-        uri.endsWith(".zip", true) || uri.endsWith(".rar", true) -> "🗜"
-        else -> "📄"
+        uri.endsWith(".pdf", true) -> "PDF"
+        uri.endsWith(".doc", true) || uri.endsWith(".docx", true) -> "DOC"
+        uri.endsWith(".xls", true) || uri.endsWith(".xlsx", true) -> "XLS"
+        uri.endsWith(".ppt", true) || uri.endsWith(".pptx", true) -> "PPT"
+        else -> "FILE"
     }
 
     private fun mimeFor(uri: String, type: String) = when (type) {
-        "image" -> "image/*"; "video" -> "video/*"; "audio" -> "audio/*"
+        "image" -> "image/*"
+        "video" -> "video/*"
+        "audio" -> "audio/*"
         else -> when {
             uri.endsWith(".pdf", true) -> "application/pdf"
             uri.endsWith(".docx", true) -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document"

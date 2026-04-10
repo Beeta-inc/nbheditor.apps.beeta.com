@@ -8,12 +8,11 @@
     android:paddingTop="3dp"
     android:paddingBottom="3dp">
 
-    <!-- Sender name shown ABOVE the bubble row for incoming messages -->
+    <!-- Sender name (above bubble, only for incoming) -->
     <TextView
         android:id="@+id/tvSenderName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="User Name"
         android:textSize="11sp"
         android:textStyle="bold"
         android:textColor="@color/accent_primary"
@@ -21,7 +20,7 @@
         android:paddingBottom="2dp"
         android:visibility="gone" />
 
-    <!-- Row: avatar circle + bubble -->
+    <!-- Avatar + bubble row -->
     <LinearLayout
         android:id="@+id/bubbleRow"
         android:layout_width="match_parent"
@@ -29,7 +28,7 @@
         android:orientation="horizontal"
         android:gravity="bottom">
 
-        <!-- Avatar circle (FrameLayout so initial + photo can overlay) -->
+        <!-- Avatar (incoming only, gone for outgoing) -->
         <FrameLayout
             android:id="@+id/avatarCard"
             android:layout_width="34dp"
@@ -38,25 +37,21 @@
             android:layout_marginBottom="2dp"
             android:visibility="gone">
 
-            <!-- Colored circle background -->
             <View
                 android:id="@+id/avatarBg"
                 android:layout_width="34dp"
                 android:layout_height="34dp"
                 android:background="@drawable/bg_avatar_circle" />
 
-            <!-- Initial letter fallback -->
             <TextView
                 android:id="@+id/tvAvatarInitial"
                 android:layout_width="34dp"
                 android:layout_height="34dp"
-                android:text="A"
+                android:gravity="center"
                 android:textSize="14sp"
                 android:textStyle="bold"
-                android:textColor="@color/white"
-                android:gravity="center" />
+                android:textColor="@color/white" />
 
-            <!-- Real photo (overlays initial when loaded) -->
             <ImageView
                 android:id="@+id/ivAvatar"
                 android:layout_width="34dp"
@@ -66,27 +61,25 @@
                 android:contentDescription="Avatar" />
         </FrameLayout>
 
-        <!-- Bubble -->
+        <!-- Bubble: layout_gravity controls left/right alignment -->
         <LinearLayout
             android:id="@+id/messageContainer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_gravity="start"
+            android:layout_weight="0"
             android:orientation="vertical"
-            android:background="@color/editor_surface"
             android:padding="10dp"
             android:maxWidth="260dp">
 
-            <!-- Text body -->
             <TextView
                 android:id="@+id/tvMessage"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Message content"
                 android:textSize="15sp"
                 android:textColor="@color/editor_text"
                 android:lineSpacingMultiplier="1.3" />
 
-            <!-- Image preview -->
             <ImageView
                 android:id="@+id/ivMediaPreview"
                 android:layout_width="220dp"
@@ -94,10 +87,8 @@
                 android:layout_marginTop="6dp"
                 android:scaleType="centerCrop"
                 android:visibility="gone"
-                android:background="#11000000"
                 android:contentDescription="Media" />
 
-            <!-- Non-image attachment -->
             <LinearLayout
                 android:id="@+id/attachmentCard"
                 android:layout_width="match_parent"
@@ -113,7 +104,6 @@
                     android:id="@+id/tvAttachmentIcon"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="📄"
                     android:textSize="22sp"
                     android:layout_marginEnd="8dp" />
 
@@ -122,14 +112,12 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="filename.pdf"
                     android:textSize="13sp"
                     android:textColor="@color/accent_primary"
                     android:maxLines="2"
                     android:ellipsize="middle" />
             </LinearLayout>
 
-            <!-- Open / Save -->
             <LinearLayout
                 android:id="@+id/mediaActionBar"
                 android:layout_width="match_parent"
@@ -143,7 +131,7 @@
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:text="▶ Open"
+                    android:text="&#9654; Open"
                     android:textSize="12sp"
                     android:textColor="@color/accent_primary"
                     android:textStyle="bold"
@@ -160,7 +148,7 @@
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:text="⬇ Save"
+                    android:text="&#8595; Save"
                     android:textSize="12sp"
                     android:textColor="@color/accent_secondary"
                     android:textStyle="bold"
@@ -170,7 +158,7 @@
                     android:focusable="true" />
             </LinearLayout>
 
-            <!-- Timestamp + tick -->
+            <!-- Timestamp row -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -183,7 +171,6 @@
                     android:id="@+id/tvImportantBadge"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="⭐ "
                     android:textSize="11sp"
                     android:visibility="gone" />
 
@@ -191,7 +178,6 @@
                     android:id="@+id/tvLinkedTaskBadge"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="✓ "
                     android:textSize="11sp"
                     android:textColor="@color/accent_secondary"
                     android:visibility="gone" />
@@ -200,7 +186,6 @@
                     android:id="@+id/tvTimestamp"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="12:34"
                     android:textSize="11sp"
                     android:textColor="@color/editor_hint" />
 
@@ -208,12 +193,21 @@
                     android:id="@+id/tvReadTick"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text=" ✓"
+                    android:text=" &#10003;"
                     android:textSize="11sp"
                     android:textColor="@color/accent_secondary"
                     android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>
+
+        <!-- Spacer: pushes bubble left when outgoing (fills remaining space) -->
+        <View
+            android:id="@+id/avatarSpacer"
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1"
+            android:visibility="gone" />
+
     </LinearLayout>
 
     <!-- Long-press actions -->
@@ -235,7 +229,7 @@
             android:id="@+id/btnMarkImportant"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="⭐"
+            android:text="&#11088;"
             android:textSize="18sp"
             android:padding="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
@@ -246,7 +240,7 @@
             android:id="@+id/btnCreateTask"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="✓"
+            android:text="&#10003;"
             android:textSize="18sp"
             android:padding="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
@@ -257,7 +251,7 @@
             android:id="@+id/btnSetReminder"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="⏰"
+            android:text="&#9200;"
             android:textSize="18sp"
             android:padding="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
