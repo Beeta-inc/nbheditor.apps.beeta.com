@@ -5,10 +5,23 @@
     android:orientation="vertical"
     android:paddingStart="8dp"
     android:paddingEnd="8dp"
-    android:paddingTop="2dp"
-    android:paddingBottom="2dp">
+    android:paddingTop="3dp"
+    android:paddingBottom="3dp">
 
-    <!-- Row: avatar + bubble (for incoming) / bubble only (for outgoing) -->
+    <!-- Sender name shown ABOVE the bubble row for incoming messages -->
+    <TextView
+        android:id="@+id/tvSenderName"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="User Name"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:textColor="@color/accent_primary"
+        android:paddingStart="44dp"
+        android:paddingBottom="2dp"
+        android:visibility="gone" />
+
+    <!-- Row: avatar circle + bubble -->
     <LinearLayout
         android:id="@+id/bubbleRow"
         android:layout_width="match_parent"
@@ -16,46 +29,42 @@
         android:orientation="horizontal"
         android:gravity="bottom">
 
-        <!-- Avatar (shown for incoming messages only) -->
-        <com.google.android.material.card.MaterialCardView
+        <!-- Avatar circle (FrameLayout so initial + photo can overlay) -->
+        <FrameLayout
             android:id="@+id/avatarCard"
             android:layout_width="34dp"
             android:layout_height="34dp"
             android:layout_marginEnd="6dp"
             android:layout_marginBottom="2dp"
-            android:visibility="gone"
-            app:cardCornerRadius="17dp"
-            app:cardElevation="0dp"
-            app:cardBackgroundColor="@color/accent_primary"
-            xmlns:app="http://schemas.android.com/apk/res-auto">
+            android:visibility="gone">
 
-            <!-- Initial letter (fallback) -->
+            <!-- Colored circle background -->
+            <View
+                android:id="@+id/avatarBg"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:background="@drawable/bg_avatar_circle" />
+
+            <!-- Initial letter fallback -->
             <TextView
                 android:id="@+id/tvAvatarInitial"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
                 android:text="A"
                 android:textSize="14sp"
                 android:textStyle="bold"
                 android:textColor="@color/white"
                 android:gravity="center" />
 
-            <!-- Real photo (loaded async, overlays the initial) -->
+            <!-- Real photo (overlays initial when loaded) -->
             <ImageView
                 android:id="@+id/ivAvatar"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_width="34dp"
+                android:layout_height="34dp"
                 android:scaleType="centerCrop"
                 android:visibility="gone"
                 android:contentDescription="Avatar" />
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Spacer for outgoing (pushes bubble right) -->
-        <View
-            android:id="@+id/avatarSpacer"
-            android:layout_width="40dp"
-            android:layout_height="1dp"
-            android:visibility="gone" />
+        </FrameLayout>
 
         <!-- Bubble -->
         <LinearLayout
@@ -65,19 +74,7 @@
             android:orientation="vertical"
             android:background="@color/editor_surface"
             android:padding="10dp"
-            android:elevation="1dp"
             android:maxWidth="260dp">
-
-            <!-- Sender name (hidden for own messages) -->
-            <TextView
-                android:id="@+id/tvSenderName"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="User Name"
-                android:textSize="12sp"
-                android:textStyle="bold"
-                android:textColor="@color/accent_primary"
-                android:paddingBottom="2dp" />
 
             <!-- Text body -->
             <TextView
@@ -100,7 +97,7 @@
                 android:background="#11000000"
                 android:contentDescription="Media" />
 
-            <!-- Non-image attachment row -->
+            <!-- Non-image attachment -->
             <LinearLayout
                 android:id="@+id/attachmentCard"
                 android:layout_width="match_parent"
@@ -132,7 +129,7 @@
                     android:ellipsize="middle" />
             </LinearLayout>
 
-            <!-- Open / Save row -->
+            <!-- Open / Save -->
             <LinearLayout
                 android:id="@+id/mediaActionBar"
                 android:layout_width="match_parent"
@@ -173,7 +170,7 @@
                     android:focusable="true" />
             </LinearLayout>
 
-            <!-- Timestamp + tick row -->
+            <!-- Timestamp + tick -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
