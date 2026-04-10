@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Root is full-width so gravity on messageContainer works correctly -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -9,170 +8,218 @@
     android:paddingTop="2dp"
     android:paddingBottom="2dp">
 
-    <!-- Bubble -->
+    <!-- Row: avatar + bubble (for incoming) / bubble only (for outgoing) -->
     <LinearLayout
-        android:id="@+id/messageContainer"
-        android:layout_width="wrap_content"
+        android:id="@+id/bubbleRow"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="@color/editor_surface"
-        android:padding="10dp"
-        android:elevation="1dp"
-        android:layout_gravity="start"
-        android:maxWidth="280dp">
+        android:orientation="horizontal"
+        android:gravity="bottom">
 
-        <!-- Sender name (hidden for own messages) -->
-        <TextView
-            android:id="@+id/tvSenderName"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="User Name"
-            android:textSize="12sp"
-            android:textStyle="bold"
-            android:textColor="@color/accent_primary"
-            android:paddingBottom="2dp" />
-
-        <!-- Text body -->
-        <TextView
-            android:id="@+id/tvMessage"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Message content"
-            android:textSize="15sp"
-            android:textColor="@color/editor_text"
-            android:lineSpacingMultiplier="1.3" />
-
-        <!-- Image preview -->
-        <ImageView
-            android:id="@+id/ivMediaPreview"
-            android:layout_width="240dp"
-            android:layout_height="160dp"
-            android:layout_marginTop="6dp"
-            android:scaleType="centerCrop"
+        <!-- Avatar (shown for incoming messages only) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/avatarCard"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:layout_marginEnd="6dp"
+            android:layout_marginBottom="2dp"
             android:visibility="gone"
-            android:background="#11000000"
-            android:contentDescription="Media" />
+            app:cardCornerRadius="17dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@color/accent_primary"
+            xmlns:app="http://schemas.android.com/apk/res-auto">
 
-        <!-- Non-image attachment row -->
-        <LinearLayout
-            android:id="@+id/attachmentCard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:background="#1A4C6EF5"
-            android:padding="8dp"
-            android:layout_marginTop="6dp"
-            android:visibility="gone">
-
+            <!-- Initial letter (fallback) -->
             <TextView
-                android:id="@+id/tvAttachmentIcon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="📄"
-                android:textSize="22sp"
-                android:layout_marginEnd="8dp" />
-
-            <TextView
-                android:id="@+id/tvAttachmentName"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="filename.pdf"
-                android:textSize="13sp"
-                android:textColor="@color/accent_primary"
-                android:maxLines="2"
-                android:ellipsize="middle" />
-        </LinearLayout>
-
-        <!-- Open / Save row -->
-        <LinearLayout
-            android:id="@+id/mediaActionBar"
-            android:layout_width="match_parent"
-            android:layout_height="32dp"
-            android:orientation="horizontal"
-            android:layout_marginTop="4dp"
-            android:visibility="gone">
-
-            <TextView
-                android:id="@+id/btnOpenMedia"
-                android:layout_width="0dp"
+                android:id="@+id/tvAvatarInitial"
+                android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:text="▶ Open"
-                android:textSize="12sp"
-                android:textColor="@color/accent_primary"
+                android:text="A"
+                android:textSize="14sp"
                 android:textStyle="bold"
-                android:gravity="center"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true" />
+                android:textColor="@color/white"
+                android:gravity="center" />
 
-            <View android:layout_width="1dp" android:layout_height="match_parent"
-                android:background="@color/divider" />
-
-            <TextView
-                android:id="@+id/btnDownloadMedia"
-                android:layout_width="0dp"
+            <!-- Real photo (loaded async, overlays the initial) -->
+            <ImageView
+                android:id="@+id/ivAvatar"
+                android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:text="⬇ Save"
-                android:textSize="12sp"
-                android:textColor="@color/accent_secondary"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true" />
-        </LinearLayout>
+                android:scaleType="centerCrop"
+                android:visibility="gone"
+                android:contentDescription="Avatar" />
+        </com.google.android.material.card.MaterialCardView>
 
-        <!-- Timestamp + status row -->
+        <!-- Spacer for outgoing (pushes bubble right) -->
+        <View
+            android:id="@+id/avatarSpacer"
+            android:layout_width="40dp"
+            android:layout_height="1dp"
+            android:visibility="gone" />
+
+        <!-- Bubble -->
         <LinearLayout
+            android:id="@+id/messageContainer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_gravity="end"
-            android:layout_marginTop="4dp">
+            android:orientation="vertical"
+            android:background="@color/editor_surface"
+            android:padding="10dp"
+            android:elevation="1dp"
+            android:maxWidth="260dp">
 
+            <!-- Sender name (hidden for own messages) -->
             <TextView
-                android:id="@+id/tvImportantBadge"
+                android:id="@+id/tvSenderName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="⭐ "
-                android:textSize="11sp"
-                android:visibility="gone" />
+                android:text="User Name"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="@color/accent_primary"
+                android:paddingBottom="2dp" />
 
+            <!-- Text body -->
             <TextView
-                android:id="@+id/tvLinkedTaskBadge"
+                android:id="@+id/tvMessage"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="✓ "
-                android:textSize="11sp"
-                android:textColor="@color/accent_secondary"
-                android:visibility="gone" />
+                android:text="Message content"
+                android:textSize="15sp"
+                android:textColor="@color/editor_text"
+                android:lineSpacingMultiplier="1.3" />
 
-            <TextView
-                android:id="@+id/tvTimestamp"
+            <!-- Image preview -->
+            <ImageView
+                android:id="@+id/ivMediaPreview"
+                android:layout_width="220dp"
+                android:layout_height="150dp"
+                android:layout_marginTop="6dp"
+                android:scaleType="centerCrop"
+                android:visibility="gone"
+                android:background="#11000000"
+                android:contentDescription="Media" />
+
+            <!-- Non-image attachment row -->
+            <LinearLayout
+                android:id="@+id/attachmentCard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="#1A4C6EF5"
+                android:padding="8dp"
+                android:layout_marginTop="6dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tvAttachmentIcon"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📄"
+                    android:textSize="22sp"
+                    android:layout_marginEnd="8dp" />
+
+                <TextView
+                    android:id="@+id/tvAttachmentName"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="filename.pdf"
+                    android:textSize="13sp"
+                    android:textColor="@color/accent_primary"
+                    android:maxLines="2"
+                    android:ellipsize="middle" />
+            </LinearLayout>
+
+            <!-- Open / Save row -->
+            <LinearLayout
+                android:id="@+id/mediaActionBar"
+                android:layout_width="match_parent"
+                android:layout_height="32dp"
+                android:orientation="horizontal"
+                android:layout_marginTop="4dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/btnOpenMedia"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:text="▶ Open"
+                    android:textSize="12sp"
+                    android:textColor="@color/accent_primary"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true" />
+
+                <View android:layout_width="1dp" android:layout_height="match_parent"
+                    android:background="@color/divider" />
+
+                <TextView
+                    android:id="@+id/btnDownloadMedia"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:text="⬇ Save"
+                    android:textSize="12sp"
+                    android:textColor="@color/accent_secondary"
+                    android:textStyle="bold"
+                    android:gravity="center"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true" />
+            </LinearLayout>
+
+            <!-- Timestamp + tick row -->
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="12:34"
-                android:textSize="11sp"
-                android:textColor="@color/editor_hint" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_gravity="end"
+                android:layout_marginTop="4dp">
 
-            <!-- Read tick (shown only for own messages) -->
-            <TextView
-                android:id="@+id/tvReadTick"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text=" ✓"
-                android:textSize="11sp"
-                android:textColor="@color/accent_secondary"
-                android:visibility="gone" />
+                <TextView
+                    android:id="@+id/tvImportantBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="⭐ "
+                    android:textSize="11sp"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tvLinkedTaskBadge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="✓ "
+                    android:textSize="11sp"
+                    android:textColor="@color/accent_secondary"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tvTimestamp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="12:34"
+                    android:textSize="11sp"
+                    android:textColor="@color/editor_hint" />
+
+                <TextView
+                    android:id="@+id/tvReadTick"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=" ✓"
+                    android:textSize="11sp"
+                    android:textColor="@color/accent_secondary"
+                    android:visibility="gone" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Long-press action bar (shown below bubble) -->
+    <!-- Long-press actions -->
     <LinearLayout
         android:id="@+id/messageActions"
         android:layout_width="wrap_content"

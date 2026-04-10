@@ -3,9 +3,15 @@ package com.beeta.nbheditor
 import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.BitmapShader
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Shader
 import android.net.Uri
 import android.os.Environment
+import android.util.LruCache
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -15,6 +21,11 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -26,14 +37,29 @@ class CollabChatAdapter(
     private val onSetReminder: (ChatMessage) -> Unit = {}
 ) : RecyclerView.Adapter<CollabChatAdapter.MessageViewHolder>() {
 
-    // Distinct sender colors (cycled by userId hash)
     private val senderColors = listOf(
         0xFF4C6EF5.toInt(), 0xFF51CF66.toInt(), 0xFFFF8787.toInt(),
         0xFF9775FA.toInt(), 0xFFFFD43B.toInt(), 0xFF20C997.toInt(),
         0xFFFF6B6B.toInt(), 0xFF74C0FC.toInt()
     )
 
+    // userId -> photoUrl, updated from fragment
+    private var photoMap: Map<String, String> = emptyMap()
+
+    // Simple in-process bitmap cache keyed by URL
+    private val bitmapCache = LruCache<String, Bitmap>(20)
+
+    fun updatePhotoMap(map: Map<String, String>) {
+        photoMap = map
+        notifyDataSetChanged()
+    }
+
     class MessageViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val bubbleRow: LinearLayout = view.findViewById(R.id.bubbleRow)
+        val avatarCard: com.google.android.material.card.MaterialCardView = view.findViewById(R.id.avatarCard)
+        val tvAvatarInitial: TextView = view.findViewById(R.id.tvAvatarInitial)
+        val ivAvatar: ImageView? = view.findViewById(R.id.ivAvatar)
+        val avatarSpacer: View = view.findViewById(R.id.avatarSpacer)
         val messageContainer: LinearLayout = view.findViewById(R.id.messageContainer)
         val tvSenderName: TextView = view.findViewById(R.id.tvSenderName)
         val tvMessage: TextView = view.findViewById(R.id.tvMessage)
@@ -54,7 +80,7 @@ class CollabChatAdapter(
         val btnDownloadMedia: TextView = view.findViewById(R.id.btnDownloadMedia)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MessageViewHolder =
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
         MessageViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_chat_message, parent, false))
 
     override fun onBindViewHolder(holder: MessageViewHolder, position: Int) {
@@ -62,33 +88,48 @@ class CollabChatAdapter(
         val isMe = msg.userId == currentUserId
         val ctx = holder.itemView.context
 
-        // ── Bubble style ──────────────────────────────────────────────────────
+        // ── Bubble + avatar ───────────────────────────────────────────────────
         val lp = holder.messageContainer.layoutParams as LinearLayout.LayoutParams
         when {
             isMe -> {
-                lp.gravity = Gravity.END
-                lp.marginStart = 56
-                lp.marginEnd = 0
+                holder.avatarCard.visibility = View.GONE
+                holder.avatarSpacer.visibility = View.GONE
+                holder.bubbleRow.gravity = Gravity.END or Gravity.BOTTOM
+                lp.marginStart = 56; lp.marginEnd = 0
                 holder.messageContainer.background = ctx.getDrawable(R.drawable.bg_bubble_out)
                 holder.tvSenderName.visibility = View.GONE
                 holder.tvReadTick.visibility = View.VISIBLE
                 holder.tvMessage.setTextColor(0xFF1A1A1A.toInt())
             }
             msg.isAI -> {
-                lp.gravity = Gravity.START
-                lp.marginStart = 0
-                lp.marginEnd = 56
+                holder.avatarCard.visibility = View.VISIBLE
+                holder.avatarSpacer.visibility = View.GONE
+                holder.bubbleRow.gravity = Gravity.START or Gravity.BOTTOM
+                lp.marginStart = 0; lp.marginEnd = 56
                 holder.messageContainer.background = ctx.getDrawable(R.drawable.bg_bubble_ai)
                 holder.tvSenderName.visibility = View.VISIBLE
                 holder.tvSenderName.text = "✦ Beeta AI"
                 holder.tvSenderName.setTextColor(0xFF4C6EF5.toInt())
                 holder.tvReadTick.visibility = View.GONE
                 holder.tvMessage.setTextColor(0xFF1A1A1A.toInt())
+                // Use beetaai.png for AI avatar
+                holder.tvAvatarInitial.visibility = View.GONE
+                holder.ivAvatar?.apply {
+                    visibility = View.VISIBLE
+                    try {
+                        val bmp = BitmapFactory.decodeResource(ctx.resources, R.drawable.beetaai)
+                        setImageBitmap(circleCrop(bmp))
+                    } catch (_: Exception) {
+                        setImageResource(R.drawable.beetaai)
+                    }
+                }
+                holder.avatarCard.setCardBackgroundColor(0xFF4C6EF5.toInt())
             }
             else -> {
-                lp.gravity = Gravity.START
-                lp.marginStart = 0
-                lp.marginEnd = 56
+                holder.avatarCard.visibility = View.VISIBLE
+                holder.avatarSpacer.visibility = View.GONE
+                holder.bubbleRow.gravity = Gravity.START or Gravity.BOTTOM
+                lp.marginStart = 0; lp.marginEnd = 56
                 holder.messageContainer.background = ctx.getDrawable(R.drawable.bg_bubble_in)
                 holder.tvSenderName.visibility = View.VISIBLE
                 holder.tvSenderName.text = msg.userName
@@ -96,6 +137,21 @@ class CollabChatAdapter(
                 holder.tvSenderName.setTextColor(color)
                 holder.tvReadTick.visibility = View.GONE
                 holder.tvMessage.setTextColor(0xFF1A1A1A.toInt())
+                holder.avatarCard.setCardBackgroundColor(color)
+
+                val photoUrl = photoMap[msg.userId]
+                if (!photoUrl.isNullOrBlank()) {
+                    // Show photo — hide initial text while loading
+                    holder.tvAvatarInitial.visibility = View.INVISIBLE
+                    holder.ivAvatar?.visibility = View.VISIBLE
+                    loadAvatar(ctx, photoUrl, holder)
+                } else {
+                    // Fallback: initial letter
+                    holder.tvAvatarInitial.visibility = View.VISIBLE
+                    holder.tvAvatarInitial.text = msg.userName.firstOrNull()?.uppercase() ?: "?"
+                    holder.tvAvatarInitial.textSize = 14f
+                    holder.ivAvatar?.visibility = View.GONE
+                }
             }
         }
         holder.messageContainer.layoutParams = lp
@@ -103,11 +159,9 @@ class CollabChatAdapter(
         // ── Badges ────────────────────────────────────────────────────────────
         holder.tvImportantBadge.visibility = if (msg.isImportant) View.VISIBLE else View.GONE
         holder.tvLinkedTaskBadge.visibility = if (msg.linkedTaskId != null) View.VISIBLE else View.GONE
-
-        // ── Timestamp ─────────────────────────────────────────────────────────
         holder.tvTimestamp.text = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(msg.timestamp))
 
-        // ── Media / text ──────────────────────────────────────────────────────
+        // ── Media ─────────────────────────────────────────────────────────────
         val uri = msg.attachmentUri
         val type = msg.attachmentType
         if (!uri.isNullOrBlank() && !type.isNullOrBlank()) {
@@ -123,9 +177,7 @@ class CollabChatAdapter(
                 else -> {
                     holder.ivMediaPreview.visibility = View.GONE
                     holder.attachmentCard.visibility = View.VISIBLE
-                    holder.tvAttachmentIcon.text = when (type) {
-                        "audio" -> "🎤"; "video" -> "🎥"; else -> docIcon(uri)
-                    }
+                    holder.tvAttachmentIcon.text = when (type) { "audio" -> "🎤"; "video" -> "🎥"; else -> docIcon(uri) }
                     holder.tvAttachmentName.text = uri.substringAfterLast("/")
                 }
             }
@@ -139,10 +191,9 @@ class CollabChatAdapter(
             holder.mediaActionBar.visibility = View.GONE
         }
 
-        // ── Long-press actions ────────────────────────────────────────────────
+        // ── Long-press ────────────────────────────────────────────────────────
         holder.messageContainer.setOnLongClickListener {
-            holder.messageActions.visibility =
-                if (holder.messageActions.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+            holder.messageActions.visibility = if (holder.messageActions.visibility == View.VISIBLE) View.GONE else View.VISIBLE
             true
         }
         holder.btnMarkImportant.setOnClickListener { onMarkImportant(msg); holder.messageActions.visibility = View.GONE }
@@ -154,17 +205,54 @@ class CollabChatAdapter(
 
     fun updateMessages(new: List<ChatMessage>) { messages = new; notifyDataSetChanged() }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // ── Avatar loading ────────────────────────────────────────────────────────
+
+    private fun loadAvatar(ctx: Context, url: String, holder: MessageViewHolder) {
+        val cached = bitmapCache.get(url)
+        if (cached != null) {
+            holder.ivAvatar?.setImageBitmap(cached)
+            holder.tvAvatarInitial.visibility = View.GONE
+            return
+        }
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val bmp = BitmapFactory.decodeStream(URL(url).openStream())
+                val circle = circleCrop(bmp)
+                bitmapCache.put(url, circle)
+                withContext(Dispatchers.Main) {
+                    holder.ivAvatar?.setImageBitmap(circle)
+                    holder.tvAvatarInitial.visibility = View.GONE
+                }
+            } catch (_: Exception) {
+                withContext(Dispatchers.Main) {
+                    holder.tvAvatarInitial.visibility = View.VISIBLE
+                }
+            }
+        }
+    }
+
+    private fun circleCrop(src: Bitmap): Bitmap {
+        val size = minOf(src.width, src.height)
+        val out = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(out)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        paint.shader = BitmapShader(
+            Bitmap.createScaledBitmap(src, size, size, true),
+            Shader.TileMode.CLAMP, Shader.TileMode.CLAMP
+        )
+        canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
+        return out
+    }
+
+    // ── Media helpers ─────────────────────────────────────────────────────────
 
     private fun loadImage(iv: ImageView, uriStr: String) {
         try {
             val uri = Uri.parse(uriStr)
-            if (uri.scheme == "content") {
-                val bmp = BitmapFactory.decodeStream(iv.context.contentResolver.openInputStream(uri))
-                iv.setImageBitmap(bmp)
-            } else {
-                iv.setImageBitmap(BitmapFactory.decodeFile(uriStr))
-            }
+            val bmp = if (uri.scheme == "content")
+                BitmapFactory.decodeStream(iv.context.contentResolver.openInputStream(uri))
+            else BitmapFactory.decodeFile(uriStr)
+            iv.setImageBitmap(bmp)
         } catch (_: Exception) { iv.setImageResource(android.R.drawable.ic_menu_gallery) }
     }
 

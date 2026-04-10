@@ -36,6 +36,7 @@ class CollabChatFragment : Fragment() {
     private var mediaRecorder: MediaRecorder? = null
     private var voiceFile: File? = null
     private var isRecording = false
+    private var userPhotoMap = mapOf<String, String>() // userId -> photoUrl
 
     // Mention popup
     private lateinit var mentionAdapter: MentionAdapter
@@ -137,6 +138,11 @@ class CollabChatFragment : Fragment() {
         lifecycleScope.launch {
             CollaborativeSessionManager.observeUsers(sessionCode).collect { users ->
                 sessionUsers = users.values.filter { it.userId != currentUserId }
+                // Rebuild photo map for all users including self
+                userPhotoMap = users.values
+                    .filter { it.photoUrl.isNotBlank() }
+                    .associate { it.userId to it.photoUrl }
+                adapter.updatePhotoMap(userPhotoMap)
             }
         }
     }

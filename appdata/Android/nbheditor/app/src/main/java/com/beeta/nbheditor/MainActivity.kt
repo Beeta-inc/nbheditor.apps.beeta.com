@@ -3095,7 +3095,8 @@ open class MainActivity : AppCompatActivity() {
         
         lifecycleScope.launch {
             try {
-                val result = CollaborativeSessionManager.createSession(userId, userName, email, currentContent)
+                val photoUrl = GoogleSignInHelper.getUserPhotoUrl(this@MainActivity) ?: ""
+                val result = CollaborativeSessionManager.createSession(userId, userName, email, currentContent, photoUrl)
                 
                 // Add slight delay to show the loading animation
                 delay(800)
@@ -3103,10 +3104,9 @@ open class MainActivity : AppCompatActivity() {
                 loadingDialog.dismiss()
                 
                 result.onSuccess { sessionId ->
-                    // Show success animation
                     showSuccessToast("✓ Session created: $sessionId")
                     showActiveSessionUI(sessionId, isCreator = true)
-                    startCollaborativeSync(sessionId)
+                    // startCollaborativeSync is called inside showActiveSessionUI
                 }.onFailure { e ->
                     showErrorDialog("Failed to create session", e.message ?: "Unknown error")
                 }
@@ -3131,7 +3131,8 @@ open class MainActivity : AppCompatActivity() {
         
         lifecycleScope.launch {
             try {
-                val result = CollaborativeSessionManager.joinSession(sessionId, userId, userName, email)
+                val photoUrl = GoogleSignInHelper.getUserPhotoUrl(this@MainActivity) ?: ""
+                val result = CollaborativeSessionManager.joinSession(sessionId, userId, userName, email, photoUrl)
                 
                 // Add slight delay to show the loading animation
                 delay(800)
@@ -3139,12 +3140,10 @@ open class MainActivity : AppCompatActivity() {
                 loadingDialog.dismiss()
                 
                 result.onSuccess { session ->
-                    // Show success animation
                     showSuccessToast("✓ Joined session: $sessionId")
-                    // Load session content into editor
                     editorBinding.textArea.setText(session.content)
                     showActiveSessionUI(sessionId, isCreator = false)
-                    startCollaborativeSync(sessionId)
+                    // startCollaborativeSync is called inside showActiveSessionUI
                 }.onFailure { e ->
                     showErrorDialog("Failed to join session", e.message ?: "Unknown error")
                 }

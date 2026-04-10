@@ -13,6 +13,7 @@ data class SessionUser(
     val userId: String = "",
     val userName: String = "",
     val email: String = "",
+    val photoUrl: String = "",
     val creator: Boolean = false,
     val cursorPosition: Int = 0,
     val typing: Boolean = false,
@@ -108,6 +109,7 @@ object CollaborativeSessionManager {
     }
     private var currentSessionId: String? = null
     private var currentUserId: String? = null
+    private var currentCreatorId: String? = null  // stored locally at join/create time
     
     // Sanitize user ID for Firebase (replace invalid characters)
     private fun sanitizeUserId(userId: String): String {
@@ -154,7 +156,8 @@ object CollaborativeSessionManager {
         userId: String,
         userName: String,
         email: String,
-        initialContent: String = ""
+        initialContent: String = "",
+        photoUrl: String = ""
     ): Result<String> {
         return try {
             val sessionId = generateUniqueSessionCode()
@@ -163,6 +166,7 @@ object CollaborativeSessionManager {
                 userId = sanitizedUserId,
                 userName = userName,
                 email = email,
+                photoUrl = photoUrl,
                 creator = true,
                 lastActive = System.currentTimeMillis()
             )
@@ -177,6 +181,7 @@ object CollaborativeSessionManager {
             database.child(SESSIONS_PATH).child(sessionId).setValue(session).await()
             currentSessionId = sessionId
             currentUserId = sanitizedUserId
+            currentCreatorId = sanitizedUserId  // creator is always the one who creates
             
             // Start presence tracking
             startPresenceTracking(sessionId, sanitizedUserId)
@@ -194,7 +199,8 @@ object CollaborativeSessionManager {
         sessionId: String,
         userId: String,
         userName: String,
-        email: String
+        email: String,
+        photoUrl: String = ""
     ): Result<CollaborativeSession> {
         return try {
             val sanitizedUserId = sanitizeUserId(userId)
@@ -208,21 +214,19 @@ object CollaborativeSessionManager {
             val session = snapshot.getValue(CollaborativeSession::class.java)
                 ?: return Result.failure(Exception("Invalid session data"))
             
-            // Check if session is expired
             if (System.currentTimeMillis() - session.lastActivity > SESSION_TIMEOUT) {
                 return Result.failure(Exception("Session expired"))
             }
             
-            // Check if session is full
             if (session.users.size >= session.maxUsers) {
                 return Result.failure(Exception("Session is full (max ${session.maxUsers} users)"))
             }
             
-            // Add user to session
             val newUser = SessionUser(
                 userId = sanitizedUserId,
                 userName = userName,
                 email = email,
+                photoUrl = photoUrl,
                 creator = false,
                 lastActive = System.currentTimeMillis()
             )
@@ -232,7 +236,8 @@ object CollaborativeSessionManager {
             
             currentSessionId = sessionId
             currentUserId = sanitizedUserId
-            
+            currentCreatorId = session.creatorId  // remember who the creator is
+
             // Start presence tracking
             startPresenceTracking(sessionId, sanitizedUserId)
             
@@ -266,6 +271,7 @@ object CollaborativeSessionManager {
             // Clear local state
             currentSessionId = null
             currentUserId = null
+            currentCreatorId = null
             
             Log.d(TAG, "Left session: $sessionId")
         } catch (e: Exception) {
@@ -367,19 +373,21 @@ object CollaborativeSessionManager {
         awaitClose { ref.removeEventListener(listener) }
     }
     
-    // Kick user (creator only) — writes a kicked flag the target client observes
+    // Kick user (creator only)
     suspend fun kickUser(sessionId: String, userId: String): Result<Unit> {
         return try {
             val sanitizedUserId = sanitizeUserId(userId)
-            val currentUser = getCurrentUser(sessionId)
-            if (currentUser?.isCreator != true) {
+            // Use locally stored creatorId — no Firebase read needed
+            if (currentUserId != currentCreatorId) {
                 return Result.failure(Exception("Only creator can kick users"))
             }
-            // Write kicked flag first so the client sees it before removal
+            // Write kicked flag first so the target client detects it
             database.child(SESSIONS_PATH).child(sessionId)
                 .child("kicked").child(sanitizedUserId).setValue(true).await()
+            // Then remove from users
             database.child(SESSIONS_PATH).child(sessionId)
                 .child("users").child(sanitizedUserId).removeValue().await()
+            Log.d(TAG, "Kicked user: $sanitizedUserId from $sessionId")
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to kick user", e)
@@ -401,22 +409,18 @@ object CollaborativeSessionManager {
         awaitClose { ref.removeEventListener(listener) }
     }
     
-    // End session (creator only)
+    // End session (creator only) — deletes entire session from Firebase
     suspend fun endSession(sessionId: String): Result<Unit> {
         return try {
-            val currentUser = getCurrentUser(sessionId)
-            if (currentUser?.isCreator != true) {
+            if (currentUserId != currentCreatorId) {
                 return Result.failure(Exception("Only creator can end session"))
             }
-            
-            // Delete entire session from Firebase
+            // Hard delete the entire session node
             database.child(SESSIONS_PATH).child(sessionId).removeValue().await()
-            
-            // Clear local state
+            Log.d(TAG, "Session deleted from Firebase: $sessionId")
             currentSessionId = null
             currentUserId = null
-            
-            Log.d(TAG, "Session ended and deleted: $sessionId")
+            currentCreatorId = null
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to end session", e)
@@ -842,6 +846,7 @@ object CollaborativeSessionManager {
         clearTempCache(context)
         currentSessionId = null
         currentUserId = null
+        currentCreatorId = null
         Log.d(TAG, "Cleared all session cache")
     }
 }
