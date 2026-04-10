@@ -26,11 +26,19 @@ class CollabChatAdapter(
     private val onSetReminder: (ChatMessage) -> Unit = {}
 ) : RecyclerView.Adapter<CollabChatAdapter.MessageViewHolder>() {
 
+    // Distinct sender colors (cycled by userId hash)
+    private val senderColors = listOf(
+        0xFF4C6EF5.toInt(), 0xFF51CF66.toInt(), 0xFFFF8787.toInt(),
+        0xFF9775FA.toInt(), 0xFFFFD43B.toInt(), 0xFF20C997.toInt(),
+        0xFFFF6B6B.toInt(), 0xFF74C0FC.toInt()
+    )
+
     class MessageViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val messageContainer: LinearLayout = view.findViewById(R.id.messageContainer)
         val tvSenderName: TextView = view.findViewById(R.id.tvSenderName)
         val tvMessage: TextView = view.findViewById(R.id.tvMessage)
         val tvTimestamp: TextView = view.findViewById(R.id.tvTimestamp)
+        val tvReadTick: TextView = view.findViewById(R.id.tvReadTick)
         val tvImportantBadge: TextView = view.findViewById(R.id.tvImportantBadge)
         val tvLinkedTaskBadge: TextView = view.findViewById(R.id.tvLinkedTaskBadge)
         val messageActions: LinearLayout = view.findViewById(R.id.messageActions)
@@ -46,176 +54,142 @@ class CollabChatAdapter(
         val btnDownloadMedia: TextView = view.findViewById(R.id.btnDownloadMedia)
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MessageViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_chat_message, parent, false)
-        return MessageViewHolder(view)
-    }
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MessageViewHolder =
+        MessageViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.item_chat_message, parent, false))
 
     override fun onBindViewHolder(holder: MessageViewHolder, position: Int) {
-        val message = messages[position]
-        val isCurrentUser = message.userId == currentUserId
+        val msg = messages[position]
+        val isMe = msg.userId == currentUserId
+        val ctx = holder.itemView.context
 
-        // Sender name
-        if (message.isAI) {
-            holder.tvSenderName.text = "🤖 AI Assistant"
-            holder.tvSenderName.setTextColor(0xFF4CAF50.toInt())
-        } else {
-            holder.tvSenderName.text = message.userName
-            holder.tvSenderName.setTextColor(0xFF1976D2.toInt())
-        }
-
-        // Badges
-        holder.tvImportantBadge.visibility = if (message.isImportant) View.VISIBLE else View.GONE
-        holder.tvLinkedTaskBadge.visibility = if (message.linkedTaskId != null) View.VISIBLE else View.GONE
-
-        // Timestamp
-        holder.tvTimestamp.text = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(message.timestamp))
-
-        // Bubble alignment + color
+        // ── Bubble style ──────────────────────────────────────────────────────
         val lp = holder.messageContainer.layoutParams as LinearLayout.LayoutParams
-        if (isCurrentUser) {
-            lp.gravity = Gravity.END
-            holder.messageContainer.setBackgroundColor(0xFFE3F2FD.toInt())
-        } else if (message.isAI) {
-            lp.gravity = Gravity.START
-            holder.messageContainer.setBackgroundColor(0xFFE8F5E9.toInt())
-        } else {
-            lp.gravity = Gravity.START
-            holder.messageContainer.setBackgroundColor(0xFFFFFFFF.toInt())
+        when {
+            isMe -> {
+                lp.gravity = Gravity.END
+                lp.marginStart = 56
+                lp.marginEnd = 0
+                holder.messageContainer.background = ctx.getDrawable(R.drawable.bg_bubble_out)
+                holder.tvSenderName.visibility = View.GONE
+                holder.tvReadTick.visibility = View.VISIBLE
+                holder.tvMessage.setTextColor(0xFF1A1A1A.toInt())
+            }
+            msg.isAI -> {
+                lp.gravity = Gravity.START
+                lp.marginStart = 0
+                lp.marginEnd = 56
+                holder.messageContainer.background = ctx.getDrawable(R.drawable.bg_bubble_ai)
+                holder.tvSenderName.visibility = View.VISIBLE
+                holder.tvSenderName.text = "✦ Beeta AI"
+                holder.tvSenderName.setTextColor(0xFF4C6EF5.toInt())
+                holder.tvReadTick.visibility = View.GONE
+                holder.tvMessage.setTextColor(0xFF1A1A1A.toInt())
+            }
+            else -> {
+                lp.gravity = Gravity.START
+                lp.marginStart = 0
+                lp.marginEnd = 56
+                holder.messageContainer.background = ctx.getDrawable(R.drawable.bg_bubble_in)
+                holder.tvSenderName.visibility = View.VISIBLE
+                holder.tvSenderName.text = msg.userName
+                val color = senderColors[Math.abs(msg.userId.hashCode()) % senderColors.size]
+                holder.tvSenderName.setTextColor(color)
+                holder.tvReadTick.visibility = View.GONE
+                holder.tvMessage.setTextColor(0xFF1A1A1A.toInt())
+            }
         }
         holder.messageContainer.layoutParams = lp
 
-        // Media rendering
-        val uri = message.attachmentUri
-        val type = message.attachmentType
-        if (!uri.isNullOrBlank() && !type.isNullOrBlank()) {
-            holder.tvMessage.visibility = if (message.message.isNotBlank()) View.VISIBLE else View.GONE
-            holder.tvMessage.text = message.message
-            holder.mediaActionBar.visibility = View.VISIBLE
+        // ── Badges ────────────────────────────────────────────────────────────
+        holder.tvImportantBadge.visibility = if (msg.isImportant) View.VISIBLE else View.GONE
+        holder.tvLinkedTaskBadge.visibility = if (msg.linkedTaskId != null) View.VISIBLE else View.GONE
 
+        // ── Timestamp ─────────────────────────────────────────────────────────
+        holder.tvTimestamp.text = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(msg.timestamp))
+
+        // ── Media / text ──────────────────────────────────────────────────────
+        val uri = msg.attachmentUri
+        val type = msg.attachmentType
+        if (!uri.isNullOrBlank() && !type.isNullOrBlank()) {
+            holder.tvMessage.visibility = if (msg.message.isNotBlank()) View.VISIBLE else View.GONE
+            holder.tvMessage.text = msg.message
+            holder.mediaActionBar.visibility = View.VISIBLE
             when (type) {
                 "image" -> {
                     holder.ivMediaPreview.visibility = View.VISIBLE
                     holder.attachmentCard.visibility = View.GONE
-                    loadImagePreview(holder.ivMediaPreview, uri)
-                }
-                "audio" -> {
-                    holder.ivMediaPreview.visibility = View.GONE
-                    holder.attachmentCard.visibility = View.VISIBLE
-                    holder.tvAttachmentIcon.text = "🎤"
-                    holder.tvAttachmentName.text = uri.substringAfterLast("/")
-                }
-                "video" -> {
-                    holder.ivMediaPreview.visibility = View.GONE
-                    holder.attachmentCard.visibility = View.VISIBLE
-                    holder.tvAttachmentIcon.text = "🎥"
-                    holder.tvAttachmentName.text = uri.substringAfterLast("/")
-                }
-                "document" -> {
-                    holder.ivMediaPreview.visibility = View.GONE
-                    holder.attachmentCard.visibility = View.VISIBLE
-                    holder.tvAttachmentIcon.text = docIcon(uri)
-                    holder.tvAttachmentName.text = uri.substringAfterLast("/")
+                    loadImage(holder.ivMediaPreview, uri)
                 }
                 else -> {
                     holder.ivMediaPreview.visibility = View.GONE
-                    holder.attachmentCard.visibility = View.GONE
+                    holder.attachmentCard.visibility = View.VISIBLE
+                    holder.tvAttachmentIcon.text = when (type) {
+                        "audio" -> "🎤"; "video" -> "🎥"; else -> docIcon(uri)
+                    }
+                    holder.tvAttachmentName.text = uri.substringAfterLast("/")
                 }
             }
-
-            holder.btnOpenMedia.setOnClickListener { openMedia(it.context, uri, type) }
-            holder.btnDownloadMedia.setOnClickListener { downloadMedia(it.context, uri, type) }
+            holder.btnOpenMedia.setOnClickListener { openMedia(ctx, uri, type) }
+            holder.btnDownloadMedia.setOnClickListener { downloadMedia(ctx, uri, type) }
         } else {
-            // Plain text message
             holder.tvMessage.visibility = View.VISIBLE
-            holder.tvMessage.text = message.message
+            holder.tvMessage.text = msg.message
             holder.ivMediaPreview.visibility = View.GONE
             holder.attachmentCard.visibility = View.GONE
             holder.mediaActionBar.visibility = View.GONE
         }
 
-        // Long-press actions
+        // ── Long-press actions ────────────────────────────────────────────────
         holder.messageContainer.setOnLongClickListener {
             holder.messageActions.visibility =
                 if (holder.messageActions.visibility == View.VISIBLE) View.GONE else View.VISIBLE
             true
         }
-        holder.btnMarkImportant.setOnClickListener { onMarkImportant(message); holder.messageActions.visibility = View.GONE }
-        holder.btnCreateTask.setOnClickListener { onCreateTask(message); holder.messageActions.visibility = View.GONE }
-        holder.btnSetReminder.setOnClickListener { onSetReminder(message); holder.messageActions.visibility = View.GONE }
+        holder.btnMarkImportant.setOnClickListener { onMarkImportant(msg); holder.messageActions.visibility = View.GONE }
+        holder.btnCreateTask.setOnClickListener { onCreateTask(msg); holder.messageActions.visibility = View.GONE }
+        holder.btnSetReminder.setOnClickListener { onSetReminder(msg); holder.messageActions.visibility = View.GONE }
     }
 
     override fun getItemCount() = messages.size
 
-    fun updateMessages(newMessages: List<ChatMessage>) {
-        messages = newMessages
-        notifyDataSetChanged()
-    }
+    fun updateMessages(new: List<ChatMessage>) { messages = new; notifyDataSetChanged() }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private fun loadImagePreview(iv: ImageView, uriStr: String) {
+    private fun loadImage(iv: ImageView, uriStr: String) {
         try {
             val uri = Uri.parse(uriStr)
             if (uri.scheme == "content") {
-                val stream = iv.context.contentResolver.openInputStream(uri) ?: return
-                val bmp = BitmapFactory.decodeStream(stream)
-                stream.close()
+                val bmp = BitmapFactory.decodeStream(iv.context.contentResolver.openInputStream(uri))
                 iv.setImageBitmap(bmp)
             } else {
-                // local file path
-                val bmp = BitmapFactory.decodeFile(uriStr)
-                iv.setImageBitmap(bmp)
+                iv.setImageBitmap(BitmapFactory.decodeFile(uriStr))
             }
-        } catch (_: Exception) {
-            iv.setImageResource(android.R.drawable.ic_menu_gallery)
-        }
+        } catch (_: Exception) { iv.setImageResource(android.R.drawable.ic_menu_gallery) }
     }
 
-    private fun openMedia(context: Context, uriStr: String, type: String) {
+    private fun openMedia(ctx: Context, uriStr: String, type: String) {
         try {
-            val uri = Uri.parse(uriStr)
-            val mime = when (type) {
-                "image" -> "image/*"
-                "video" -> "video/*"
-                "audio" -> "audio/*"
-                "document" -> mimeForDoc(uriStr)
-                else -> "*/*"
-            }
-            context.startActivity(Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, mime)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            ctx.startActivity(Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(Uri.parse(uriStr), mimeFor(uriStr, type))
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
             })
-        } catch (e: Exception) {
-            Toast.makeText(context, "No app found to open this file", Toast.LENGTH_SHORT).show()
-        }
+        } catch (_: Exception) { Toast.makeText(ctx, "No app to open this file", Toast.LENGTH_SHORT).show() }
     }
 
-    private fun downloadMedia(context: Context, uriStr: String, type: String) {
+    private fun downloadMedia(ctx: Context, uriStr: String, type: String) {
         try {
-            val uri = Uri.parse(uriStr)
-            val filename = uriStr.substringAfterLast("/").ifBlank { "attachment_${System.currentTimeMillis()}" }
-            val mime = when (type) {
-                "image" -> "image/*"
-                "video" -> "video/*"
-                "audio" -> "audio/*"
-                else -> mimeForDoc(uriStr)
-            }
-            val request = DownloadManager.Request(uri).apply {
-                setTitle(filename)
-                setDescription("Saving from NBH Chat")
-                setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
-                setMimeType(mime)
-                setAllowedOverMetered(true)
-            }
-            (context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(request)
-            Toast.makeText(context, "⬇ Saving to Downloads...", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            Toast.makeText(context, "Save failed: ${e.message}", Toast.LENGTH_SHORT).show()
-        }
+            val name = uriStr.substringAfterLast("/").ifBlank { "attachment_${System.currentTimeMillis()}" }
+            (ctx.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(
+                DownloadManager.Request(Uri.parse(uriStr)).apply {
+                    setTitle(name); setDescription("Saving from NBH Chat")
+                    setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                    setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, name)
+                    setMimeType(mimeFor(uriStr, type)); setAllowedOverMetered(true)
+                }
+            )
+            Toast.makeText(ctx, "⬇ Saving to Downloads...", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) { Toast.makeText(ctx, "Save failed: ${e.message}", Toast.LENGTH_SHORT).show() }
     }
 
     private fun docIcon(uri: String) = when {
@@ -227,14 +201,15 @@ class CollabChatAdapter(
         else -> "📄"
     }
 
-    private fun mimeForDoc(uri: String) = when {
-        uri.endsWith(".pdf", true) -> "application/pdf"
-        uri.endsWith(".doc", true) -> "application/msword"
-        uri.endsWith(".docx", true) -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-        uri.endsWith(".xls", true) -> "application/vnd.ms-excel"
-        uri.endsWith(".xlsx", true) -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        uri.endsWith(".ppt", true) -> "application/vnd.ms-powerpoint"
-        uri.endsWith(".pptx", true) -> "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-        else -> "*/*"
+    private fun mimeFor(uri: String, type: String) = when (type) {
+        "image" -> "image/*"; "video" -> "video/*"; "audio" -> "audio/*"
+        else -> when {
+            uri.endsWith(".pdf", true) -> "application/pdf"
+            uri.endsWith(".docx", true) -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            uri.endsWith(".doc", true) -> "application/msword"
+            uri.endsWith(".xlsx", true) -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            uri.endsWith(".pptx", true) -> "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+            else -> "*/*"
+        }
     }
 }

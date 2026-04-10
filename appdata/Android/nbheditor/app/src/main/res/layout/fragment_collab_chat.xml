@@ -10,191 +10,136 @@
     <LinearLayout
         android:id="@+id/chatHeader"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="56dp"
         android:orientation="horizontal"
-        android:background="@color/editor_surface"
-        android:paddingStart="16dp"
+        android:background="@color/accent_primary"
+        android:paddingStart="4dp"
         android:paddingEnd="12dp"
-        android:paddingTop="12dp"
-        android:paddingBottom="12dp"
         android:gravity="center_vertical"
         android:elevation="4dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="💬 Team Chat"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="@color/editor_text" />
-
-        <TextView
-            android:id="@+id/tvChatStatus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="🟢 Active"
-            android:textColor="@color/accent_secondary"
-            android:textSize="12sp"
-            android:layout_marginEnd="12dp" />
+        app:layout_constraintTop_toTopOf="parent">
 
         <ImageButton
             android:id="@+id/btnCloseChat"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:src="@drawable/ic_back"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:tint="@color/editor_text"
-            android:contentDescription="Close chat" />
+            android:tint="@color/white"
+            android:contentDescription="Back" />
+
+        <!-- Avatar circle -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="38dp"
+            android:layout_height="38dp"
+            app:cardCornerRadius="19dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#33FFFFFF"
+            android:layout_marginEnd="10dp">
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:text="💬"
+                android:textSize="18sp"
+                android:gravity="center" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Team Chat"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/white" />
+
+            <TextView
+                android:id="@+id/tvChatStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="● online"
+                android:textSize="11sp"
+                android:textColor="#CCFFFFFF" />
+        </LinearLayout>
+
+        <!-- Attachment buttons in header -->
+        <ImageButton
+            android:id="@+id/btnAttachImage"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@android:drawable/ic_menu_gallery"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="@color/white"
+            android:contentDescription="Image" />
+
+        <ImageButton
+            android:id="@+id/btnAttachDocument"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@android:drawable/ic_menu_agenda"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="@color/white"
+            android:contentDescription="Document" />
+
+        <ImageButton
+            android:id="@+id/btnAttachVoice"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@android:drawable/ic_btn_speak_now"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="@color/white"
+            android:contentDescription="Voice" />
+
+        <ImageButton
+            android:id="@+id/btnAttachVideo"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@android:drawable/ic_menu_camera"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="@color/white"
+            android:contentDescription="Video" />
     </LinearLayout>
 
-    <View
-        android:id="@+id/headerDivider"
+    <!-- @ mention popup (shown above input when user types @) -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/mentionPopup"
         android:layout_width="match_parent"
-        android:layout_height="0.5dp"
-        android:background="@color/divider"
-        app:layout_constraintTop_toBottomOf="@id/chatHeader" />
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="4dp"
+        android:visibility="gone"
+        android:elevation="12dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="8dp"
+        app:cardBackgroundColor="@color/editor_surface"
+        app:layout_constraintBottom_toTopOf="@id/inputBar">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvMentionSuggestions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:maxHeight="200dp"
+            android:nestedScrollingEnabled="false" />
+    </androidx.cardview.widget.CardView>
 
     <!-- Messages RecyclerView -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvChatMessages"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:padding="8dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
         android:clipToPadding="false"
-        app:layout_constraintTop_toBottomOf="@id/headerDivider"
-        app:layout_constraintBottom_toTopOf="@id/quickActionsBar"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <!-- Quick Actions Bar -->
-    <LinearLayout
-        android:id="@+id/quickActionsBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="8dp"
-        android:background="@color/editor_surface"
-        android:gravity="center_vertical"
-        android:elevation="2dp"
-        app:layout_constraintBottom_toTopOf="@id/inputBar"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <Button
-            android:id="@+id/btnCreateTaskFromChat"
-            android:layout_width="wrap_content"
-            android:layout_height="36dp"
-            android:text="✓ Task"
-            android:textSize="12sp"
-            android:backgroundTint="#FF9800"
-            android:textColor="@android:color/white"
-            android:paddingHorizontal="12dp" />
-
-        <ImageButton
-            android:id="@+id/btnAttachImage"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_marginStart="8dp"
-            android:src="@android:drawable/ic_menu_gallery"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:tint="#4CAF50"
-            android:contentDescription="Attach image" />
-
-        <ImageButton
-            android:id="@+id/btnAttachDocument"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_marginStart="4dp"
-            android:src="@android:drawable/ic_menu_agenda"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:tint="#2196F3"
-            android:contentDescription="Attach document" />
-
-        <ImageButton
-            android:id="@+id/btnAttachVoice"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_marginStart="4dp"
-            android:src="@android:drawable/ic_btn_speak_now"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:tint="#FF5722"
-            android:contentDescription="Record voice" />
-
-        <ImageButton
-            android:id="@+id/btnAttachVideo"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_marginStart="4dp"
-            android:src="@android:drawable/ic_menu_camera"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:tint="#9C27B0"
-            android:contentDescription="Attach video" />
-
-        <View
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1" />
-
-        <TextView
-            android:id="@+id/tvTypingIndicator"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text=""
-            android:textSize="11sp"
-            android:textColor="@color/editor_hint"
-            android:visibility="gone" />
-    </LinearLayout>
-
-    <!-- Target Selector -->
-    <LinearLayout
-        android:id="@+id/targetSelectorBar"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="8dp"
-        android:background="@color/editor_surface"
-        android:gravity="center_vertical"
-        app:layout_constraintBottom_toTopOf="@id/inputDivider"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="To:"
-            android:textSize="12sp"
-            android:textColor="@color/editor_hint"
-            android:layout_marginEnd="8dp" />
-
-        <TextView
-            android:id="@+id/tvTargetDisplay"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Everyone"
-            android:textSize="14sp"
-            android:textColor="@color/accent_primary"
-            android:textStyle="bold"
-            android:background="?attr/selectableItemBackground"
-            android:padding="4dp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="👉 tap to change"
-            android:textSize="10sp"
-            android:textColor="@color/editor_hint" />
-    </LinearLayout>
-
-    <View
-        android:id="@+id/inputDivider"
-        android:layout_width="match_parent"
-        android:layout_height="0.5dp"
-        android:background="@color/divider"
+        android:background="@color/editor_bg"
+        app:layout_constraintTop_toBottomOf="@id/chatHeader"
         app:layout_constraintBottom_toTopOf="@id/inputBar" />
 
     <!-- Input Bar -->
@@ -204,51 +149,115 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:background="@color/editor_surface"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
-        android:gravity="center_vertical"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:paddingTop="6dp"
+        android:paddingBottom="6dp"
+        android:gravity="bottom"
         android:elevation="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintBottom_toBottomOf="parent">
 
+        <!-- To: chip -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/targetSelectorBar"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_marginEnd="6dp"
+            android:layout_gravity="center_vertical"
+            app:cardCornerRadius="18dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="@color/accent_primary"
+            app:strokeWidth="0dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp">
+
+                <TextView
+                    android:id="@+id/tvTargetDisplay"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@all"
+                    android:textSize="12sp"
+                    android:textColor="@color/white"
+                    android:textStyle="bold"
+                    android:maxWidth="80dp"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text=" ▾"
+                    android:textSize="10sp"
+                    android:textColor="#CCFFFFFF" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Text input -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             app:cardBackgroundColor="@color/input_bg"
-            app:cardCornerRadius="24dp"
+            app:cardCornerRadius="22dp"
             app:cardElevation="0dp"
-            app:strokeWidth="1.5dp"
+            app:strokeWidth="1dp"
             app:strokeColor="@color/divider">
 
             <EditText
                 android:id="@+id/etChatMessage"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Type @ai, @all, @username or message..."
+                android:hint="Message..."
                 android:background="@null"
                 android:paddingStart="16dp"
                 android:paddingEnd="16dp"
                 android:paddingTop="10dp"
                 android:paddingBottom="10dp"
-                android:maxLines="4"
+                android:maxLines="5"
+                android:textSize="15sp"
                 android:textColor="@color/editor_text"
                 android:textColorHint="@color/editor_hint"
                 android:inputType="textMultiLine|textCapSentences" />
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Task button -->
         <ImageButton
-            android:id="@+id/btnSendMessage"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:layout_marginStart="8dp"
-            android:src="@android:drawable/ic_menu_send"
+            android:id="@+id/btnCreateTaskFromChat"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_marginStart="4dp"
+            android:src="@android:drawable/ic_menu_add"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:tint="@color/accent_primary"
-            android:contentDescription="Send message" />
+            android:tint="@color/accent_secondary"
+            android:contentDescription="Create task" />
+
+        <!-- Send FAB -->
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/btnSendMessage"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="6dp"
+            android:src="@drawable/ic_send"
+            app:backgroundTint="@color/accent_primary"
+            app:tint="@color/white"
+            app:fabSize="mini"
+            app:elevation="2dp"
+            android:contentDescription="Send" />
     </LinearLayout>
+
+    <!-- Hidden views kept for binding compatibility -->
+    <View android:id="@+id/headerDivider" android:layout_width="0dp" android:layout_height="0dp"
+        app:layout_constraintTop_toBottomOf="@id/chatHeader" />
+    <View android:id="@+id/inputDivider" android:layout_width="0dp" android:layout_height="0dp"
+        app:layout_constraintBottom_toTopOf="@id/inputBar" />
+    <LinearLayout android:id="@+id/quickActionsBar" android:layout_width="0dp"
+        android:layout_height="0dp" android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/inputBar" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
