@@ -97,17 +97,12 @@ class MediaViewerFragment : Fragment() {
 
         lifecycleScope.launch {
             try {
+                val dm = resources.displayMetrics
+                val maxW = dm.widthPixels
+                val maxH = dm.heightPixels
                 val bmp = withContext(Dispatchers.IO) {
                     val uri = Uri.parse(uriStr)
-                    if (uri.scheme == "content") {
-                        requireContext().contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) }
-                    } else if (uri.scheme == "http" || uri.scheme == "https") {
-                        val conn = URL(uriStr).openConnection()
-                        conn.connectTimeout = 8000; conn.readTimeout = 8000
-                        BitmapFactory.decodeStream(conn.getInputStream())
-                    } else {
-                        BitmapFactory.decodeFile(uriStr)
-                    }
+                    decodeSampled(uriStr, uri, maxW, maxH)
                 }
                 progress.visibility = View.GONE
                 if (bmp != null) {
@@ -123,6 +118,30 @@ class MediaViewerFragment : Fragment() {
                 tvError.visibility = View.VISIBLE
             }
         }
+    }
+
+    private fun decodeSampled(uriStr: String, uri: Uri, reqW: Int, reqH: Int): android.graphics.Bitmap? {
+        val ctx = requireContext()
+        fun stream() = try {
+            if (uri.scheme == "content") ctx.contentResolver.openInputStream(uri)
+            else if (uri.scheme == "http" || uri.scheme == "https") {
+                val conn = URL(uriStr).openConnection()
+                conn.connectTimeout = 8000; conn.readTimeout = 8000
+                conn.getInputStream()
+            } else java.io.FileInputStream(uriStr)
+        } catch (_: Exception) { null }
+
+        val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        stream()?.use { BitmapFactory.decodeStream(it, null, opts) }
+        var sample = 1
+        if (opts.outHeight > reqH || opts.outWidth > reqW) {
+            val hRatio = Math.round(opts.outHeight.toFloat() / reqH)
+            val wRatio = Math.round(opts.outWidth.toFloat() / reqW)
+            sample = minOf(hRatio, wRatio).coerceAtLeast(1)
+        }
+        opts.inSampleSize = sample
+        opts.inJustDecodeBounds = false
+        return stream()?.use { BitmapFactory.decodeStream(it, null, opts) }
     }
 
     private fun setupPinchZoom(iv: ImageView) {
@@ -373,13 +392,15 @@ class MediaViewerFragment : Fragment() {
                     val fd = requireContext().contentResolver.openFileDescriptor(uri, "r") ?: return@withContext null
                     val renderer = android.graphics.pdf.PdfRenderer(fd)
                     val bitmaps = mutableListOf<android.graphics.Bitmap>()
+                    val screenW = resources.displayMetrics.widthPixels
                     for (i in 0 until renderer.pageCount) {
                         val page = renderer.openPage(i)
-                        val scale = resources.displayMetrics.density
+                        // Scale to screen width, cap height to avoid OOM
+                        val scale = screenW.toFloat() / page.width
+                        val bmpW = screenW
+                        val bmpH = (page.height * scale).toInt().coerceAtMost(screenW * 2)
                         val bmp = android.graphics.Bitmap.createBitmap(
-                            (page.width * scale).toInt(),
-                            (page.height * scale).toInt(),
-                            android.graphics.Bitmap.Config.ARGB_8888
+                            bmpW, bmpH, android.graphics.Bitmap.Config.ARGB_8888
                         )
                         bmp.eraseColor(android.graphics.Color.WHITE)
                         page.render(bmp, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
