@@ -30,7 +30,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.beeta.nbheditor.databinding.FragmentCollabChatBinding
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -47,6 +49,7 @@ class CollabChatFragment : Fragment() {
     private var mediaRecorder: MediaRecorder? = null
     private var voiceFile: File? = null
     private var isRecording = false
+    private var videoJob: Job? = null
     private var userPhotoMap = mapOf<String, String>() // userId -> photoUrl
 
     // Mention popup
@@ -365,14 +368,12 @@ class CollabChatFragment : Fragment() {
 
     private fun sendVideoWithCompression(uri: Uri) {
         val name = getFileName(uri)
-        lifecycleScope.launch {
+        videoJob = lifecycleScope.launch {
             val fileSizeBytes = withContext(Dispatchers.IO) {
                 requireContext().contentResolver.openFileDescriptor(uri, "r")?.use { it.statSize } ?: 0L
             }
             val needsCompression = fileSizeBytes > 100 * 1024 * 1024L
 
-            // Build progress dialog
-            val progressView = layoutInflater.inflate(android.R.layout.activity_list_item, null)
             val progressBar = ProgressBar(requireContext(), null, android.R.attr.progressBarStyleHorizontal).apply {
                 max = 100; isIndeterminate = false
             }
@@ -387,6 +388,7 @@ class CollabChatFragment : Fragment() {
                 .setTitle(if (needsCompression) "Preparing video" else "Uploading")
                 .setView(container)
                 .setCancelable(false)
+                .setNegativeButton("Cancel") { d, _ -> d.dismiss(); videoJob?.cancel() }
                 .create()
             dialog.show()
 
@@ -396,41 +398,61 @@ class CollabChatFragment : Fragment() {
                 val compressed = withContext(Dispatchers.IO) {
                     try {
                         compressVideo(uri) { pct ->
+                            if (!isActive) return@compressVideo
                             lifecycleScope.launch(Dispatchers.Main) {
-                                progressBar.progress = (pct * 0.7f).toInt() // compression = 0-70%
+                                progressBar.progress = (pct * 0.7f).toInt()
                                 tvStatus.text = "Compressing... ${(pct * 0.7f).toInt()}%"
                             }
                         }
-                    } catch (e: Exception) { null }
-                }
-                if (compressed == null) {
-                    withContext(Dispatchers.Main) {
-                        dialog.dismiss()
-                        AlertDialog.Builder(requireContext())
-                            .setTitle("Compression failed")
-                            .setMessage("Sending original file instead.")
-                            .setPositiveButton("OK") { _, _ ->
-                                lifecycleScope.launch { doUpload(uri.toString(), name, dialog, progressBar, tvStatus, startPct = 0) }
-                            }
-                            .setNegativeButton("Cancel", null)
-                            .show()
-                        return@withContext
+                    } catch (e: Exception) {
+                        if (e is kotlinx.coroutines.CancellationException) throw e
+                        null
                     }
+                }
+                // Cancelled — dialog already dismissed by button, just stop
+                if (!isActive) { dialog.dismiss(); return@launch }
+
+                if (compressed == null) {
+                    dialog.dismiss()
+                    AlertDialog.Builder(requireContext())
+                        .setTitle("Compression failed")
+                        .setMessage("Sending original file instead.")
+                        .setPositiveButton("Send anyway") { _, _ ->
+                            videoJob = lifecycleScope.launch { doUpload(uri.toString(), name) }
+                        }
+                        .setNegativeButton("Cancel", null)
+                        .show()
                     return@launch
                 } else {
                     uploadUri = compressed.toURI().toString()
                 }
             }
 
-            doUpload(uploadUri, name, dialog, progressBar, tvStatus, startPct = if (needsCompression) 70 else 0)
+            dialog.dismiss()
+            doUpload(uploadUri, name, startPct = if (needsCompression) 70 else 0)
         }
     }
 
-    private suspend fun doUpload(uriStr: String, name: String, dialog: AlertDialog, progressBar: ProgressBar, tvStatus: TextView, startPct: Int) {
-        withContext(Dispatchers.Main) { tvStatus.text = "Uploading..."; progressBar.progress = startPct }
-        // Simulate upload progress while actual upload runs
+    private suspend fun doUpload(uriStr: String, name: String, startPct: Int = 0) {
+        val progressBar = ProgressBar(requireContext(), null, android.R.attr.progressBarStyleHorizontal).apply {
+            max = 100; isIndeterminate = false; progress = startPct
+        }
+        val tvStatus = TextView(requireContext()).apply { text = "Uploading... $startPct%" }
+        val container = android.widget.LinearLayout(requireContext()).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(48, 32, 48, 16)
+            addView(tvStatus); addView(progressBar)
+        }
+        val dialog = AlertDialog.Builder(requireContext())
+            .setTitle("Uploading")
+            .setView(container)
+            .setCancelable(false)
+            .setNegativeButton("Cancel") { d, _ -> d.dismiss(); videoJob?.cancel() }
+            .create()
+        dialog.show()
+
         var fakeProgress = startPct
-        val progressJob = lifecycleScope.launch(Dispatchers.Main) {
+        val tickJob = lifecycleScope.launch(Dispatchers.Main) {
             while (fakeProgress < 95) {
                 kotlinx.coroutines.delay(300)
                 fakeProgress = (fakeProgress + 2).coerceAtMost(95)
@@ -444,13 +466,14 @@ class CollabChatFragment : Fragment() {
                 targetUserIds = selectedUserIds.toList(),
                 attachmentUri = uriStr, attachmentType = "video"
             )
-            progressJob.cancel()
-            withContext(Dispatchers.Main) { progressBar.progress = 100; tvStatus.text = "Done!" }
+            tickJob.cancel()
+            progressBar.progress = 100; tvStatus.text = "Done!"
             kotlinx.coroutines.delay(300)
             Toast.makeText(requireContext(), "✓ Sent", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
-            progressJob.cancel()
-            Toast.makeText(requireContext(), "Upload failed: ${e.message}", Toast.LENGTH_SHORT).show()
+            tickJob.cancel()
+            if (e !is kotlinx.coroutines.CancellationException)
+                Toast.makeText(requireContext(), "Upload failed: ${e.message}", Toast.LENGTH_SHORT).show()
         } finally {
             withContext(Dispatchers.Main) { dialog.dismiss() }
         }
@@ -654,6 +677,7 @@ class CollabChatFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         if (isRecording) { mediaRecorder?.stop(); mediaRecorder?.release(); mediaRecorder = null }
+        videoJob?.cancel()
         _binding = null
     }
 
