@@ -4,6 +4,7 @@ import android.app.DownloadManager
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
+import android.graphics.SurfaceTexture
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Bundle
@@ -13,6 +14,8 @@ import android.os.Looper
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
+import android.view.Surface
+import android.view.TextureView
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.WebSettings
@@ -25,7 +28,6 @@ import android.widget.ProgressBar
 import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
-import android.widget.VideoView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
@@ -64,17 +66,27 @@ class MediaViewerFragment : Fragment() {
         val type = arguments?.getString(ARG_TYPE) ?: return
         val name = arguments?.getString(ARG_NAME) ?: uriStr.substringAfterLast("/")
 
+        val header = view.findViewById<LinearLayout>(R.id.viewerHeader)
         val btnClose = view.findViewById<ImageButton>(R.id.btnViewerClose)
         val tvTitle = view.findViewById<TextView>(R.id.tvViewerTitle)
         val btnDownload = view.findViewById<ImageButton>(R.id.btnViewerDownload)
         val progress = view.findViewById<ProgressBar>(R.id.viewerProgress)
         val tvError = view.findViewById<TextView>(R.id.tvViewerError)
 
+        // Push header below status bar
+        val statusBarHeight = getStatusBarHeight()
+        header.setPadding(
+            header.paddingLeft,
+            header.paddingTop + statusBarHeight,
+            header.paddingRight,
+            header.paddingBottom
+        )
+
         tvTitle.text = name
         btnClose.setOnClickListener { parentFragmentManager.popBackStack() }
         btnDownload.setOnClickListener { downloadFile(uriStr, name, type) }
 
-        // Slide-in animation
+        // Slide up animation
         view.translationY = view.height.toFloat()
         view.animate().translationY(0f).setDuration(280)
             .setInterpolator(android.view.animation.DecelerateInterpolator()).start()
@@ -86,6 +98,11 @@ class MediaViewerFragment : Fragment() {
             "document" -> showDocument(view, uriStr, name, progress, tvError)
             else -> showDocument(view, uriStr, name, progress, tvError)
         }
+    }
+
+    private fun getStatusBarHeight(): Int {
+        val resourceId = resources.getIdentifier("status_bar_height", "dimen", "android")
+        return if (resourceId > 0) resources.getDimensionPixelSize(resourceId) else 0
     }
 
     // ── Image ─────────────────────────────────────────────────────────────────
@@ -180,7 +197,7 @@ class MediaViewerFragment : Fragment() {
     // ── Video ─────────────────────────────────────────────────────────────────
 
     private fun showVideo(view: View, uriStr: String, progress: ProgressBar, tvError: TextView) {
-        val vv = view.findViewById<VideoView>(R.id.videoViewer)
+        val tv = view.findViewById<TextureView>(R.id.videoViewer)
         val controls = view.findViewById<LinearLayout>(R.id.videoControls)
         val seekBar = view.findViewById<SeekBar>(R.id.videoSeekBar)
         val btnPlay = view.findViewById<ImageButton>(R.id.btnVideoPlayPause)
@@ -188,49 +205,63 @@ class MediaViewerFragment : Fragment() {
         val btnFwd = view.findViewById<ImageButton>(R.id.btnVideoForward)
         val tvTime = view.findViewById<TextView>(R.id.tvVideoTime)
 
-        vv.visibility = View.VISIBLE
+        tv.visibility = View.VISIBLE
         controls.visibility = View.VISIBLE
         progress.visibility = View.VISIBLE
 
-        vv.setVideoURI(Uri.parse(uriStr))
-        vv.setOnPreparedListener { mp ->
-            progress.visibility = View.GONE
-            seekBar.max = mp.duration
-            mp.start()
-            btnPlay.setImageResource(android.R.drawable.ic_media_pause)
-            startSeekUpdate(seekBar, tvTime, vv)
+        fun initPlayer(surface: Surface) {
+            mediaPlayer = MediaPlayer().apply {
+                setDataSource(requireContext(), Uri.parse(uriStr))
+                setSurface(surface)
+                prepareAsync()
+                setOnPreparedListener { mp ->
+                    progress.visibility = View.GONE
+                    seekBar.max = mp.duration
+                    mp.start()
+                    btnPlay.setImageResource(android.R.drawable.ic_media_pause)
+                    startVideoSeekUpdate(seekBar, tvTime, mp)
+                }
+                setOnErrorListener { _, _, _ ->
+                    progress.visibility = View.GONE
+                    tvError.text = "Cannot play this video"
+                    tvError.visibility = View.VISIBLE
+                    true
+                }
+                setOnCompletionListener { btnPlay.setImageResource(android.R.drawable.ic_media_play) }
+            }
         }
-        vv.setOnErrorListener { _, _, _ ->
-            progress.visibility = View.GONE
-            tvError.text = "Cannot play this video"
-            tvError.visibility = View.VISIBLE
-            true
+
+        if (tv.isAvailable) {
+            initPlayer(Surface(tv.surfaceTexture))
+        } else {
+            tv.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
+                override fun onSurfaceTextureAvailable(st: SurfaceTexture, w: Int, h: Int) = initPlayer(Surface(st))
+                override fun onSurfaceTextureSizeChanged(st: SurfaceTexture, w: Int, h: Int) {}
+                override fun onSurfaceTextureDestroyed(st: SurfaceTexture) = true
+                override fun onSurfaceTextureUpdated(st: SurfaceTexture) {}
+            }
         }
 
         btnPlay.setOnClickListener {
-            if (vv.isPlaying) {
-                vv.pause()
-                btnPlay.setImageResource(android.R.drawable.ic_media_play)
-            } else {
-                vv.start()
-                btnPlay.setImageResource(android.R.drawable.ic_media_pause)
-            }
+            val mp = mediaPlayer ?: return@setOnClickListener
+            if (mp.isPlaying) { mp.pause(); btnPlay.setImageResource(android.R.drawable.ic_media_play) }
+            else { mp.start(); btnPlay.setImageResource(android.R.drawable.ic_media_pause) }
         }
-        btnRew.setOnClickListener { vv.seekTo((vv.currentPosition - 10000).coerceAtLeast(0)) }
-        btnFwd.setOnClickListener { vv.seekTo((vv.currentPosition + 10000).coerceAtMost(vv.duration)) }
+        btnRew.setOnClickListener { mediaPlayer?.let { it.seekTo((it.currentPosition - 10000).coerceAtLeast(0)) } }
+        btnFwd.setOnClickListener { mediaPlayer?.let { it.seekTo((it.currentPosition + 10000).coerceAtMost(it.duration)) } }
         seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(sb: SeekBar, p: Int, fromUser: Boolean) { if (fromUser) vv.seekTo(p) }
+            override fun onProgressChanged(sb: SeekBar, p: Int, fromUser: Boolean) { if (fromUser) mediaPlayer?.seekTo(p) }
             override fun onStartTrackingTouch(sb: SeekBar) {}
             override fun onStopTrackingTouch(sb: SeekBar) {}
         })
     }
 
-    private fun startSeekUpdate(seekBar: SeekBar, tvTime: TextView, vv: VideoView) {
+    private fun startVideoSeekUpdate(seekBar: SeekBar, tvTime: TextView, mp: MediaPlayer) {
         seekRunnable = object : Runnable {
             override fun run() {
-                if (vv.isPlaying) {
-                    seekBar.progress = vv.currentPosition
-                    tvTime.text = "${formatTime(vv.currentPosition)} / ${formatTime(vv.duration)}"
+                if (mp.isPlaying) {
+                    seekBar.progress = mp.currentPosition
+                    tvTime.text = "${formatTime(mp.currentPosition)} / ${formatTime(mp.duration)}"
                 }
                 seekHandler.postDelayed(this, 500)
             }
@@ -243,10 +274,11 @@ class MediaViewerFragment : Fragment() {
     private fun showAudio(view: View, uriStr: String, name: String, progress: ProgressBar, tvError: TextView) {
         val audioView = view.findViewById<LinearLayout>(R.id.audioViewer)
         val seekBar = view.findViewById<SeekBar>(R.id.audioSeekBar)
-        val btnPlay = view.findViewById<ImageButton>(R.id.btnAudioPlayPause)
+        val btnPlay = view.findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.btnAudioPlayPause)
         val btnRew = view.findViewById<ImageButton>(R.id.btnAudioRewind)
         val btnFwd = view.findViewById<ImageButton>(R.id.btnAudioForward)
         val tvTime = view.findViewById<TextView>(R.id.tvAudioTime)
+        val tvDuration = view.findViewById<TextView>(R.id.tvAudioDuration)
         val tvName = view.findViewById<TextView>(R.id.tvAudioName)
 
         audioView.visibility = View.VISIBLE
@@ -261,6 +293,7 @@ class MediaViewerFragment : Fragment() {
                     setOnPreparedListener { mp ->
                         progress.visibility = View.GONE
                         seekBar.max = mp.duration
+                        tvDuration.text = formatTime(mp.duration)
                         mp.start()
                         btnPlay.setImageResource(android.R.drawable.ic_media_pause)
                         startAudioSeekUpdate(seekBar, tvTime, mp)
@@ -306,7 +339,7 @@ class MediaViewerFragment : Fragment() {
             override fun run() {
                 if (mp.isPlaying) {
                     seekBar.progress = mp.currentPosition
-                    tvTime.text = "${formatTime(mp.currentPosition)} / ${formatTime(mp.duration)}"
+                    tvTime.text = formatTime(mp.currentPosition)
                 }
                 seekHandler.postDelayed(this, 500)
             }

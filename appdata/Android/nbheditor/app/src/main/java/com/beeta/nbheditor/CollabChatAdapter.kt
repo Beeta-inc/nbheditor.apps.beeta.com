@@ -10,6 +10,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Shader
 import android.graphics.drawable.GradientDrawable
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Environment
 import android.util.LruCache
@@ -222,6 +223,7 @@ class CollabChatAdapter(
             actionBar.visibility = View.VISIBLE
             when (type) {
                 "image" -> { ivPreview.visibility = View.VISIBLE; attachCard.visibility = View.GONE; loadImage(ivPreview, uri) }
+                "video" -> { ivPreview.visibility = View.VISIBLE; attachCard.visibility = View.GONE; loadVideoThumbnail(ivPreview, uri, ctx) }
                 else -> {
                     ivPreview.visibility = View.GONE; attachCard.visibility = View.VISIBLE
                     tvIcon.text = when (type) { "audio" -> "Mic"; "video" -> "Vid"; else -> docIcon(uri) }
@@ -289,6 +291,29 @@ class CollabChatAdapter(
     }
 
     // ── Media open/save ───────────────────────────────────────────────────────
+
+    private fun loadVideoThumbnail(iv: ImageView, uriStr: String, ctx: Context) {
+        iv.setImageResource(android.R.drawable.ic_media_play)
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val retriever = MediaMetadataRetriever()
+                val uri = Uri.parse(uriStr)
+                if (uri.scheme == "content" || uri.scheme == "file") {
+                    retriever.setDataSource(ctx, uri)
+                } else {
+                    retriever.setDataSource(uriStr, emptyMap())
+                }
+                val frame = retriever.getFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+                retriever.release()
+                if (frame != null) {
+                    val thumb = Bitmap.createScaledBitmap(frame, 320, 180, true)
+                    withContext(Dispatchers.Main) { iv.setImageBitmap(thumb) }
+                }
+            } catch (_: Exception) {
+                withContext(Dispatchers.Main) { iv.setImageResource(android.R.drawable.ic_media_play) }
+            }
+        }
+    }
 
     private fun loadImage(iv: ImageView, uriStr: String) {
         try {

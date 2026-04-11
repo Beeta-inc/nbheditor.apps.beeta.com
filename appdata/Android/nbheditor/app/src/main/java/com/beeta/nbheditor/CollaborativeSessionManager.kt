@@ -41,7 +41,8 @@ data class ChatMessage(
     val targetUserIds: List<String> = emptyList(),
     // attachment fields — null means plain text message
     val attachmentUri: String? = null,   // content URI or file path
-    val attachmentType: String? = null   // "image", "video", "audio", "document"
+    val attachmentType: String? = null,   // "image", "video", "audio", "document"
+    val attachmentThumbnail: String? = null  // local path to thumbnail for video
 )
 
 data class TaskItem(

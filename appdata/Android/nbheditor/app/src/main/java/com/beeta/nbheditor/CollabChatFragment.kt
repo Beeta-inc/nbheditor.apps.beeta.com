@@ -2,9 +2,16 @@ package com.beeta.nbheditor
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.MediaCodec
+import android.media.MediaCodecInfo
+import android.media.MediaExtractor
+import android.media.MediaFormat
+import android.media.MediaMuxer
 import android.media.MediaRecorder
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.Editable
@@ -12,6 +19,7 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -21,9 +29,12 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.beeta.nbheditor.databinding.FragmentCollabChatBinding
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
+import java.nio.ByteBuffer
 
 class CollabChatFragment : Fragment() {
 
@@ -54,7 +65,7 @@ class CollabChatFragment : Fragment() {
     }
     private val videoPickerLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK)
-            result.data?.data?.let { sendAttachment(getFileName(it), it.toString(), "video") }
+            result.data?.data?.let { uri -> sendVideoWithCompression(uri) }
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -276,12 +287,38 @@ class CollabChatFragment : Fragment() {
     // ── Attachments ───────────────────────────────────────────────────────────
 
     private fun setupAttachments() {
-        binding.btnAttachImage.setOnClickListener { imagePickerLauncher.launch(Intent(Intent.ACTION_PICK).apply { type = "image/*" }) }
+        binding.btnAttachImage.setOnClickListener {
+            imagePickerLauncher.launch(Intent(Intent.ACTION_GET_CONTENT).apply {
+                type = "image/*"
+                addCategory(Intent.CATEGORY_OPENABLE)
+                putExtra(Intent.EXTRA_LOCAL_ONLY, true)
+            })
+        }
         binding.btnAttachDocument.setOnClickListener {
-            documentPickerLauncher.launch(Intent(Intent.ACTION_OPEN_DOCUMENT).apply { addCategory(Intent.CATEGORY_OPENABLE); type = "*/*" })
+            documentPickerLauncher.launch(Intent(Intent.ACTION_GET_CONTENT).apply {
+                type = "*/*"
+                addCategory(Intent.CATEGORY_OPENABLE)
+                putExtra(Intent.EXTRA_LOCAL_ONLY, true)
+                putExtra(Intent.EXTRA_MIME_TYPES, arrayOf(
+                    "application/pdf",
+                    "application/msword",
+                    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "application/vnd.ms-excel",
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "application/vnd.ms-powerpoint",
+                    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                    "text/plain", "text/csv", "application/zip"
+                ))
+            })
         }
         binding.btnAttachVoice.setOnClickListener { if (isRecording) stopVoiceRecording() else startVoiceRecording() }
-        binding.btnAttachVideo.setOnClickListener { videoPickerLauncher.launch(Intent(Intent.ACTION_PICK).apply { type = "video/*" }) }
+        binding.btnAttachVideo.setOnClickListener {
+            videoPickerLauncher.launch(Intent(Intent.ACTION_GET_CONTENT).apply {
+                type = "video/*"
+                addCategory(Intent.CATEGORY_OPENABLE)
+                putExtra(Intent.EXTRA_LOCAL_ONLY, true)
+            })
+        }
     }
 
     private fun startVoiceRecording() {
@@ -313,9 +350,250 @@ class CollabChatFragment : Fragment() {
 
     private fun sendAttachment(name: String, uriStr: String, type: String) {
         lifecycleScope.launch {
-            CollaborativeSessionManager.sendChatMessage(message = name, targetType = messageVisibility, targetUserIds = selectedUserIds.toList(), attachmentUri = uriStr, attachmentType = type)
-            Toast.makeText(requireContext(), "✓ Sent", Toast.LENGTH_SHORT).show()
+            val dialog = buildUploadDialog(name)
+            dialog.show()
+            try {
+                CollaborativeSessionManager.sendChatMessage(
+                    message = name, targetType = messageVisibility,
+                    targetUserIds = selectedUserIds.toList(),
+                    attachmentUri = uriStr, attachmentType = type
+                )
+                Toast.makeText(requireContext(), "✓ Sent", Toast.LENGTH_SHORT).show()
+            } finally { dialog.dismiss() }
         }
+    }
+
+    private fun sendVideoWithCompression(uri: Uri) {
+        val name = getFileName(uri)
+        lifecycleScope.launch {
+            val fileSizeBytes = withContext(Dispatchers.IO) {
+                requireContext().contentResolver.openFileDescriptor(uri, "r")?.use { it.statSize } ?: 0L
+            }
+            val needsCompression = fileSizeBytes > 100 * 1024 * 1024L
+
+            // Build progress dialog
+            val progressView = layoutInflater.inflate(android.R.layout.activity_list_item, null)
+            val progressBar = ProgressBar(requireContext(), null, android.R.attr.progressBarStyleHorizontal).apply {
+                max = 100; isIndeterminate = false
+            }
+            val tvStatus = TextView(requireContext()).apply { text = if (needsCompression) "Compressing..." else "Uploading..." }
+            val container = android.widget.LinearLayout(requireContext()).apply {
+                orientation = android.widget.LinearLayout.VERTICAL
+                setPadding(48, 32, 48, 16)
+                addView(tvStatus)
+                addView(progressBar)
+            }
+            val dialog = AlertDialog.Builder(requireContext())
+                .setTitle(if (needsCompression) "Preparing video" else "Uploading")
+                .setView(container)
+                .setCancelable(false)
+                .create()
+            dialog.show()
+
+            var uploadUri = uri.toString()
+
+            if (needsCompression) {
+                val compressed = withContext(Dispatchers.IO) {
+                    try {
+                        compressVideo(uri) { pct ->
+                            lifecycleScope.launch(Dispatchers.Main) {
+                                progressBar.progress = (pct * 0.7f).toInt() // compression = 0-70%
+                                tvStatus.text = "Compressing... ${(pct * 0.7f).toInt()}%"
+                            }
+                        }
+                    } catch (e: Exception) { null }
+                }
+                if (compressed == null) {
+                    withContext(Dispatchers.Main) {
+                        dialog.dismiss()
+                        AlertDialog.Builder(requireContext())
+                            .setTitle("Compression failed")
+                            .setMessage("Sending original file instead.")
+                            .setPositiveButton("OK") { _, _ ->
+                                lifecycleScope.launch { doUpload(uri.toString(), name, dialog, progressBar, tvStatus, startPct = 0) }
+                            }
+                            .setNegativeButton("Cancel", null)
+                            .show()
+                        return@withContext
+                    }
+                    return@launch
+                } else {
+                    uploadUri = compressed.toURI().toString()
+                }
+            }
+
+            doUpload(uploadUri, name, dialog, progressBar, tvStatus, startPct = if (needsCompression) 70 else 0)
+        }
+    }
+
+    private suspend fun doUpload(uriStr: String, name: String, dialog: AlertDialog, progressBar: ProgressBar, tvStatus: TextView, startPct: Int) {
+        withContext(Dispatchers.Main) { tvStatus.text = "Uploading..."; progressBar.progress = startPct }
+        // Simulate upload progress while actual upload runs
+        var fakeProgress = startPct
+        val progressJob = lifecycleScope.launch(Dispatchers.Main) {
+            while (fakeProgress < 95) {
+                kotlinx.coroutines.delay(300)
+                fakeProgress = (fakeProgress + 2).coerceAtMost(95)
+                progressBar.progress = fakeProgress
+                tvStatus.text = "Uploading... $fakeProgress%"
+            }
+        }
+        try {
+            CollaborativeSessionManager.sendChatMessage(
+                message = name, targetType = messageVisibility,
+                targetUserIds = selectedUserIds.toList(),
+                attachmentUri = uriStr, attachmentType = "video"
+            )
+            progressJob.cancel()
+            withContext(Dispatchers.Main) { progressBar.progress = 100; tvStatus.text = "Done!" }
+            kotlinx.coroutines.delay(300)
+            Toast.makeText(requireContext(), "✓ Sent", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            progressJob.cancel()
+            Toast.makeText(requireContext(), "Upload failed: ${e.message}", Toast.LENGTH_SHORT).show()
+        } finally {
+            withContext(Dispatchers.Main) { dialog.dismiss() }
+        }
+    }
+
+    private fun buildUploadDialog(name: String): AlertDialog {
+        val progressBar = ProgressBar(requireContext(), null, android.R.attr.progressBarStyleHorizontal).apply { isIndeterminate = true }
+        val container = android.widget.LinearLayout(requireContext()).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            setPadding(48, 32, 48, 16)
+            addView(TextView(requireContext()).apply { text = "Sending $name..." })
+            addView(progressBar)
+        }
+        return AlertDialog.Builder(requireContext()).setView(container).setCancelable(false).create()
+    }
+
+    /** Compress video using MediaCodec. Returns output File or throws. */
+    private fun compressVideo(uri: Uri, onProgress: (Int) -> Unit): File {
+        val outFile = File(requireContext().cacheDir, "compressed_${System.currentTimeMillis()}.mp4")
+        val extractor = MediaExtractor()
+        extractor.setDataSource(requireContext(), uri, null)
+
+        var videoTrackIndex = -1
+        var audioTrackIndex = -1
+        var videoFormat: MediaFormat? = null
+        var audioFormat: MediaFormat? = null
+
+        for (i in 0 until extractor.trackCount) {
+            val fmt = extractor.getTrackFormat(i)
+            val mime = fmt.getString(MediaFormat.KEY_MIME) ?: continue
+            if (mime.startsWith("video/") && videoTrackIndex < 0) { videoTrackIndex = i; videoFormat = fmt }
+            else if (mime.startsWith("audio/") && audioTrackIndex < 0) { audioTrackIndex = i; audioFormat = fmt }
+        }
+        if (videoTrackIndex < 0) throw IllegalStateException("No video track")
+
+        val srcWidth = videoFormat!!.getInteger(MediaFormat.KEY_WIDTH)
+        val srcHeight = videoFormat.getInteger(MediaFormat.KEY_HEIGHT)
+        val duration = if (videoFormat.containsKey(MediaFormat.KEY_DURATION)) videoFormat.getLong(MediaFormat.KEY_DURATION) else 0L
+
+        // Scale down to max 720p
+        val scale = if (srcWidth > 1280 || srcHeight > 720) minOf(1280f / srcWidth, 720f / srcHeight) else 1f
+        val outW = (srcWidth * scale).toInt().let { if (it % 2 != 0) it - 1 else it }
+        val outH = (srcHeight * scale).toInt().let { if (it % 2 != 0) it - 1 else it }
+
+        val encFormat = MediaFormat.createVideoFormat("video/avc", outW, outH).apply {
+            setInteger(MediaFormat.KEY_BIT_RATE, 1_500_000)
+            setInteger(MediaFormat.KEY_FRAME_RATE, 30)
+            setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 2)
+            setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface)
+        }
+
+        val encoder = MediaCodec.createEncoderByType("video/avc")
+        encoder.configure(encFormat, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+        val inputSurface = encoder.createInputSurface()
+        encoder.start()
+
+        val decoder = MediaCodec.createDecoderByType(videoFormat.getString(MediaFormat.KEY_MIME)!!)
+        decoder.configure(videoFormat, inputSurface, null, 0)
+        decoder.start()
+
+        val muxer = MediaMuxer(outFile.absolutePath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
+        var muxerVideoTrack = -1
+        var muxerAudioTrack = -1
+        var muxerStarted = false
+
+        // Pass-through audio
+        if (audioTrackIndex >= 0 && audioFormat != null) {
+            muxerAudioTrack = muxer.addTrack(audioFormat)
+        }
+
+        extractor.selectTrack(videoTrackIndex)
+        val bufInfo = MediaCodec.BufferInfo()
+        var decoderDone = false
+        var encoderDone = false
+        var processedUs = 0L
+
+        while (!encoderDone) {
+            // Feed decoder
+            if (!decoderDone) {
+                val inIdx = decoder.dequeueInputBuffer(10_000)
+                if (inIdx >= 0) {
+                    val buf = decoder.getInputBuffer(inIdx)!!
+                    val size = extractor.readSampleData(buf, 0)
+                    if (size < 0) {
+                        decoder.queueInputBuffer(inIdx, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+                        decoderDone = true
+                    } else {
+                        decoder.queueInputBuffer(inIdx, 0, size, extractor.sampleTime, 0)
+                        extractor.advance()
+                    }
+                }
+            }
+            // Drain decoder -> encoder surface (automatic via inputSurface)
+            val decOutIdx = decoder.dequeueOutputBuffer(bufInfo, 10_000)
+            if (decOutIdx >= 0) {
+                decoder.releaseOutputBuffer(decOutIdx, true) // render to surface
+                if (bufInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) {
+                    encoder.signalEndOfInputStream()
+                }
+            }
+            // Drain encoder
+            val encOutIdx = encoder.dequeueOutputBuffer(bufInfo, 10_000)
+            when {
+                encOutIdx == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {
+                    muxerVideoTrack = muxer.addTrack(encoder.outputFormat)
+                    if (muxerAudioTrack < 0 || audioTrackIndex < 0) { muxer.start(); muxerStarted = true }
+                    else { muxer.start(); muxerStarted = true }
+                }
+                encOutIdx >= 0 -> {
+                    val encBuf = encoder.getOutputBuffer(encOutIdx)!!
+                    if (bufInfo.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG == 0 && muxerStarted) {
+                        muxer.writeSampleData(muxerVideoTrack, encBuf, bufInfo)
+                        processedUs = bufInfo.presentationTimeUs
+                        if (duration > 0) onProgress(((processedUs.toFloat() / duration) * 100).toInt().coerceIn(0, 99))
+                    }
+                    encoder.releaseOutputBuffer(encOutIdx, false)
+                    if (bufInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0) encoderDone = true
+                }
+            }
+        }
+
+        // Pass-through audio track
+        if (audioTrackIndex >= 0 && muxerAudioTrack >= 0 && muxerStarted) {
+            extractor.unselectTrack(videoTrackIndex)
+            extractor.selectTrack(audioTrackIndex)
+            extractor.seekTo(0, MediaExtractor.SEEK_TO_CLOSEST_SYNC)
+            val audioBuf = ByteBuffer.allocate(256 * 1024)
+            val audioBufInfo = MediaCodec.BufferInfo()
+            while (true) {
+                val size = extractor.readSampleData(audioBuf, 0)
+                if (size < 0) break
+                audioBufInfo.set(0, size, extractor.sampleTime, extractor.sampleFlags)
+                muxer.writeSampleData(muxerAudioTrack, audioBuf, audioBufInfo)
+                extractor.advance()
+            }
+        }
+
+        decoder.stop(); decoder.release()
+        encoder.stop(); encoder.release()
+        extractor.release()
+        muxer.stop(); muxer.release()
+        onProgress(100)
+        return outFile
     }
 
     // ── Create task ───────────────────────────────────────────────────────────
