@@ -767,11 +767,21 @@ object CollaborativeSessionManager {
     // Ask AI in chat context - integrated with existing AI system
     suspend fun askAIInChat(question: String, context: String, aiCallback: suspend (String) -> String?): Result<String> {
         return try {
-            // Call the AI with the question and context
             val aiResponse = aiCallback(question) ?: "Sorry, I couldn't process that request."
-            
-            // Send AI response to chat
-            sendChatMessage(aiResponse, isAI = true)
+            // Use fixed AI userId so it never matches any real user
+            val sessionId = currentSessionId ?: return Result.failure(Exception("Not in a session"))
+            val messageId = database.child(SESSIONS_PATH).child(sessionId)
+                .child("chatMessages").push().key ?: return Result.failure(Exception("Failed to generate message ID"))
+            val chatMessage = ChatMessage(
+                messageId = messageId,
+                userId = "__ai__",
+                userName = "Beeta AI",
+                message = aiResponse,
+                timestamp = System.currentTimeMillis(),
+                isAI = true
+            )
+            database.child(SESSIONS_PATH).child(sessionId)
+                .child("chatMessages").child(messageId).setValue(chatMessage).await()
             Result.success(aiResponse)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to ask AI", e)

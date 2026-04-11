@@ -73,6 +73,22 @@
       <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/resourceHashesCache.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/resourceHashesCache.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/file-system.probe" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/file-system.probe" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_4_3_26,_1_32 PM_[Changes]/buildOutputCleanup.lock" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_4_3_26,_1_32 PM_[Changes]/executionHistory.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_4_3_26,_1_32 PM_[Changes]/executionHistory.lock" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_4_3_26,_1_32 PM_[Changes]/fileHashes.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_4_3_26,_1_32 PM_[Changes]/fileHashes.lock" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_4_3_26,_1_32 PM_[Changes]/resourceHashesCache.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_4_3_26,_1_32 PM_[Changes]/shelved.patch" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_4_3_26,_2_39 PM_[Changes]/shelved.patch" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_4_3_26__1_32PM__Changes_.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/shelf/Uncommitted_changes_before_Update_at_4_3_26__2_39PM__Changes_.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollaborativeSessionManager.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollaborativeSessionManager.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/layout/item_chat_message.xml" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/layout/item_chat_message.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -378,14 +394,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1774176942839</updated>
-    </task>
-    <task id="LOCAL-00062" summary="bug fixes and ui update">
-      <option name="closed" value="true" />
-      <created>1774691670559</created>
-      <option name="number" value="00062" />
-      <option name="presentableId" value="LOCAL-00062" />
-      <option name="project" value="LOCAL" />
-      <updated>1774691670559</updated>
     </task>
     <task id="LOCAL-00063" summary="voice mode fixed">
       <option name="closed" value="true" />
@@ -771,7 +779,15 @@
       <option name="project" value="LOCAL" />
       <updated>1775814789952</updated>
     </task>
-    <option name="localTasksCounter" value="111" />
+    <task id="LOCAL-00111" summary="bug fixes ui update">
+      <option name="closed" value="true" />
+      <created>1775815201452</created>
+      <option name="number" value="00111" />
+      <option name="presentableId" value="LOCAL-00111" />
+      <option name="project" value="LOCAL" />
+      <updated>1775815201452</updated>
+    </task>
+    <option name="localTasksCounter" value="112" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">

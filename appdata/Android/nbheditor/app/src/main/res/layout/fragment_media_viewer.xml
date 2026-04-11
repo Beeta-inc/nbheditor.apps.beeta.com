@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/viewerRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FF000000">
+
+    <!-- Header -->
+    <LinearLayout
+        android:id="@+id/viewerHeader"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="4dp"
+        android:paddingEnd="12dp"
+        android:background="#CC000000"
+        android:elevation="4dp"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <ImageButton
+            android:id="@+id/btnViewerClose"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:src="@drawable/ic_back"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="@color/white"
+            android:contentDescription="Close" />
+
+        <TextView
+            android:id="@+id/tvViewerTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            android:maxLines="1"
+            android:ellipsize="middle"
+            android:paddingStart="8dp" />
+
+        <ImageButton
+            android:id="@+id/btnViewerDownload"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:src="@android:drawable/stat_sys_download"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:tint="@color/white"
+            android:contentDescription="Download" />
+    </LinearLayout>
+
+    <!-- IMAGE viewer (pinch-zoom via ScaleGestureDetector in code) -->
+    <ImageView
+        android:id="@+id/imageViewer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        android:scaleType="fitCenter"
+        android:contentDescription="Image"
+        app:layout_constraintTop_toBottomOf="@id/viewerHeader"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+    <!-- Unused fallback kept for ID compatibility -->
+    <View
+        android:id="@+id/imageViewerFallback"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/viewerHeader"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+    <!-- VIDEO viewer -->
+    <VideoView
+        android:id="@+id/videoViewer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/viewerHeader"
+        app:layout_constraintBottom_toTopOf="@id/videoControls" />
+
+    <LinearLayout
+        android:id="@+id/videoControls"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#CC000000"
+        android:padding="12dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <SeekBar
+            android:id="@+id/videoSeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:progressTint="@color/accent_primary"
+            android:thumbTint="@color/accent_primary" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginTop="8dp">
+
+            <ImageButton
+                android:id="@+id/btnVideoRewind"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:src="@android:drawable/ic_media_rew"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:tint="@color/white"
+                android:contentDescription="Rewind" />
+
+            <ImageButton
+                android:id="@+id/btnVideoPlayPause"
+                android:layout_width="56dp"
+                android:layout_height="56dp"
+                android:src="@android:drawable/ic_media_play"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:tint="@color/white"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:contentDescription="Play/Pause" />
+
+            <ImageButton
+                android:id="@+id/btnVideoForward"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:src="@android:drawable/ic_media_ff"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:tint="@color/white"
+                android:contentDescription="Forward" />
+
+            <TextView
+                android:id="@+id/tvVideoTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0:00 / 0:00"
+                android:textColor="@color/white"
+                android:textSize="12sp"
+                android:layout_marginStart="16dp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- AUDIO viewer -->
+    <LinearLayout
+        android:id="@+id/audioViewer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="32dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/viewerHeader"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <!-- Waveform / icon -->
+        <TextView
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:text="&#127911;"
+            android:textSize="72sp"
+            android:gravity="center"
+            android:background="@drawable/bg_avatar_circle"
+            android:layout_marginBottom="32dp" />
+
+        <TextView
+            android:id="@+id/tvAudioName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            android:textColor="@color/white"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="8dp" />
+
+        <SeekBar
+            android:id="@+id/audioSeekBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:progressTint="@color/accent_primary"
+            android:thumbTint="@color/accent_primary"
+            android:layout_marginTop="24dp"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/tvAudioTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0:00 / 0:00"
+            android:textColor="#AAFFFFFF"
+            android:textSize="13sp"
+            android:layout_marginBottom="24dp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <ImageButton
+                android:id="@+id/btnAudioRewind"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:src="@android:drawable/ic_media_rew"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:tint="@color/white"
+                android:contentDescription="Rewind" />
+
+            <ImageButton
+                android:id="@+id/btnAudioPlayPause"
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:src="@android:drawable/ic_media_play"
+                android:background="@drawable/bg_avatar_circle"
+                android:tint="@color/white"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:contentDescription="Play/Pause" />
+
+            <ImageButton
+                android:id="@+id/btnAudioForward"
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:src="@android:drawable/ic_media_ff"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:tint="@color/white"
+                android:contentDescription="Forward" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- PDF / DOCUMENT viewer (WebView renders PDF via data URI) -->
+    <WebView
+        android:id="@+id/documentViewer"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toBottomOf="@id/viewerHeader"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+    <!-- Loading spinner -->
+    <ProgressBar
+        android:id="@+id/viewerProgress"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:indeterminateTint="@color/accent_primary"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Error state -->
+    <TextView
+        android:id="@+id/tvViewerError"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="#AAFFFFFF"
+        android:textSize="15sp"
+        android:gravity="center"
+        android:padding="32dp"
+        android:visibility="gone"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

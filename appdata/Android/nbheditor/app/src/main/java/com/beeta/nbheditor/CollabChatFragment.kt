@@ -138,10 +138,15 @@ class CollabChatFragment : Fragment() {
         lifecycleScope.launch {
             CollaborativeSessionManager.observeUsers(sessionCode).collect { users ->
                 sessionUsers = users.values.filter { it.userId != currentUserId }
-                // Rebuild photo map for all users including self
-                userPhotoMap = users.values
-                    .filter { it.photoUrl.isNotBlank() }
-                    .associate { it.userId to it.photoUrl }
+                // Build photo map for ALL users (including self for display purposes)
+                val map = mutableMapOf<String, String>()
+                users.values.forEach { user ->
+                    if (user.photoUrl.isNotBlank()) map[user.userId] = user.photoUrl
+                }
+                // Also add current user's own photo from Google sign-in
+                val myPhoto = GoogleSignInHelper.getUserPhotoUrl(requireContext())
+                if (!myPhoto.isNullOrBlank()) map[currentUserId] = myPhoto
+                userPhotoMap = map
                 adapter.updatePhotoMap(userPhotoMap)
             }
         }

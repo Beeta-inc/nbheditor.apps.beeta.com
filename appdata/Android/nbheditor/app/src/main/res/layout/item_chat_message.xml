@@ -1,41 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- INCOMING: avatar on left, bubble on left, name above bubble -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:paddingStart="8dp"
-    android:paddingEnd="8dp"
+    android:paddingEnd="64dp"
     android:paddingTop="3dp"
     android:paddingBottom="3dp">
 
-    <!-- Sender name (above bubble, only for incoming) -->
+    <!-- Sender name above bubble -->
     <TextView
         android:id="@+id/tvSenderName"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="40dp"
         android:textSize="11sp"
         android:textStyle="bold"
-        android:textColor="@color/accent_primary"
-        android:paddingStart="44dp"
         android:paddingBottom="2dp"
         android:visibility="gone" />
 
-    <!-- Avatar + bubble row -->
     <LinearLayout
-        android:id="@+id/bubbleRow"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="bottom">
 
-        <!-- Avatar (incoming only, gone for outgoing) -->
+        <!-- Avatar circle -->
         <FrameLayout
             android:id="@+id/avatarCard"
             android:layout_width="34dp"
             android:layout_height="34dp"
             android:layout_marginEnd="6dp"
-            android:layout_marginBottom="2dp"
-            android:visibility="gone">
+            android:layout_marginBottom="2dp">
 
             <View
                 android:id="@+id/avatarBg"
@@ -61,29 +58,28 @@
                 android:contentDescription="Avatar" />
         </FrameLayout>
 
-        <!-- Bubble: layout_gravity controls left/right alignment -->
+        <!-- Bubble -->
         <LinearLayout
             android:id="@+id/messageContainer"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="start"
-            android:layout_weight="0"
             android:orientation="vertical"
+            android:background="@drawable/bg_bubble_in"
             android:padding="10dp"
-            android:maxWidth="260dp">
+            android:maxWidth="240dp">
 
             <TextView
                 android:id="@+id/tvMessage"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="15sp"
-                android:textColor="@color/editor_text"
+                android:textColor="#1A1A1A"
                 android:lineSpacingMultiplier="1.3" />
 
             <ImageView
                 android:id="@+id/ivMediaPreview"
-                android:layout_width="220dp"
-                android:layout_height="150dp"
+                android:layout_width="200dp"
+                android:layout_height="140dp"
                 android:layout_marginTop="6dp"
                 android:scaleType="centerCrop"
                 android:visibility="gone"
@@ -104,7 +100,7 @@
                     android:id="@+id/tvAttachmentIcon"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textSize="22sp"
+                    android:textSize="20sp"
                     android:layout_marginEnd="8dp" />
 
                 <TextView
@@ -131,7 +127,7 @@
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:text="&#9654; Open"
+                    android:text="Open"
                     android:textSize="12sp"
                     android:textColor="@color/accent_primary"
                     android:textStyle="bold"
@@ -148,7 +144,7 @@
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
-                    android:text="&#8595; Save"
+                    android:text="Save"
                     android:textSize="12sp"
                     android:textColor="@color/accent_secondary"
                     android:textStyle="bold"
@@ -158,7 +154,6 @@
                     android:focusable="true" />
             </LinearLayout>
 
-            <!-- Timestamp row -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -199,18 +194,8 @@
                     android:visibility="gone" />
             </LinearLayout>
         </LinearLayout>
-
-        <!-- Spacer: pushes bubble left when outgoing (fills remaining space) -->
-        <View
-            android:id="@+id/avatarSpacer"
-            android:layout_width="0dp"
-            android:layout_height="1dp"
-            android:layout_weight="1"
-            android:visibility="gone" />
-
     </LinearLayout>
 
-    <!-- Long-press actions -->
     <LinearLayout
         android:id="@+id/messageActions"
         android:layout_width="wrap_content"
@@ -223,40 +208,26 @@
         android:paddingTop="4dp"
         android:paddingBottom="4dp"
         android:visibility="gone"
-        android:layout_marginTop="2dp">
+        android:layout_marginTop="2dp"
+        android:layout_marginStart="40dp">
 
-        <TextView
-            android:id="@+id/btnMarkImportant"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="&#11088;"
-            android:textSize="18sp"
-            android:padding="8dp"
+        <TextView android:id="@+id/btnMarkImportant"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="&#11088;" android:textSize="18sp" android:padding="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true" />
+            android:clickable="true" android:focusable="true" />
 
-        <TextView
-            android:id="@+id/btnCreateTask"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="&#10003;"
-            android:textSize="18sp"
-            android:padding="8dp"
+        <TextView android:id="@+id/btnCreateTask"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="&#10003;" android:textSize="18sp" android:padding="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true" />
+            android:clickable="true" android:focusable="true" />
 
-        <TextView
-            android:id="@+id/btnSetReminder"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="&#9200;"
-            android:textSize="18sp"
-            android:padding="8dp"
+        <TextView android:id="@+id/btnSetReminder"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="&#9200;" android:textSize="18sp" android:padding="8dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:clickable="true"
-            android:focusable="true" />
+            android:clickable="true" android:focusable="true" />
     </LinearLayout>
 
 </LinearLayout>
