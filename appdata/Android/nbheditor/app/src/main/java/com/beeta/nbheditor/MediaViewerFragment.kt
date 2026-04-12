@@ -256,18 +256,25 @@ class MediaViewerFragment : Fragment() {
         controls.visibility = View.VISIBLE
         progress.visibility = View.VISIBLE
 
+        android.util.Log.d("MediaViewer", "showVideo called with uri: $uriStr")
+
         fun initPlayer(surface: Surface) {
             try {
                 mediaPlayer = MediaPlayer().apply {
                     try {
                         val uri = Uri.parse(uriStr)
+                        android.util.Log.d("MediaViewer", "Setting video data source: $uri, scheme: ${uri.scheme}")
                         if (uri.scheme == "content" || uri.scheme == "file") {
                             setDataSource(requireContext(), uri)
+                        } else if (uri.scheme == null || uriStr.startsWith("/")) {
+                            // Plain file path
+                            setDataSource(uriStr)
                         } else {
                             setDataSource(uriStr)
                         }
                         setSurface(surface)
                         setOnPreparedListener { mp ->
+                            android.util.Log.d("MediaViewer", "Video prepared successfully")
                             progress.visibility = View.GONE
                             seekBar.max = mp.duration
                             mp.start()
@@ -275,6 +282,7 @@ class MediaViewerFragment : Fragment() {
                             startVideoSeekUpdate(seekBar, tvTime, mp)
                         }
                         setOnErrorListener { _, what, extra ->
+                            android.util.Log.e("MediaViewer", "Video playback error: what=$what, extra=$extra")
                             progress.visibility = View.GONE
                             tvError.text = "Cannot play video (error: $what/$extra). Try downloading the file."
                             tvError.visibility = View.VISIBLE
@@ -291,12 +299,14 @@ class MediaViewerFragment : Fragment() {
                         }
                         prepareAsync()
                     } catch (e: Exception) {
+                        android.util.Log.e("MediaViewer", "Error setting up video player", e)
                         progress.visibility = View.GONE
                         tvError.text = "Video error: ${e.message}"
                         tvError.visibility = View.VISIBLE
                     }
                 }
             } catch (e: Exception) {
+                android.util.Log.e("MediaViewer", "Failed to initialize video player", e)
                 progress.visibility = View.GONE
                 tvError.text = "Failed to initialize player: ${e.message}"
                 tvError.visibility = View.VISIBLE

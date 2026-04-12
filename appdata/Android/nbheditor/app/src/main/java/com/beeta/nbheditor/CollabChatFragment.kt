@@ -726,16 +726,21 @@ class CollabChatFragment : Fragment() {
         val srcHeight = videoFormat.getInteger(MediaFormat.KEY_HEIGHT)
         val duration = if (videoFormat.containsKey(MediaFormat.KEY_DURATION)) videoFormat.getLong(MediaFormat.KEY_DURATION) else 0L
 
-        // Scale down to max 720p
-        val scale = if (srcWidth > 1280 || srcHeight > 720) minOf(1280f / srcWidth, 720f / srcHeight) else 1f
+        // Less aggressive scaling - only scale down if larger than 1080p
+        val scale = if (srcWidth > 1920 || srcHeight > 1080) minOf(1920f / srcWidth, 1080f / srcHeight) else 1f
         val outW = (srcWidth * scale).toInt().let { if (it % 2 != 0) it - 1 else it }
         val outH = (srcHeight * scale).toInt().let { if (it % 2 != 0) it - 1 else it }
 
+        android.util.Log.d("VideoCompress", "Compressing video: ${srcWidth}x${srcHeight} -> ${outW}x${outH}, scale=$scale")
+
         val encFormat = MediaFormat.createVideoFormat("video/avc", outW, outH).apply {
-            setInteger(MediaFormat.KEY_BIT_RATE, 1_500_000)
+            // Higher bitrate for better quality - 5Mbps for 1080p, 3Mbps for 720p
+            val bitrate = if (outW >= 1920) 5_000_000 else if (outW >= 1280) 3_000_000 else 2_000_000
+            setInteger(MediaFormat.KEY_BIT_RATE, bitrate)
             setInteger(MediaFormat.KEY_FRAME_RATE, 30)
-            setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 2)
+            setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 1)
             setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface)
+            android.util.Log.d("VideoCompress", "Using bitrate: $bitrate")
         }
 
         val encoder = MediaCodec.createEncoderByType("video/avc")
