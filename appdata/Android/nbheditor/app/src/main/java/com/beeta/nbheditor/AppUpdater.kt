@@ -172,14 +172,25 @@ object AppUpdater {
             text = "0%"
             textSize = 12f
             gravity = android.view.Gravity.END
+            setTextColor(if (context.getSharedPreferences("nbheditor_prefs", Context.MODE_PRIVATE).getBoolean("glass_mode", false)) 0xDDFFFFFF.toInt() else 0xFF666666.toInt())
             layoutParams = android.widget.LinearLayout.LayoutParams(
                 android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
                 android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
             ).also { it.topMargin = 8 }
         }
+        val speedText = TextView(context).apply {
+            text = "Preparing..."
+            textSize = 11f
+            setTextColor(if (context.getSharedPreferences("nbheditor_prefs", Context.MODE_PRIVATE).getBoolean("glass_mode", false)) 0xAAFFFFFF.toInt() else 0xFF888888.toInt())
+            layoutParams = android.widget.LinearLayout.LayoutParams(
+                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
+                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+            ).also { it.topMargin = 4 }
+        }
         progressLayout.addView(statusText)
         progressLayout.addView(progressBar)
         progressLayout.addView(percentText)
+        progressLayout.addView(speedText)
 
         val progressDialog = MaterialAlertDialogBuilder(context)
             .setView(progressLayout)
@@ -206,6 +217,10 @@ object AppUpdater {
 
             // Poll progress on main thread
             val handler = Handler(Looper.getMainLooper())
+            var startTime = System.currentTimeMillis()
+            var lastDownloaded = 0L
+            var lastTime = startTime
+            
             val pollRunnable = object : Runnable {
                 override fun run() {
                     val query = DownloadManager.Query().setFilterById(downloadId)
@@ -221,19 +236,50 @@ object AppUpdater {
                                 if (total > 0) {
                                     val pct = (downloaded * 100 / total).toInt()
                                     progressBar.progress = pct
-                                    percentText.text = "$pct%"
+                                    percentText.text = "$pct% • ${formatSize(downloaded)} / ${formatSize(total)}"
+                                    
+                                    // Calculate speed and time remaining
+                                    val currentTime = System.currentTimeMillis()
+                                    val timeDiff = currentTime - lastTime
+                                    if (timeDiff >= 1000) { // Update every second
+                                        val bytesDiff = downloaded - lastDownloaded
+                                        val speed = (bytesDiff * 1000 / timeDiff).toDouble() // bytes per second
+                                        val remaining = total - downloaded
+                                        val timeRemaining = if (speed > 0) (remaining / speed).toLong() else 0
+                                        
+                                        val speedStr = when {
+                                            speed > 1024 * 1024 -> String.format("%.1f MB/s", speed / (1024 * 1024))
+                                            speed > 1024 -> String.format("%.1f KB/s", speed / 1024)
+                                            else -> String.format("%.0f B/s", speed)
+                                        }
+                                        
+                                        val timeStr = when {
+                                            timeRemaining > 60 -> "${timeRemaining / 60}m ${timeRemaining % 60}s remaining"
+                                            timeRemaining > 0 -> "${timeRemaining}s remaining"
+                                            else -> "Calculating..."
+                                        }
+                                        
+                                        speedText.text = "$speedStr • $timeStr"
+                                        lastDownloaded = downloaded
+                                        lastTime = currentTime
+                                    }
                                 } else {
                                     progressBar.isIndeterminate = true
+                                    speedText.text = "Connecting..."
                                 }
                                 handler.postDelayed(this, 300)
                             }
                             DownloadManager.STATUS_SUCCESSFUL -> {
                                 progressBar.progress = 100
-                                percentText.text = "100%"
-                                statusText.text = "✓ Download complete — launching installer..."
+                                percentText.text = "100% • Download complete"
+                                speedText.text = "Installing update..."
+                                statusText.text = "✓ Download complete"
                                 handler.postDelayed({
-                                    progressDialog.dismiss()
-                                    promptInstall(context, filename)
+                                    statusText.text = "📦 Launching installer..."
+                                    handler.postDelayed({
+                                        progressDialog.dismiss()
+                                        installApk(context, filename)
+                                    }, 500)
                                 }, 800)
                             }
                             DownloadManager.STATUS_FAILED -> {
@@ -257,12 +303,16 @@ object AppUpdater {
                         ctx.unregisterReceiver(this)
                         handler.removeCallbacksAndMessages(null)
                         if (progressDialog.isShowing) {
-                            statusText.text = "✓ Download complete — launching installer..."
+                            statusText.text = "✓ Download complete"
                             progressBar.progress = 100
-                            percentText.text = "100%"
+                            percentText.text = "100% • Download complete"
+                            speedText.text = "Installing update..."
                             handler.postDelayed({
-                                progressDialog.dismiss()
-                                promptInstall(ctx, filename)
+                                statusText.text = "📦 Launching installer..."
+                                handler.postDelayed({
+                                    progressDialog.dismiss()
+                                    installApk(ctx, filename)
+                                }, 500)
                             }, 800)
                         }
                     }
@@ -289,26 +339,41 @@ object AppUpdater {
         }
     }
 
-    private fun promptInstall(context: Context, filename: String) {
+    private fun installApk(context: Context, filename: String) {
         try {
             val file = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), filename)
             if (!file.exists()) {
                 android.widget.Toast.makeText(context, "APK not found in Downloads. Check manually.", android.widget.Toast.LENGTH_LONG).show()
                 return
             }
+            
+            Log.d(TAG, "Installing APK: ${file.absolutePath}")
+            
             val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                 FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
             } else {
                 Uri.fromFile(file)
             }
-            context.startActivity(Intent(Intent.ACTION_VIEW).apply {
+            
+            val intent = Intent(Intent.ACTION_VIEW).apply {
                 setDataAndType(uri, "application/vnd.android.package-archive")
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            })
+            }
+            
+            context.startActivity(intent)
+            Log.d(TAG, "Install intent launched successfully")
         } catch (e: Exception) {
-            Log.e(TAG, "Install prompt failed: ${e.message}", e)
+            Log.e(TAG, "Install failed: ${e.message}", e)
             android.widget.Toast.makeText(context, "✓ Download complete. Open from Downloads to install.", android.widget.Toast.LENGTH_LONG).show()
+        }
+    }
+    
+    private fun formatSize(bytes: Long): String {
+        return when {
+            bytes >= 1024 * 1024 -> String.format("%.1f MB", bytes / (1024.0 * 1024.0))
+            bytes >= 1024 -> String.format("%.1f KB", bytes / 1024.0)
+            else -> "$bytes B"
         }
     }
 
