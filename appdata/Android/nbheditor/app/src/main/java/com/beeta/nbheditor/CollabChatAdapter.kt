@@ -439,11 +439,19 @@ class CollabChatAdapter(
                         val localUri = android.net.Uri.fromFile(cacheFile).toString()
                         // Detect actual type from filename if needed
                         val actualType = when {
-                            fileName.matches(Regex(".*\\.(jpg|jpeg|png|gif|bmp|webp)$", RegexOption.IGNORE_CASE)) -> "image"
-                            fileName.matches(Regex(".*\\.(mp4|avi|mkv|mov|wmv|flv|webm)$", RegexOption.IGNORE_CASE)) -> "video"
-                            fileName.matches(Regex(".*\\.(mp3|wav|ogg|m4a|aac|flac)$", RegexOption.IGNORE_CASE)) -> "audio"
+                            fileName.endsWith(".jpg", true) || fileName.endsWith(".jpeg", true) || 
+                            fileName.endsWith(".png", true) || fileName.endsWith(".gif", true) || 
+                            fileName.endsWith(".bmp", true) || fileName.endsWith(".webp", true) -> "image"
+                            fileName.endsWith(".mp4", true) || fileName.endsWith(".avi", true) || 
+                            fileName.endsWith(".mkv", true) || fileName.endsWith(".mov", true) || 
+                            fileName.endsWith(".wmv", true) || fileName.endsWith(".flv", true) || 
+                            fileName.endsWith(".webm", true) -> "video"
+                            fileName.endsWith(".mp3", true) || fileName.endsWith(".wav", true) || 
+                            fileName.endsWith(".ogg", true) || fileName.endsWith(".m4a", true) || 
+                            fileName.endsWith(".aac", true) || fileName.endsWith(".flac", true) -> "audio"
                             else -> type
                         }
+                        android.util.Log.d("CollabChatAdapter", "Opening file: $fileName with type: $actualType (original: $type)")
                         val fragment = MediaViewerFragment.newInstance(localUri, actualType, fileName)
                         activity.supportFragmentManager.beginTransaction()
                             .setCustomAnimations(

@@ -373,11 +373,16 @@ class CollabChatFragment : Fragment() {
         val waveformView = dialogView.findViewById<View>(R.id.waveformView)
         
         // Animate waveform
-        waveformView.animate().scaleY(1.5f).setDuration(500).withEndAction {
-            waveformView.animate().scaleY(1.0f).setDuration(500).withEndAction {
-                if (isRecording) showRecordingDialog() // Restart animation
+        fun animateWaveform() {
+            if (!isRecording) return
+            waveformView.animate().scaleY(1.5f).setDuration(500).withEndAction {
+                if (!isRecording) return@withEndAction
+                waveformView.animate().scaleY(1.0f).setDuration(500).withEndAction {
+                    animateWaveform()
+                }.start()
             }.start()
-        }.start()
+        }
+        animateWaveform()
         
         recordingDialog = AlertDialog.Builder(requireContext())
             .setView(dialogView)
@@ -412,6 +417,9 @@ class CollabChatFragment : Fragment() {
 
     private fun stopVoiceRecording(sendImmediately: Boolean) {
         try {
+            // Stop recording first
+            isRecording = false
+            
             recordingTimerHandler?.removeCallbacks(recordingTimerRunnable!!)
             recordingTimerHandler = null
             recordingTimerRunnable = null
@@ -419,7 +427,6 @@ class CollabChatFragment : Fragment() {
             mediaRecorder?.stop()
             mediaRecorder?.release()
             mediaRecorder = null
-            isRecording = false
             
             recordingDialog?.dismiss()
             recordingDialog = null

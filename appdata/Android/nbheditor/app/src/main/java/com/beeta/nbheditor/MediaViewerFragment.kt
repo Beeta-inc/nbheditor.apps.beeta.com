@@ -66,6 +66,8 @@ class MediaViewerFragment : Fragment() {
         val type = arguments?.getString(ARG_TYPE) ?: return
         val name = arguments?.getString(ARG_NAME) ?: uriStr.substringAfterLast("/")
 
+        android.util.Log.d("MediaViewer", "MediaViewerFragment created: uri=$uriStr, type=$type, name=$name")
+
         val header = view.findViewById<LinearLayout>(R.id.viewerHeader)
         val btnClose = view.findViewById<ImageButton>(R.id.btnViewerClose)
         val tvTitle = view.findViewById<TextView>(R.id.tvViewerTitle)
@@ -92,11 +94,26 @@ class MediaViewerFragment : Fragment() {
             .setInterpolator(android.view.animation.DecelerateInterpolator()).start()
 
         when (type) {
-            "image" -> showImage(view, uriStr, progress, tvError)
-            "video" -> showVideo(view, uriStr, progress, tvError)
-            "audio" -> showAudio(view, uriStr, name, progress, tvError)
-            "document" -> showDocument(view, uriStr, name, progress, tvError)
-            else -> showDocument(view, uriStr, name, progress, tvError)
+            "image" -> {
+                android.util.Log.d("MediaViewer", "Showing image viewer")
+                showImage(view, uriStr, progress, tvError)
+            }
+            "video" -> {
+                android.util.Log.d("MediaViewer", "Showing video viewer")
+                showVideo(view, uriStr, progress, tvError)
+            }
+            "audio" -> {
+                android.util.Log.d("MediaViewer", "Showing audio viewer")
+                showAudio(view, uriStr, name, progress, tvError)
+            }
+            "document" -> {
+                android.util.Log.d("MediaViewer", "Showing document viewer")
+                showDocument(view, uriStr, name, progress, tvError)
+            }
+            else -> {
+                android.util.Log.d("MediaViewer", "Unknown type '$type', defaulting to document viewer")
+                showDocument(view, uriStr, name, progress, tvError)
+            }
         }
     }
 
