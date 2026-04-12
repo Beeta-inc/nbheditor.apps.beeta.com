@@ -205,7 +205,7 @@ object AppUpdater {
                 setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                 setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
                 setMimeType("application/vnd.android.package-archive")
-                addRequestHeader("User-Agent", "NBHEditor-Updater/4.1")
+                addRequestHeader("User-Agent", "NBHEditor-Updater/4.2")
                 addRequestHeader("Accept", "application/octet-stream, */*")
                 setAllowedOverMetered(true)
                 setAllowedOverRoaming(false)
@@ -381,7 +381,7 @@ object AppUpdater {
         try {
             client.newCall(
                 Request.Builder().url(url)
-                    .addHeader("User-Agent", "NBHEditor-Updater/4.1")
+                    .addHeader("User-Agent", "NBHEditor-Updater/4.2")
                     .addHeader("Cache-Control", "no-cache")
                     .build()
             ).execute().use { response ->
