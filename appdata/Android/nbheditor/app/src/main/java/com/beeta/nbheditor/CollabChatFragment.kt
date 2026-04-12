@@ -49,6 +49,10 @@ class CollabChatFragment : Fragment() {
     private var mediaRecorder: MediaRecorder? = null
     private var voiceFile: File? = null
     private var isRecording = false
+    private var recordingDialog: AlertDialog? = null
+    private var recordingStartTime = 0L
+    private var recordingTimerHandler: android.os.Handler? = null
+    private var recordingTimerRunnable: Runnable? = null
     private var videoJob: Job? = null
     private var userPhotoMap = mapOf<String, String>() // userId -> photoUrl
 
@@ -316,7 +320,7 @@ class CollabChatFragment : Fragment() {
                 ))
             })
         }
-        binding.btnAttachVoice.setOnClickListener { if (isRecording) stopVoiceRecording() else startVoiceRecording() }
+        binding.btnAttachVoice.setOnClickListener { if (isRecording) stopVoiceRecording(sendImmediately = false) else startVoiceRecording() }
         binding.btnAttachVideo.setOnClickListener {
             videoPickerLauncher.launch(Intent(Intent.ACTION_GET_CONTENT).apply {
                 type = "video/*"
@@ -331,35 +335,106 @@ class CollabChatFragment : Fragment() {
             requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), 201); return
         }
         try {
-            voiceFile = File(requireContext().cacheDir, "voice_${System.currentTimeMillis()}.3gp")
+            voiceFile = File(requireContext().cacheDir, "voice_${System.currentTimeMillis()}.m4a")
             mediaRecorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) MediaRecorder(requireContext())
             else @Suppress("DEPRECATION") MediaRecorder()
             mediaRecorder!!.apply {
-                setAudioSource(MediaRecorder.AudioSource.MIC); setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
-                setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB); setOutputFile(voiceFile!!.absolutePath)
+                setAudioSource(MediaRecorder.AudioSource.MIC)
+                setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                setAudioEncodingBitRate(128000)
+                setAudioSamplingRate(44100)
+                setOutputFile(voiceFile!!.absolutePath)
                 setMaxDuration(5 * 60 * 1000) // 5 minutes max
                 setOnInfoListener { _, what, _ ->
                     if (what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED) {
                         lifecycleScope.launch(Dispatchers.Main) {
-                            stopVoiceRecording()
+                            stopVoiceRecording(sendImmediately = true)
                             Toast.makeText(requireContext(), "⏱ Maximum recording time (5 minutes) reached", Toast.LENGTH_LONG).show()
                         }
                     }
                 }
-                prepare(); start()
+                prepare()
+                start()
             }
             isRecording = true
-            binding.btnAttachVoice.setColorFilter(0xFFFF0000.toInt())
-            Toast.makeText(requireContext(), "🎤 Recording... (max 5 min)", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) { Toast.makeText(requireContext(), "Recording failed: ${e.message}", Toast.LENGTH_SHORT).show() }
+            recordingStartTime = System.currentTimeMillis()
+            showRecordingDialog()
+        } catch (e: Exception) {
+            Toast.makeText(requireContext(), "Recording failed: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
-    private fun stopVoiceRecording() {
+    private fun showRecordingDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_voice_recording, null)
+        val tvTimer = dialogView.findViewById<TextView>(R.id.tvRecordingTimer)
+        val btnSend = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSendVoice)
+        val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancelVoice)
+        val waveformView = dialogView.findViewById<View>(R.id.waveformView)
+        
+        // Animate waveform
+        waveformView.animate().scaleY(1.5f).setDuration(500).withEndAction {
+            waveformView.animate().scaleY(1.0f).setDuration(500).withEndAction {
+                if (isRecording) showRecordingDialog() // Restart animation
+            }.start()
+        }.start()
+        
+        recordingDialog = AlertDialog.Builder(requireContext())
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+        
+        // Update timer
+        recordingTimerHandler = android.os.Handler(android.os.Looper.getMainLooper())
+        recordingTimerRunnable = object : Runnable {
+            override fun run() {
+                if (isRecording) {
+                    val elapsed = (System.currentTimeMillis() - recordingStartTime) / 1000
+                    val minutes = elapsed / 60
+                    val seconds = elapsed % 60
+                    tvTimer.text = String.format("%02d:%02d", minutes, seconds)
+                    recordingTimerHandler?.postDelayed(this, 1000)
+                }
+            }
+        }
+        recordingTimerHandler?.post(recordingTimerRunnable!!)
+        
+        btnSend.setOnClickListener {
+            stopVoiceRecording(sendImmediately = true)
+        }
+        
+        btnCancel.setOnClickListener {
+            stopVoiceRecording(sendImmediately = false)
+        }
+        
+        recordingDialog?.show()
+    }
+
+    private fun stopVoiceRecording(sendImmediately: Boolean) {
         try {
-            mediaRecorder?.stop(); mediaRecorder?.release(); mediaRecorder = null; isRecording = false
+            recordingTimerHandler?.removeCallbacks(recordingTimerRunnable!!)
+            recordingTimerHandler = null
+            recordingTimerRunnable = null
+            
+            mediaRecorder?.stop()
+            mediaRecorder?.release()
+            mediaRecorder = null
+            isRecording = false
+            
+            recordingDialog?.dismiss()
+            recordingDialog = null
+            
             binding.btnAttachVoice.clearColorFilter()
-            voiceFile?.let { sendAttachment(it.name, it.absolutePath, "audio") }
-        } catch (e: Exception) { Toast.makeText(requireContext(), "Stop failed: ${e.message}", Toast.LENGTH_SHORT).show() }
+            
+            if (sendImmediately && voiceFile != null && voiceFile!!.exists()) {
+                sendAttachment(voiceFile!!.name, voiceFile!!.absolutePath, "audio")
+            } else {
+                voiceFile?.delete()
+            }
+            voiceFile = null
+        } catch (e: Exception) {
+            Toast.makeText(requireContext(), "Stop failed: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun sendAttachment(name: String, uriStr: String, type: String) {
@@ -807,7 +882,13 @@ class CollabChatFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        if (isRecording) { mediaRecorder?.stop(); mediaRecorder?.release(); mediaRecorder = null }
+        if (isRecording) {
+            recordingTimerHandler?.removeCallbacks(recordingTimerRunnable!!)
+            mediaRecorder?.stop()
+            mediaRecorder?.release()
+            mediaRecorder = null
+        }
+        recordingDialog?.dismiss()
         videoJob?.cancel()
         _binding = null
     }

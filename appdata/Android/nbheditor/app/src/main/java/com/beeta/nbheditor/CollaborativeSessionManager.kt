@@ -577,7 +577,23 @@ object CollaborativeSessionManager {
             onProgress?.invoke(5)
             
             var bytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                when {
+                    uri.scheme == "content" -> {
+                        context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                    }
+                    uri.scheme == "file" || localUri.startsWith("/") -> {
+                        // Local file path - read directly
+                        java.io.File(uri.path ?: localUri).readBytes()
+                    }
+                    else -> {
+                        // Try as file path first, then content URI
+                        try {
+                            java.io.File(localUri).readBytes()
+                        } catch (e: Exception) {
+                            context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                        }
+                    }
+                }
             } ?: return Result.failure(Exception("Could not read file"))
             
             onProgress?.invoke(15)

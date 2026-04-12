@@ -437,7 +437,14 @@ class CollabChatAdapter(
                         progressDialog.progress = 100
                         progressDialog.dismiss()
                         val localUri = android.net.Uri.fromFile(cacheFile).toString()
-                        val fragment = MediaViewerFragment.newInstance(localUri, type, fileName)
+                        // Detect actual type from filename if needed
+                        val actualType = when {
+                            fileName.matches(Regex(".*\\.(jpg|jpeg|png|gif|bmp|webp)$", RegexOption.IGNORE_CASE)) -> "image"
+                            fileName.matches(Regex(".*\\.(mp4|avi|mkv|mov|wmv|flv|webm)$", RegexOption.IGNORE_CASE)) -> "video"
+                            fileName.matches(Regex(".*\\.(mp3|wav|ogg|m4a|aac|flac)$", RegexOption.IGNORE_CASE)) -> "audio"
+                            else -> type
+                        }
+                        val fragment = MediaViewerFragment.newInstance(localUri, actualType, fileName)
                         activity.supportFragmentManager.beginTransaction()
                             .setCustomAnimations(
                                 android.R.anim.fade_in, android.R.anim.fade_out,
