@@ -129,6 +129,8 @@ class MediaViewerFragment : Fragment() {
         iv.visibility = View.VISIBLE
         progress.visibility = View.VISIBLE
 
+        android.util.Log.d("MediaViewer", "showImage called with uri: $uriStr")
+
         lifecycleScope.launch {
             try {
                 val dm = resources.displayMetrics
@@ -136,17 +138,21 @@ class MediaViewerFragment : Fragment() {
                 val maxH = dm.heightPixels * 2
                 val bmp = withContext(Dispatchers.IO) {
                     val uri = Uri.parse(uriStr)
+                    android.util.Log.d("MediaViewer", "Decoding image from URI: $uri, scheme: ${uri.scheme}, path: ${uri.path}")
                     decodeSampled(uriStr, uri, maxW, maxH)
                 }
                 progress.visibility = View.GONE
                 if (bmp != null) {
+                    android.util.Log.d("MediaViewer", "Image decoded successfully: ${bmp.width}x${bmp.height}")
                     iv.setImageBitmap(bmp)
                     setupPinchZoom(iv)
                 } else {
+                    android.util.Log.e("MediaViewer", "Failed to decode image - bitmap is null")
                     tvError.text = "Could not load image"
                     tvError.visibility = View.VISIBLE
                 }
             } catch (e: Exception) {
+                android.util.Log.e("MediaViewer", "Error loading image", e)
                 progress.visibility = View.GONE
                 tvError.text = "Error: ${e.message}"
                 tvError.visibility = View.VISIBLE
@@ -157,23 +163,34 @@ class MediaViewerFragment : Fragment() {
     private fun decodeSampled(uriStr: String, uri: Uri, reqW: Int, reqH: Int): android.graphics.Bitmap? {
         val ctx = requireContext()
         fun stream() = try {
-            if (uri.scheme == "content") {
+            android.util.Log.d("MediaViewer", "Opening stream for URI: $uri, scheme: ${uri.scheme}")
+            val result = if (uri.scheme == "content") {
+                android.util.Log.d("MediaViewer", "Using ContentResolver for content URI")
                 ctx.contentResolver.openInputStream(uri)
             } else if (uri.scheme == "http" || uri.scheme == "https") {
+                android.util.Log.d("MediaViewer", "Using HTTP connection for remote URL")
                 val conn = URL(uriStr).openConnection()
                 conn.connectTimeout = 30000 // 30 seconds for large images
                 conn.readTimeout = 30000
                 conn.setRequestProperty("User-Agent", "NbhEditor/1.0")
                 conn.getInputStream()
             } else {
-                java.io.FileInputStream(uriStr)
+                // For file:// URIs or plain paths, extract the actual file path
+                val filePath = if (uri.scheme == "file") uri.path else uriStr
+                android.util.Log.d("MediaViewer", "Using FileInputStream for local file: $filePath")
+                java.io.FileInputStream(filePath)
             }
-        } catch (e: Exception) { 
+            android.util.Log.d("MediaViewer", "Stream opened successfully")
+            result
+        } catch (e: Exception) {
+            android.util.Log.e("MediaViewer", "Failed to open stream", e)
             null 
         }
 
         val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         stream()?.use { BitmapFactory.decodeStream(it, null, opts) }
+        
+        android.util.Log.d("MediaViewer", "Image dimensions: ${opts.outWidth}x${opts.outHeight}")
         
         var sample = 1
         if (opts.outHeight > reqH || opts.outWidth > reqW) {
@@ -181,6 +198,8 @@ class MediaViewerFragment : Fragment() {
             val wRatio = Math.round(opts.outWidth.toFloat() / reqW)
             sample = minOf(hRatio, wRatio).coerceAtLeast(1)
         }
+        
+        android.util.Log.d("MediaViewer", "Using sample size: $sample")
         
         opts.inSampleSize = sample
         opts.inJustDecodeBounds = false
