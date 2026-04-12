@@ -355,16 +355,79 @@ class CollabChatFragment : Fragment() {
 
     private fun sendAttachment(name: String, uriStr: String, type: String) {
         lifecycleScope.launch {
-            val dialog = buildUploadDialog(name)
+            val progressBar = ProgressBar(requireContext(), null, android.R.attr.progressBarStyleHorizontal).apply {
+                max = 100
+                progress = 0
+                isIndeterminate = false
+            }
+            val tvStatus = TextView(requireContext()).apply { 
+                text = "Uploading $name... 0%"
+                textSize = 14f
+            }
+            val tvSpeed = TextView(requireContext()).apply {
+                text = "Preparing..."
+                textSize = 12f
+                setTextColor(0xFF888888.toInt())
+            }
+            val container = android.widget.LinearLayout(requireContext()).apply {
+                orientation = android.widget.LinearLayout.VERTICAL
+                setPadding(48, 32, 48, 16)
+                addView(tvStatus)
+                addView(progressBar)
+                addView(tvSpeed)
+            }
+            val dialog = AlertDialog.Builder(requireContext())
+                .setTitle("Uploading to Firebase")
+                .setView(container)
+                .setCancelable(false)
+                .setNegativeButton("Cancel") { d, _ -> d.dismiss() }
+                .create()
             dialog.show()
+            
+            var startTime = System.currentTimeMillis()
+            var lastProgress = 0
+            
             try {
-                CollaborativeSessionManager.sendChatMessage(
-                    message = name, targetType = messageVisibility,
+                val result = CollaborativeSessionManager.sendChatMessage(
+                    message = name,
+                    targetType = messageVisibility,
                     targetUserIds = selectedUserIds.toList(),
-                    attachmentUri = uriStr, attachmentType = type
+                    attachmentUri = uriStr,
+                    attachmentType = type,
+                    onProgress = { progress ->
+                        lifecycleScope.launch(Dispatchers.Main) {
+                            progressBar.progress = progress
+                            tvStatus.text = "Uploading $name... $progress%"
+                            
+                            // Calculate speed and time remaining
+                            if (progress > lastProgress && progress > 0) {
+                                val elapsed = (System.currentTimeMillis() - startTime) / 1000.0
+                                val speed = progress / elapsed
+                                val remaining = ((100 - progress) / speed).toInt()
+                                
+                                val speedText = when {
+                                    speed > 10 -> "Fast"
+                                    speed > 5 -> "Normal"
+                                    else -> "Slow"
+                                }
+                                
+                                tvSpeed.text = "Speed: $speedText • ${remaining}s remaining"
+                                lastProgress = progress
+                            }
+                        }
+                    }
                 )
-                Toast.makeText(requireContext(), "✓ Sent", Toast.LENGTH_SHORT).show()
-            } finally { dialog.dismiss() }
+                
+                if (result.isSuccess) {
+                    Toast.makeText(requireContext(), "✓ Sent successfully", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(requireContext(), "Failed: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_LONG).show()
+            } finally {
+                dialog.dismiss()
+            }
         }
     }
 
@@ -437,43 +500,76 @@ class CollabChatFragment : Fragment() {
 
     private suspend fun doUpload(uriStr: String, name: String, startPct: Int = 0) {
         val progressBar = ProgressBar(requireContext(), null, android.R.attr.progressBarStyleHorizontal).apply {
-            max = 100; isIndeterminate = false; progress = startPct
+            max = 100; progress = startPct; isIndeterminate = false
         }
-        val tvStatus = TextView(requireContext()).apply { text = "Uploading... $startPct%" }
+        val tvStatus = TextView(requireContext()).apply { 
+            text = "Uploading... $startPct%"
+            textSize = 14f
+        }
+        val tvSpeed = TextView(requireContext()).apply {
+            text = "Preparing..."
+            textSize = 12f
+            setTextColor(0xFF888888.toInt())
+        }
         val container = android.widget.LinearLayout(requireContext()).apply {
             orientation = android.widget.LinearLayout.VERTICAL
             setPadding(48, 32, 48, 16)
-            addView(tvStatus); addView(progressBar)
+            addView(tvStatus); addView(progressBar); addView(tvSpeed)
         }
         val dialog = AlertDialog.Builder(requireContext())
-            .setTitle("Uploading")
+            .setTitle("Uploading Video")
             .setView(container)
             .setCancelable(false)
             .setNegativeButton("Cancel") { d, _ -> d.dismiss(); videoJob?.cancel() }
             .create()
         dialog.show()
 
-        var fakeProgress = startPct
-        val tickJob = lifecycleScope.launch(Dispatchers.Main) {
-            while (fakeProgress < 95) {
-                kotlinx.coroutines.delay(300)
-                fakeProgress = (fakeProgress + 2).coerceAtMost(95)
-                progressBar.progress = fakeProgress
-                tvStatus.text = "Uploading... $fakeProgress%"
-            }
-        }
+        var startTime = System.currentTimeMillis()
+        var lastProgress = startPct
+        
         try {
-            CollaborativeSessionManager.sendChatMessage(
-                message = name, targetType = messageVisibility,
+            val result = CollaborativeSessionManager.sendChatMessage(
+                message = name,
+                targetType = messageVisibility,
                 targetUserIds = selectedUserIds.toList(),
-                attachmentUri = uriStr, attachmentType = "video"
+                attachmentUri = uriStr,
+                attachmentType = "video",
+                onProgress = { progress ->
+                    lifecycleScope.launch(Dispatchers.Main) {
+                        val adjustedProgress = startPct + ((progress * (100 - startPct)) / 100)
+                        progressBar.progress = adjustedProgress
+                        tvStatus.text = "Uploading... $adjustedProgress%"
+                        
+                        if (adjustedProgress > lastProgress && adjustedProgress > startPct) {
+                            val elapsed = (System.currentTimeMillis() - startTime) / 1000.0
+                            val speed = (adjustedProgress - startPct) / elapsed
+                            val remaining = ((100 - adjustedProgress) / speed).toInt()
+                            
+                            val speedText = when {
+                                speed > 10 -> "Fast"
+                                speed > 5 -> "Normal"
+                                else -> "Slow"
+                            }
+                            
+                            tvSpeed.text = "Speed: $speedText • ${remaining}s remaining"
+                            lastProgress = adjustedProgress
+                        }
+                    }
+                }
             )
-            tickJob.cancel()
-            progressBar.progress = 100; tvStatus.text = "Done!"
-            kotlinx.coroutines.delay(300)
-            Toast.makeText(requireContext(), "✓ Sent", Toast.LENGTH_SHORT).show()
+            
+            if (result.isSuccess) {
+                withContext(Dispatchers.Main) {
+                    progressBar.progress = 100
+                    tvStatus.text = "Done!"
+                    tvSpeed.text = "Upload complete"
+                }
+                kotlinx.coroutines.delay(500)
+                Toast.makeText(requireContext(), "✓ Sent", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(requireContext(), "Upload failed: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
+            }
         } catch (e: Exception) {
-            tickJob.cancel()
             if (e !is kotlinx.coroutines.CancellationException)
                 Toast.makeText(requireContext(), "Upload failed: ${e.message}", Toast.LENGTH_SHORT).show()
         } finally {

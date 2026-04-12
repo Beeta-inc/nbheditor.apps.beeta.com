@@ -351,18 +351,126 @@ class CollabChatAdapter(
     private fun openMedia(ctx: Context, uriStr: String, type: String) {
         val activity = ctx as? androidx.fragment.app.FragmentActivity ?: return
         val name = uriStr.substringAfterLast("/").ifBlank { "attachment" }
-        val fragment = MediaViewerFragment.newInstance(uriStr, type, name)
-        activity.supportFragmentManager.beginTransaction()
-            .setCustomAnimations(
-                android.R.anim.fade_in, android.R.anim.fade_out,
-                android.R.anim.fade_in, android.R.anim.fade_out
-            )
-            .add(android.R.id.content, fragment)
-            .addToBackStack("media_viewer")
-            .commit()
+        
+        // Check if it's a Firebase reference
+        if (uriStr.startsWith("firebase://")) {
+            // Download from Firebase Realtime Database first
+            val progressDialog = android.app.ProgressDialog(ctx).apply {
+                setMessage("Loading...")
+                setCancelable(false)
+                show()
+            }
+            
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    // Parse firebase://attachments/sessionId/messageId
+                    val parts = uriStr.removePrefix("firebase://attachments/").split("/")
+                    if (parts.size != 2) throw Exception("Invalid Firebase reference")
+                    
+                    val sessionId = parts[0]
+                    val messageId = parts[1]
+                    
+                    val database = com.google.firebase.database.FirebaseDatabase.getInstance("https://nbheditior-default-rtdb.firebaseio.com").reference
+                    val snapshot = database.child("collaborative_sessions")
+                        .child(sessionId)
+                        .child("attachments")
+                        .child(messageId)
+                        .get()
+                        .await()
+                    
+                    val base64 = snapshot.child("base64").getValue(String::class.java)
+                        ?: throw Exception("File data not found")
+                    val fileName = snapshot.child("fileName").getValue(String::class.java) ?: "file"
+                    
+                    // Decode base64 to bytes
+                    val bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
+                    
+                    // Save to cache
+                    val cacheFile = java.io.File(ctx.cacheDir, "temp_$fileName")
+                    cacheFile.writeBytes(bytes)
+                    
+                    withContext(Dispatchers.Main) {
+                        progressDialog.dismiss()
+                        val localUri = android.net.Uri.fromFile(cacheFile).toString()
+                        val fragment = MediaViewerFragment.newInstance(localUri, type, fileName)
+                        activity.supportFragmentManager.beginTransaction()
+                            .setCustomAnimations(
+                                android.R.anim.fade_in, android.R.anim.fade_out,
+                                android.R.anim.fade_in, android.R.anim.fade_out
+                            )
+                            .add(android.R.id.content, fragment)
+                            .addToBackStack("media_viewer")
+                            .commit()
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        progressDialog.dismiss()
+                        android.widget.Toast.makeText(ctx, "Failed to load: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        } else {
+            // Regular URI - open directly
+            val fragment = MediaViewerFragment.newInstance(uriStr, type, name)
+            activity.supportFragmentManager.beginTransaction()
+                .setCustomAnimations(
+                    android.R.anim.fade_in, android.R.anim.fade_out,
+                    android.R.anim.fade_in, android.R.anim.fade_out
+                )
+                .add(android.R.id.content, fragment)
+                .addToBackStack("media_viewer")
+                .commit()
+        }
     }
 
     private fun downloadMedia(ctx: Context, uriStr: String, type: String) {
+        // Check if it's a Firebase reference
+        if (uriStr.startsWith("firebase://")) {
+            val progressDialog = android.app.ProgressDialog(ctx).apply {
+                setMessage("Downloading...")
+                setCancelable(false)
+                show()
+            }
+            
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val parts = uriStr.removePrefix("firebase://attachments/").split("/")
+                    if (parts.size != 2) throw Exception("Invalid Firebase reference")
+                    
+                    val sessionId = parts[0]
+                    val messageId = parts[1]
+                    
+                    val database = com.google.firebase.database.FirebaseDatabase.getInstance("https://nbheditior-default-rtdb.firebaseio.com").reference
+                    val snapshot = database.child("collaborative_sessions")
+                        .child(sessionId)
+                        .child("attachments")
+                        .child(messageId)
+                        .get()
+                        .await()
+                    
+                    val base64 = snapshot.child("base64").getValue(String::class.java)
+                        ?: throw Exception("File data not found")
+                    val fileName = snapshot.child("fileName").getValue(String::class.java) ?: "file"
+                    
+                    val bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
+                    val dest = java.io.File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS), fileName)
+                    dest.writeBytes(bytes)
+                    
+                    withContext(Dispatchers.Main) {
+                        progressDialog.dismiss()
+                        android.widget.Toast.makeText(ctx, "Saved to Downloads/$fileName", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                } catch (e: Exception) {
+                    withContext(Dispatchers.Main) {
+                        progressDialog.dismiss()
+                        android.widget.Toast.makeText(ctx, "Download failed: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+            return
+        }
+        
+        // Regular download for non-Firebase URIs
         try {
             val name = uriStr.substringAfterLast("/").ifBlank { "attachment_${System.currentTimeMillis()}" }
             (ctx.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager).enqueue(

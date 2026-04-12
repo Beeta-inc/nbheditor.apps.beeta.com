@@ -473,7 +473,7 @@ object CollaborativeSessionManager {
     
     // ── Chat Functions ────────────────────────────────────────────────────────
     
-    // Send a chat message
+    // Send a chat message with file upload support
     suspend fun sendChatMessage(
         message: String,
         isAI: Boolean = false,
@@ -482,7 +482,8 @@ object CollaborativeSessionManager {
         targetType: String = "everyone",
         targetUserIds: List<String> = emptyList(),
         attachmentUri: String? = null,
-        attachmentType: String? = null
+        attachmentType: String? = null,
+        onProgress: ((Int) -> Unit)? = null
     ): Result<String> {
         return try {
             val sessionId = currentSessionId ?: return Result.failure(Exception("Not in a session"))
@@ -496,6 +497,19 @@ object CollaborativeSessionManager {
             val messageId = database.child(SESSIONS_PATH).child(sessionId)
                 .child("chatMessages").push().key ?: return Result.failure(Exception("Failed to generate message ID"))
             
+            // If there's an attachment, upload it to Firebase Storage first
+            var finalAttachmentUri = attachmentUri
+            if (!attachmentUri.isNullOrBlank() && !attachmentType.isNullOrBlank()) {
+                onProgress?.invoke(0)
+                val uploadResult = uploadFileToStorage(sessionId, messageId, attachmentUri, attachmentType, onProgress)
+                if (uploadResult.isSuccess) {
+                    finalAttachmentUri = uploadResult.getOrNull()
+                    onProgress?.invoke(100)
+                } else {
+                    return Result.failure(uploadResult.exceptionOrNull() ?: Exception("Upload failed"))
+                }
+            }
+            
             val chatMessage = ChatMessage(
                 messageId = messageId,
                 userId = userId,
@@ -507,7 +521,7 @@ object CollaborativeSessionManager {
                 linkedTaskId = linkedTaskId,
                 targetType = targetType,
                 targetUserIds = targetUserIds,
-                attachmentUri = attachmentUri,
+                attachmentUri = finalAttachmentUri,
                 attachmentType = attachmentType
             )
             
@@ -517,6 +531,64 @@ object CollaborativeSessionManager {
             Result.success(messageId)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to send chat message", e)
+            Result.failure(e)
+        }
+    }
+    
+    // Upload file to Firebase Realtime Database as base64 and return the message ID
+    private suspend fun uploadFileToStorage(
+        sessionId: String,
+        messageId: String,
+        localUri: String,
+        fileType: String,
+        onProgress: ((Int) -> Unit)?
+    ): Result<String> {
+        return try {
+            // Read file as bytes
+            val uri = android.net.Uri.parse(localUri)
+            val context = com.google.firebase.Firebase.app.applicationContext
+            
+            onProgress?.invoke(10)
+            
+            val bytes = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            } ?: return Result.failure(Exception("Could not read file"))
+            
+            onProgress?.invoke(30)
+            
+            // Convert to base64 in chunks to show progress
+            val base64 = withContext(kotlinx.coroutines.Dispatchers.IO) {
+                android.util.Base64.encodeToString(bytes, android.util.Base64.DEFAULT)
+            }
+            
+            onProgress?.invoke(60)
+            
+            // Store in Firebase Realtime Database under attachments
+            val fileName = uri.lastPathSegment ?: "file_${System.currentTimeMillis()}"
+            val attachmentData = mapOf(
+                "base64" to base64,
+                "fileName" to fileName,
+                "fileType" to fileType,
+                "size" to bytes.size,
+                "uploadedAt" to com.google.firebase.database.ServerValue.TIMESTAMP
+            )
+            
+            database.child(SESSIONS_PATH)
+                .child(sessionId)
+                .child("attachments")
+                .child(messageId)
+                .setValue(attachmentData)
+                .await()
+            
+            onProgress?.invoke(100)
+            
+            // Return a reference path that other clients can use
+            val referencePath = "firebase://attachments/$sessionId/$messageId"
+            
+            Log.d(TAG, "File uploaded to Realtime Database: $referencePath")
+            Result.success(referencePath)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to upload file to database", e)
             Result.failure(e)
         }
     }

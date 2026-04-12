@@ -115,8 +115,8 @@ class MediaViewerFragment : Fragment() {
         lifecycleScope.launch {
             try {
                 val dm = resources.displayMetrics
-                val maxW = dm.widthPixels
-                val maxH = dm.heightPixels
+                val maxW = dm.widthPixels * 2 // Allow higher resolution
+                val maxH = dm.heightPixels * 2
                 val bmp = withContext(Dispatchers.IO) {
                     val uri = Uri.parse(uriStr)
                     decodeSampled(uriStr, uri, maxW, maxH)
@@ -140,24 +140,35 @@ class MediaViewerFragment : Fragment() {
     private fun decodeSampled(uriStr: String, uri: Uri, reqW: Int, reqH: Int): android.graphics.Bitmap? {
         val ctx = requireContext()
         fun stream() = try {
-            if (uri.scheme == "content") ctx.contentResolver.openInputStream(uri)
-            else if (uri.scheme == "http" || uri.scheme == "https") {
+            if (uri.scheme == "content") {
+                ctx.contentResolver.openInputStream(uri)
+            } else if (uri.scheme == "http" || uri.scheme == "https") {
                 val conn = URL(uriStr).openConnection()
-                conn.connectTimeout = 8000; conn.readTimeout = 8000
+                conn.connectTimeout = 30000 // 30 seconds for large images
+                conn.readTimeout = 30000
+                conn.setRequestProperty("User-Agent", "NbhEditor/1.0")
                 conn.getInputStream()
-            } else java.io.FileInputStream(uriStr)
-        } catch (_: Exception) { null }
+            } else {
+                java.io.FileInputStream(uriStr)
+            }
+        } catch (e: Exception) { 
+            null 
+        }
 
         val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         stream()?.use { BitmapFactory.decodeStream(it, null, opts) }
+        
         var sample = 1
         if (opts.outHeight > reqH || opts.outWidth > reqW) {
             val hRatio = Math.round(opts.outHeight.toFloat() / reqH)
             val wRatio = Math.round(opts.outWidth.toFloat() / reqW)
             sample = minOf(hRatio, wRatio).coerceAtLeast(1)
         }
+        
         opts.inSampleSize = sample
         opts.inJustDecodeBounds = false
+        opts.inPreferredConfig = android.graphics.Bitmap.Config.RGB_565 // Use less memory for large images
+        
         return stream()?.use { BitmapFactory.decodeStream(it, null, opts) }
     }
 
@@ -209,17 +220,6 @@ class MediaViewerFragment : Fragment() {
         controls.visibility = View.VISIBLE
         progress.visibility = View.VISIBLE
 
-        // Timeout for video loading
-        val timeoutHandler = Handler(Looper.getMainLooper())
-        val timeoutRunnable = Runnable {
-            if (progress.visibility == View.VISIBLE) {
-                progress.visibility = View.GONE
-                tvError.text = "Video loading timeout"
-                tvError.visibility = View.VISIBLE
-            }
-        }
-        timeoutHandler.postDelayed(timeoutRunnable, 20000) // 20 second timeout
-
         fun initPlayer(surface: Surface) {
             try {
                 mediaPlayer = MediaPlayer().apply {
@@ -231,9 +231,7 @@ class MediaViewerFragment : Fragment() {
                             setDataSource(uriStr)
                         }
                         setSurface(surface)
-                        prepareAsync()
                         setOnPreparedListener { mp ->
-                            timeoutHandler.removeCallbacks(timeoutRunnable)
                             progress.visibility = View.GONE
                             seekBar.max = mp.duration
                             mp.start()
@@ -241,22 +239,28 @@ class MediaViewerFragment : Fragment() {
                             startVideoSeekUpdate(seekBar, tvTime, mp)
                         }
                         setOnErrorListener { _, what, extra ->
-                            timeoutHandler.removeCallbacks(timeoutRunnable)
                             progress.visibility = View.GONE
-                            tvError.text = "Cannot play video (error: $what/$extra)"
+                            tvError.text = "Cannot play video (error: $what/$extra). Try downloading the file."
                             tvError.visibility = View.VISIBLE
                             true
                         }
                         setOnCompletionListener { btnPlay.setImageResource(android.R.drawable.ic_media_play) }
+                        setOnInfoListener { _, what, extra ->
+                            if (what == MediaPlayer.MEDIA_INFO_BUFFERING_START) {
+                                progress.visibility = View.VISIBLE
+                            } else if (what == MediaPlayer.MEDIA_INFO_BUFFERING_END) {
+                                progress.visibility = View.GONE
+                            }
+                            true
+                        }
+                        prepareAsync()
                     } catch (e: Exception) {
-                        timeoutHandler.removeCallbacks(timeoutRunnable)
                         progress.visibility = View.GONE
                         tvError.text = "Video error: ${e.message}"
                         tvError.visibility = View.VISIBLE
                     }
                 }
             } catch (e: Exception) {
-                timeoutHandler.removeCallbacks(timeoutRunnable)
                 progress.visibility = View.GONE
                 tvError.text = "Failed to initialize player: ${e.message}"
                 tvError.visibility = View.VISIBLE
@@ -317,17 +321,6 @@ class MediaViewerFragment : Fragment() {
         progress.visibility = View.VISIBLE
         tvName.text = name
 
-        // Timeout for audio loading
-        val timeoutHandler = Handler(Looper.getMainLooper())
-        val timeoutRunnable = Runnable {
-            if (progress.visibility == View.VISIBLE) {
-                progress.visibility = View.GONE
-                tvError.text = "Audio loading timeout"
-                tvError.visibility = View.VISIBLE
-            }
-        }
-        timeoutHandler.postDelayed(timeoutRunnable, 15000) // 15 second timeout
-
         lifecycleScope.launch {
             try {
                 mediaPlayer = MediaPlayer().apply {
@@ -338,9 +331,7 @@ class MediaViewerFragment : Fragment() {
                         } else {
                             setDataSource(uriStr)
                         }
-                        prepareAsync()
                         setOnPreparedListener { mp ->
-                            timeoutHandler.removeCallbacks(timeoutRunnable)
                             progress.visibility = View.GONE
                             seekBar.max = mp.duration
                             tvDuration.text = formatTime(mp.duration)
@@ -349,24 +340,30 @@ class MediaViewerFragment : Fragment() {
                             startAudioSeekUpdate(seekBar, tvTime, mp)
                         }
                         setOnErrorListener { _, what, extra ->
-                            timeoutHandler.removeCallbacks(timeoutRunnable)
                             progress.visibility = View.GONE
-                            tvError.text = "Cannot play audio (error: $what/$extra)"
+                            tvError.text = "Cannot play audio (error: $what/$extra). Try downloading the file."
                             tvError.visibility = View.VISIBLE
                             true
                         }
                         setOnCompletionListener {
                             btnPlay.setImageResource(android.R.drawable.ic_media_play)
                         }
+                        setOnInfoListener { _, what, _ ->
+                            if (what == MediaPlayer.MEDIA_INFO_BUFFERING_START) {
+                                progress.visibility = View.VISIBLE
+                            } else if (what == MediaPlayer.MEDIA_INFO_BUFFERING_END) {
+                                progress.visibility = View.GONE
+                            }
+                            true
+                        }
+                        prepareAsync()
                     } catch (e: Exception) {
-                        timeoutHandler.removeCallbacks(timeoutRunnable)
                         progress.visibility = View.GONE
                         tvError.text = "Audio error: ${e.message}"
                         tvError.visibility = View.VISIBLE
                     }
                 }
             } catch (e: Exception) {
-                timeoutHandler.removeCallbacks(timeoutRunnable)
                 progress.visibility = View.GONE
                 tvError.text = "Error: ${e.message}"
                 tvError.visibility = View.VISIBLE
@@ -412,17 +409,6 @@ class MediaViewerFragment : Fragment() {
         wv.visibility = View.VISIBLE
         progress.visibility = View.VISIBLE
 
-        // Timeout handler to prevent infinite loading
-        val timeoutHandler = Handler(Looper.getMainLooper())
-        val timeoutRunnable = Runnable {
-            if (progress.visibility == View.VISIBLE) {
-                progress.visibility = View.GONE
-                tvError.text = "Loading timeout - document may be too large"
-                tvError.visibility = View.VISIBLE
-            }
-        }
-        timeoutHandler.postDelayed(timeoutRunnable, 15000) // 15 second timeout
-
         wv.settings.apply {
             javaScriptEnabled = true
             builtInZoomControls = true
@@ -438,11 +424,9 @@ class MediaViewerFragment : Fragment() {
 
         wv.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
-                timeoutHandler.removeCallbacks(timeoutRunnable)
                 progress.visibility = View.GONE
             }
             override fun onReceivedError(view: WebView?, errorCode: Int, description: String?, failingUrl: String?) {
-                timeoutHandler.removeCallbacks(timeoutRunnable)
                 progress.visibility = View.GONE
                 tvError.text = "Could not load document: $description"
                 tvError.visibility = View.VISIBLE
@@ -451,54 +435,86 @@ class MediaViewerFragment : Fragment() {
 
         val uri = Uri.parse(uriStr)
         when {
-            // Local file — read bytes and load as base64 data URI
+            // Local file — read and display
             uri.scheme == "content" || uri.scheme == "file" || uriStr.startsWith("/") -> {
                 lifecycleScope.launch {
                     try {
-                        val bytes = withContext(Dispatchers.IO) {
-                            if (uri.scheme == "content") {
-                                requireContext().contentResolver.openInputStream(uri)?.use { it.readBytes() }
-                            } else {
-                                File(uriStr).readBytes()
+                        val mime = mimeForDoc(name)
+                        when {
+                            mime == "application/pdf" -> {
+                                // Use PdfRenderer for local PDFs
+                                progress.visibility = View.GONE
+                                wv.visibility = View.GONE
+                                showPdfRenderer(view, uri, progress, tvError)
                             }
-                        }
-                        if (bytes != null) {
-                            val mime = mimeForDoc(name)
-                            when {
-                                mime == "application/pdf" -> {
-                                    // Use PdfRenderer for local PDFs
-                                    timeoutHandler.removeCallbacks(timeoutRunnable)
-                                    progress.visibility = View.GONE
-                                    wv.visibility = View.GONE
-                                    showPdfRenderer(view, uri, progress, tvError)
+                            mime == "application/rtf" || name.endsWith(".rtf", true) -> {
+                                // Convert RTF to HTML and display
+                                val bytes = withContext(Dispatchers.IO) {
+                                    if (uri.scheme == "content") {
+                                        requireContext().contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                                    } else {
+                                        File(uriStr).readBytes()
+                                    }
                                 }
-                                mime == "application/rtf" || name.endsWith(".rtf", true) -> {
-                                    // Convert RTF to HTML and display
-                                    timeoutHandler.removeCallbacks(timeoutRunnable)
+                                if (bytes != null) {
                                     val html = convertRtfToHtml(bytes)
                                     wv.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
-                                }
-                                else -> {
-                                    val base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
-                                    wv.loadData(base64, mime, "base64")
+                                } else {
+                                    progress.visibility = View.GONE
+                                    tvError.text = "Could not read RTF file"
+                                    tvError.visibility = View.VISIBLE
                                 }
                             }
-                        } else {
-                            timeoutHandler.removeCallbacks(timeoutRunnable)
-                            progress.visibility = View.GONE
-                            tvError.text = "Could not read file"
-                            tvError.visibility = View.VISIBLE
+                            mime == "text/plain" || mime.startsWith("text/") -> {
+                                // Load text files directly without base64
+                                val text = withContext(Dispatchers.IO) {
+                                    if (uri.scheme == "content") {
+                                        requireContext().contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                                    } else {
+                                        File(uriStr).readText()
+                                    }
+                                }
+                                if (text != null) {
+                                    val html = "<html><head><meta charset='UTF-8'><style>body{font-family:monospace;padding:16px;white-space:pre-wrap;word-wrap:break-word;}</style></head><body>${text.replace("<", "&lt;").replace(">", "&gt;")}</body></html>"
+                                    wv.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
+                                } else {
+                                    progress.visibility = View.GONE
+                                    tvError.text = "Could not read file"
+                                    tvError.visibility = View.VISIBLE
+                                }
+                            }
+                            else -> {
+                                // For other document types, use Google Docs Viewer for remote URLs
+                                // or try to display locally
+                                if (uri.scheme == "http" || uri.scheme == "https") {
+                                    // Use Google Docs Viewer for remote documents
+                                    val viewerUrl = "https://docs.google.com/viewer?url=${android.net.Uri.encode(uriStr)}&embedded=true"
+                                    wv.loadUrl(viewerUrl)
+                                } else {
+                                    // Try to load local file directly
+                                    wv.loadUrl(uriStr)
+                                }
+                            }
                         }
                     } catch (e: Exception) {
-                        timeoutHandler.removeCallbacks(timeoutRunnable)
                         progress.visibility = View.GONE
                         tvError.text = "Error: ${e.message}"
                         tvError.visibility = View.VISIBLE
                     }
                 }
             }
-            // Remote URL — load directly in WebView
-            else -> wv.loadUrl(uriStr)
+            // Remote URL — use Google Docs Viewer for better compatibility
+            else -> {
+                if (name.endsWith(".pdf", true) || name.endsWith(".doc", true) || 
+                    name.endsWith(".docx", true) || name.endsWith(".ppt", true) || 
+                    name.endsWith(".pptx", true) || name.endsWith(".xls", true) || 
+                    name.endsWith(".xlsx", true)) {
+                    val viewerUrl = "https://docs.google.com/viewer?url=${android.net.Uri.encode(uriStr)}&embedded=true"
+                    wv.loadUrl(viewerUrl)
+                } else {
+                    wv.loadUrl(uriStr)
+                }
+            }
         }
     }
 
