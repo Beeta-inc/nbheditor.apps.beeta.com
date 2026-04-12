@@ -3584,16 +3584,51 @@ open class MainActivity : AppCompatActivity() {
             lifecycleScope.launch {
                 CollaborativeSessionManager.observeKicked(sessionId, currentUserId).collect { kicked ->
                     if (kicked) {
-                        CollaborativeSessionManager.leaveSession()
                         contentSyncJob?.cancel()
+                        CollaborativeSessionManager.leaveSession(clearLocal = false)
                         CollaborativeSessionManager.clearSessionCache(this@MainActivity)
+                        activeSessionDialog?.dismiss()
+                        activeSessionDialog = null
                         removeSessionInfoBar()
                         editorBinding.textArea.setText("")
                         this@MainActivity.currentFileUri = null
                         textChanged = false
                         updateToolbarTitle()
                         showHome()
-                        Toast.makeText(this@MainActivity, "You were removed from the session", Toast.LENGTH_LONG).show()
+                        
+                        // Show popup
+                        androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                            .setTitle("Removed from Session")
+                            .setMessage("You have been removed from the session by the host.")
+                            .setPositiveButton("OK", null)
+                            .setCancelable(false)
+                            .show()
+                    }
+                }
+            }
+            
+            // Observe session existence (for when host ends session)
+            lifecycleScope.launch {
+                CollaborativeSessionManager.observeSessionExists(sessionId).collect { exists ->
+                    if (!exists) {
+                        contentSyncJob?.cancel()
+                        CollaborativeSessionManager.clearSessionCache(this@MainActivity)
+                        activeSessionDialog?.dismiss()
+                        activeSessionDialog = null
+                        removeSessionInfoBar()
+                        editorBinding.textArea.setText("")
+                        this@MainActivity.currentFileUri = null
+                        textChanged = false
+                        updateToolbarTitle()
+                        showHome()
+                        
+                        // Show popup
+                        androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                            .setTitle("Session Ended")
+                            .setMessage("The session has been ended by the host.")
+                            .setPositiveButton("OK", null)
+                            .setCancelable(false)
+                            .show()
                     }
                 }
             }

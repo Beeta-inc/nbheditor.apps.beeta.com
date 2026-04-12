@@ -251,7 +251,7 @@ object CollaborativeSessionManager {
     }
     
     // Leave current session
-    suspend fun leaveSession() {
+    suspend fun leaveSession(clearLocal: Boolean = true) {
         try {
             val sessionId = currentSessionId ?: return
             val userId = currentUserId ?: return
@@ -270,9 +270,11 @@ object CollaborativeSessionManager {
             }
             
             // Clear local state
-            currentSessionId = null
-            currentUserId = null
-            currentCreatorId = null
+            if (clearLocal) {
+                currentSessionId = null
+                currentUserId = null
+                currentCreatorId = null
+            }
             
             Log.d(TAG, "Left session: $sessionId")
         } catch (e: Exception) {
@@ -402,7 +404,28 @@ object CollaborativeSessionManager {
         val ref = database.child(SESSIONS_PATH).child(sessionId).child("kicked").child(sanitized)
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
-                trySend(snapshot.getValue(Boolean::class.java) == true)
+                val kicked = snapshot.getValue(Boolean::class.java) == true
+                if (kicked) {
+                    Log.d(TAG, "User $sanitized has been kicked from session $sessionId")
+                }
+                trySend(kicked)
+            }
+            override fun onCancelled(error: DatabaseError) { close(error.toException()) }
+        }
+        ref.addValueEventListener(listener)
+        awaitClose { ref.removeEventListener(listener) }
+    }
+    
+    // Observe if session still exists (for detecting when host ends session)
+    fun observeSessionExists(sessionId: String): Flow<Boolean> = callbackFlow {
+        val ref = database.child(SESSIONS_PATH).child(sessionId)
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val exists = snapshot.exists()
+                if (!exists) {
+                    Log.d(TAG, "Session $sessionId no longer exists (ended by host)")
+                }
+                trySend(exists)
             }
             override fun onCancelled(error: DatabaseError) { close(error.toException()) }
         }
@@ -548,17 +571,52 @@ object CollaborativeSessionManager {
             val uri = android.net.Uri.parse(localUri)
             val context = com.google.firebase.FirebaseApp.getInstance().applicationContext
             
-            onProgress?.invoke(10)
+            onProgress?.invoke(5)
             
-            val bytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            var bytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
             } ?: return Result.failure(Exception("Could not read file"))
             
-            onProgress?.invoke(30)
+            onProgress?.invoke(15)
             
-            // Convert to base64 in chunks to show progress
+            // Check file size and compress if needed based on type
+            val fileSizeMB = bytes.size / (1024.0 * 1024.0)
+            
+            when (fileType) {
+                "image" -> {
+                    if (fileSizeMB > 12) {
+                        onProgress?.invoke(20)
+                        // Compress image
+                        bytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                            compressImage(context, uri, bytes)
+                        }
+                        val newSizeMB = bytes.size / (1024.0 * 1024.0)
+                        Log.d(TAG, "Image compressed: ${String.format("%.2f", fileSizeMB)}MB -> ${String.format("%.2f", newSizeMB)}MB")
+                        onProgress?.invoke(30)
+                    }
+                }
+                "video" -> {
+                    if (fileSizeMB > 100) {
+                        return Result.failure(Exception("Video too large (${String.format("%.1f", fileSizeMB)}MB). Please compress to under 100MB before sending."))
+                    }
+                }
+                "audio" -> {
+                    if (fileSizeMB > 10) {
+                        return Result.failure(Exception("Audio too large (${String.format("%.1f", fileSizeMB)}MB). Voice messages are limited to 5 minutes."))
+                    }
+                }
+                "document" -> {
+                    if (fileSizeMB > 50) {
+                        return Result.failure(Exception("Document too large (${String.format("%.1f", fileSizeMB)}MB). Maximum 50MB allowed."))
+                    }
+                }
+            }
+            
+            onProgress?.invoke(40)
+            
+            // Convert to base64
             val base64 = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                android.util.Base64.encodeToString(bytes, android.util.Base64.DEFAULT)
+                android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
             }
             
             onProgress?.invoke(60)
@@ -573,6 +631,9 @@ object CollaborativeSessionManager {
                 "uploadedAt" to com.google.firebase.database.ServerValue.TIMESTAMP
             )
             
+            onProgress?.invoke(80)
+            
+            // Upload to Firebase
             database.child(SESSIONS_PATH)
                 .child(sessionId)
                 .child("attachments")
@@ -580,16 +641,61 @@ object CollaborativeSessionManager {
                 .setValue(attachmentData)
                 .await()
             
-            onProgress?.invoke(100)
+            onProgress?.invoke(95)
             
             // Return a reference path that other clients can use
             val referencePath = "firebase://attachments/$sessionId/$messageId"
             
-            Log.d(TAG, "File uploaded to Realtime Database: $referencePath")
+            Log.d(TAG, "File uploaded to Realtime Database: $referencePath (${String.format("%.2f", bytes.size / (1024.0 * 1024.0))}MB)")
+            onProgress?.invoke(100)
             Result.success(referencePath)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to upload file to database", e)
             Result.failure(e)
+        }
+    }
+    
+    // Compress image to reduce file size
+    private fun compressImage(context: android.content.Context, uri: android.net.Uri, originalBytes: ByteArray): ByteArray {
+        try {
+            // Decode original bitmap
+            val originalBitmap = android.graphics.BitmapFactory.decodeByteArray(originalBytes, 0, originalBytes.size)
+                ?: return originalBytes
+            
+            // Calculate target dimensions (max 2048x2048)
+            val maxDimension = 2048
+            val scale = minOf(
+                maxDimension.toFloat() / originalBitmap.width,
+                maxDimension.toFloat() / originalBitmap.height,
+                1.0f
+            )
+            
+            val targetWidth = (originalBitmap.width * scale).toInt()
+            val targetHeight = (originalBitmap.height * scale).toInt()
+            
+            // Resize bitmap
+            val resizedBitmap = android.graphics.Bitmap.createScaledBitmap(
+                originalBitmap, targetWidth, targetHeight, true
+            )
+            
+            // Compress to JPEG with quality adjustment
+            var quality = 85
+            var compressedBytes: ByteArray
+            
+            do {
+                val outputStream = java.io.ByteArrayOutputStream()
+                resizedBitmap.compress(android.graphics.Bitmap.CompressFormat.JPEG, quality, outputStream)
+                compressedBytes = outputStream.toByteArray()
+                quality -= 10
+            } while (compressedBytes.size > 12 * 1024 * 1024 && quality > 20)
+            
+            originalBitmap.recycle()
+            resizedBitmap.recycle()
+            
+            return compressedBytes
+        } catch (e: Exception) {
+            Log.e(TAG, "Image compression failed", e)
+            return originalBytes
         }
     }
     

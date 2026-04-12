@@ -337,11 +337,20 @@ class CollabChatFragment : Fragment() {
             mediaRecorder!!.apply {
                 setAudioSource(MediaRecorder.AudioSource.MIC); setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
                 setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB); setOutputFile(voiceFile!!.absolutePath)
+                setMaxDuration(5 * 60 * 1000) // 5 minutes max
+                setOnInfoListener { _, what, _ ->
+                    if (what == MediaRecorder.MEDIA_RECORDER_INFO_MAX_DURATION_REACHED) {
+                        lifecycleScope.launch(Dispatchers.Main) {
+                            stopVoiceRecording()
+                            Toast.makeText(requireContext(), "⏱ Maximum recording time (5 minutes) reached", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                }
                 prepare(); start()
             }
             isRecording = true
             binding.btnAttachVoice.setColorFilter(0xFFFF0000.toInt())
-            Toast.makeText(requireContext(), "🎤 Recording... tap again to stop", Toast.LENGTH_SHORT).show()
+            Toast.makeText(requireContext(), "🎤 Recording... (max 5 min)", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) { Toast.makeText(requireContext(), "Recording failed: ${e.message}", Toast.LENGTH_SHORT).show() }
     }
 
