@@ -304,6 +304,8 @@ class CollabChatFragment : Fragment() {
                 putExtra(Intent.EXTRA_LOCAL_ONLY, true)
                 putExtra(Intent.EXTRA_MIME_TYPES, arrayOf(
                     "application/pdf",
+                    "application/rtf",
+                    "text/rtf",
                     "application/msword",
                     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                     "application/vnd.ms-excel",

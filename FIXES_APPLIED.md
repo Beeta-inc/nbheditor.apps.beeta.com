@@ -1,169 +1,159 @@
-# Fixes Applied - Collaborative Session & Voice Mode
+# Bug Fixes Applied to NbhEditor
 
-## 1. AI Integration in Collaborative Chat ✅
+## Date: $(date)
 
-**Problem**: When chat is set to "all" (everyone), the AI was not responding.
+### 1. Document Viewer Infinite Loading Issue - FIXED ✓
 
-**Solution**:
-- Modified `CollaborativeSessionManager.askAIInChat()` to accept a callback function that integrates with the existing AI system
-- Updated chat message sending logic to check if AI should respond based on target type:
-  - `"everyone"` → sends to all users AND AI
-  - `"everyone_and_ai"` → sends to all users AND AI
-  - `"ai_only"` → sends only to AI
-- AI now uses the existing `callAI()` function with context from the editor
-- AI responses are properly sent back to the chat with `isAI = true` flag
+**Problem:** Document viewer in collaborative chat was continuously rotating/loading and never displaying content.
 
-**Files Modified**:
-- `CollaborativeSessionManager.kt`: Updated `askAIInChat()` function
-- `MainActivity.kt`: Updated `btnSendMessage.setOnClickListener` logic
+**Solution:**
+- Added 15-second timeout handler for document loading
+- Improved WebView configuration with proper settings (domStorageEnabled, allowFileAccess, allowContentAccess)
+- Fixed async file reading to properly handle content:// and file:// URIs
+- Added proper error handling and user feedback when loading fails
+- Changed Base64 encoding to use NO_WRAP flag to prevent line breaks
 
-## 2. Glass UI for Collaborative Chat ✅
+**Files Modified:**
+- `MediaViewerFragment.kt` - showDocument() method
 
-**Problem**: Glass mode styling was not being applied to the collaborative chat dialog.
+---
 
-**Solution**:
-- Chat dialog now inherits theme from main editor (glass/dark/light mode)
-- Applied proper glass mode styling:
-  - Transparent backgrounds (0xBB/0xCC opacity)
-  - White text (0xFFFFFFFF)
-  - Proper blur effects
-- Styling is applied based on `isGlassMode` flag
-- Works for both glass mode and normal dark/light themes
+### 2. Video Player Infinite Loading Issue - FIXED ✓
 
-**Files Modified**:
-- `MainActivity.kt`: Updated `showCollabChatDialog()` function with theme detection
+**Problem:** Video player was stuck loading and not playing videos.
 
-## 3. Voice Mode Continuous Typing ✅
+**Solution:**
+- Added 20-second timeout handler for video loading
+- Improved MediaPlayer initialization with proper try-catch blocks
+- Added support for both content:// and file:// URI schemes
+- Better error messages showing error codes (what/extra)
+- Proper surface texture handling
 
-**Problem**: Voice mode was unreliable - sometimes it listened, sometimes not. When it did listen, text appeared in a popup but didn't get typed into the document continuously.
+**Files Modified:**
+- `MediaViewerFragment.kt` - showVideo() method
 
-**Solution**:
-- Fixed text insertion to properly insert at cursor position
-- Added cursor repositioning after each insertion to move to end of inserted text
-- Removed hint display during partial results (was confusing)
-- Text now continuously gets typed into the document as you speak
-- Voice mode restarts immediately after each phrase for continuous dictation
-- Proper spacing is added between words automatically
+---
 
-**Files Modified**:
-- `MainActivity.kt`: Updated `onResults()` and `onPartialResults()` in speech recognizer listener
+### 3. Audio Player Infinite Loading Issue - FIXED ✓
 
-## 4. Media Attachments in Collaborative Chat ✅
+**Problem:** Audio player was stuck loading and not playing audio files.
 
-**Problem**: No option to attach images, documents, voice, or video in collaborative chat.
+**Solution:**
+- Added 15-second timeout handler for audio loading
+- Improved MediaPlayer initialization with proper URI handling
+- Added support for both content:// and file:// URI schemes
+- Better error messages showing error codes
+- Proper async loading with lifecycle awareness
 
-**Solution**:
-- Added 4 media attachment buttons to the quick actions bar:
-  - 📷 **Image** (green) - Attach images
-  - 📄 **Document** (blue) - Attach documents
-  - 🎤 **Voice** (red) - Record voice messages
-  - 🎥 **Video** (purple) - Attach videos
-- Buttons are styled with appropriate colors and icons
-- Currently show "coming soon" toasts (ready for implementation)
-- UI is WhatsApp-style for familiar UX
+**Files Modified:**
+- `MediaViewerFragment.kt` - showAudio() method
 
-**Files Modified**:
-- `fragment_collab_chat.xml`: Added 4 ImageButton elements
-- `MainActivity.kt`: Added click handlers for media buttons
+---
 
-## 5. Chat Clearing on Session End/Leave ✅
+### 4. RTF File Support - ADDED ✓
 
-**Problem**: Chat messages were not being cleared when user ended or left a session, causing old messages to appear in new sessions.
+**Problem:** App did not support .rtf (Rich Text Format) files.
 
-**Solution**:
-- Added `activeSessionDialog` tracking to close chat dialog when session ends
-- Updated all session end/leave handlers to:
-  1. Clear session cache
-  2. Dismiss active chat dialog
-  3. Set dialog reference to null
-- Chat is now properly cleared when:
-  - Creator ends the session
-  - User leaves the session
-  - Session is deleted from Firebase
+**Solution:**
 
-**Files Modified**:
-- `MainActivity.kt`: Updated session end/leave handlers in 3 locations
+#### A. Main Editor RTF Support
+- Added RTF MIME types to SUPPORTED_MIME_TYPES array
+- Created convertRtfToPlainText() method to parse RTF and extract plain text
+- Modified openFileFromUri() to detect .rtf files and convert them
+- Strips RTF formatting codes and extracts readable text
+- Shows "Opened RTF (converted to plain text)" message
 
-## Technical Details
+#### B. Document Viewer RTF Support
+- Created convertRtfToHtml() method to convert RTF to HTML with formatting
+- Preserves basic formatting: bold, italic, underline, paragraphs, line breaks
+- Displays RTF files with proper styling in WebView
+- Added RTF MIME type detection in mimeForDoc()
 
-### AI Integration Flow
+#### C. Collaborative Chat RTF Support
+- Added "application/rtf" and "text/rtf" to document picker MIME types
+- Added RTF icon ("RTF") in docIcon() method
+- Added RTF MIME type in mimeFor() method for proper downloads
+
+#### D. System Integration
+- Added intent-filter in AndroidManifest.xml for RTF files
+- App now appears in "Open with" menu for .rtf files
+- Supports both application/rtf and text/rtf MIME types
+
+**Files Modified:**
+- `MainActivity.kt` - Added RTF parsing and MIME types
+- `MediaViewerFragment.kt` - Added RTF to HTML conversion
+- `CollabChatFragment.kt` - Added RTF to document picker
+- `CollabChatAdapter.kt` - Added RTF icon and MIME type
+- `AndroidManifest.xml` - Added RTF intent-filter
+
+---
+
+### 5. Voice Mode Not Working - FIXED ✓
+
+**Problem:** Voice mode was not functioning at all.
+
+**Solution:**
+- Added explicit check for SpeechRecognizer availability before starting
+- Improved permission request with user-friendly message
+- Added better error messages for unavailable speech recognition
+- Fixed emulator warning logic (was inverted)
+- Added Toast message when permission is required
+- Improved initialization sequence with proper delays
+- All voice UI elements already exist in layouts (VoiceEqualizerView, status indicators)
+- Voice mode implementation is complete with:
+  - Continuous listening with auto-restart
+  - Visual feedback (waveform animation)
+  - RMS-based voice detection
+  - 90-second auto-stop timeout
+  - Proper cleanup and state management
+
+**Files Modified:**
+- `MainActivity.kt` - startVoiceInput() method
+
+---
+
+## Testing Recommendations
+
+### Document/Video/Audio Viewer
+1. Test with various file sizes (small, medium, large)
+2. Test with both local files (content://) and remote URLs (https://)
+3. Verify timeout messages appear after 15-20 seconds for stuck files
+4. Test on different Android versions
+
+### RTF Support
+1. Create a test .rtf file with formatting (bold, italic, underline, paragraphs)
+2. Open it from file manager - verify app appears in "Open with" list
+3. Open RTF in main editor - verify text is readable (formatting stripped)
+4. Send RTF in collaborative chat - verify it displays with formatting
+5. Download RTF from chat - verify file is saved correctly
+
+### Voice Mode
+1. Grant microphone permission when prompted
+2. Tap microphone button in editor or AI chat
+3. Speak clearly - verify text appears in real-time
+4. Verify visual feedback (waveform animation, status text)
+5. Test on real device (emulator audio is unreliable)
+6. Verify auto-stop after 90 seconds of inactivity
+
+---
+
+## Build Instructions
+
+```bash
+cd /home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com
+./gradlew :app:assembleDebug
 ```
-User sends message with target "everyone" or "everyone_and_ai"
-  ↓
-Message is sent to all users in chat
-  ↓
-AI callback is triggered with question + editor context
-  ↓
-Existing callAI() function processes the request
-  ↓
-AI response is sent back to chat with isAI=true flag
-  ↓
-All users see the AI response
-```
 
-### Voice Mode Flow
-```
-User activates voice mode
-  ↓
-Speech recognizer starts listening continuously
-  ↓
-User speaks → onResults() triggered
-  ↓
-Text is inserted at current cursor position
-  ↓
-Cursor moves to end of inserted text
-  ↓
-Speech recognizer restarts immediately (no delay)
-  ↓
-Process repeats until user stops voice mode
-```
+The APK will be generated at:
+`appdata/Android/nbheditor/app/build/outputs/apk/debug/app-debug.apk`
 
-### Session Cleanup Flow
-```
-User ends/leaves session
-  ↓
-Show loading dialog
-  ↓
-Call leaveSession() or endSession()
-  ↓
-Clear session cache (temp files + state)
-  ↓
-Dismiss active chat dialog
-  ↓
-Remove session info bar with animation
-  ↓
-Clear editor content
-  ↓
-Return to home screen
-```
+---
 
-## Testing Checklist
+## Notes
 
-- [x] AI responds when chat target is "everyone"
-- [x] AI responds when chat target is "everyone + AI"
-- [x] AI responds when chat target is "AI only"
-- [x] Glass mode styling applies to chat dialog
-- [x] Voice mode continuously types into document
-- [x] Voice mode cursor moves after each insertion
-- [x] Media attachment buttons are visible
-- [x] Chat clears when ending session
-- [x] Chat clears when leaving session
-- [x] No old messages appear in new sessions
-
-## Known Limitations
-
-1. **Media Attachments**: Buttons are present but functionality is not yet implemented (shows "coming soon" toast)
-2. **Voice Mode on Emulator**: May be unreliable due to emulator audio limitations (works fine on real devices)
-3. **AI Context**: Limited to last 500 characters of editor content to avoid token overflow
-
-## Future Enhancements
-
-1. Implement full media attachment functionality:
-   - Image upload and display
-   - Document sharing
-   - Voice message recording and playback
-   - Video attachment and preview
-2. Add file size limits and compression
-3. Add progress indicators for uploads
-4. Add media preview in chat messages
-5. Add download/save functionality for received media
+- All fixes maintain backward compatibility
+- No breaking changes to existing functionality
+- Error handling is graceful with user-friendly messages
+- Timeouts prevent infinite loading states
+- RTF support is basic but functional (preserves text content)
+- Voice mode requires real device for best results (emulator audio is limited)

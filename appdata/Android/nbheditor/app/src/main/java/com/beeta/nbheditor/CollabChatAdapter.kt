@@ -379,6 +379,7 @@ class CollabChatAdapter(
 
     private fun docIcon(uri: String) = when {
         uri.endsWith(".pdf", true) -> "PDF"
+        uri.endsWith(".rtf", true) -> "RTF"
         uri.endsWith(".doc", true) || uri.endsWith(".docx", true) -> "DOC"
         uri.endsWith(".xls", true) || uri.endsWith(".xlsx", true) -> "XLS"
         uri.endsWith(".ppt", true) || uri.endsWith(".pptx", true) -> "PPT"
@@ -389,6 +390,7 @@ class CollabChatAdapter(
         "image" -> "image/*"; "video" -> "video/*"; "audio" -> "audio/*"
         else -> when {
             uri.endsWith(".pdf", true) -> "application/pdf"
+            uri.endsWith(".rtf", true) -> "application/rtf"
             uri.endsWith(".docx", true) -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             uri.endsWith(".doc", true) -> "application/msword"
             uri.endsWith(".xlsx", true) -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"

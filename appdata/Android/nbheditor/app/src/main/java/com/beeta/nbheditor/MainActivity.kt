@@ -135,6 +135,7 @@ open class MainActivity : AppCompatActivity() {
         "application/javascript", "application/typescript",
         "application/x-python", "application/x-sh",
         "application/x-kotlin", "application/x-java",
+        "application/rtf", "text/rtf",
         "application/octet-stream"
     )
 
@@ -1094,13 +1095,20 @@ open class MainActivity : AppCompatActivity() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
             != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), 101)
+            Toast.makeText(this, "Microphone permission is required for voice input", Toast.LENGTH_LONG).show()
+            return
+        }
+        
+        // Check if speech recognition is available
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+            Toast.makeText(this, "Speech recognition is not available on this device", Toast.LENGTH_LONG).show()
             return
         }
         
         // Warn if running on emulator (audio may be unreliable)
         if (Build.FINGERPRINT.contains("generic") || Build.FINGERPRINT.contains("emulator")) {
-            val isFirstTime = prefs.getBoolean("emulator_audio_warned", false)
-            if (!isFirstTime) {
+            val isFirstTime = !prefs.getBoolean("emulator_audio_warned", false)
+            if (isFirstTime) {
                 Toast.makeText(this, "⚠ Emulator audio may be unreliable. Test on real device for best results.", Toast.LENGTH_LONG).show()
                 prefs.edit().putBoolean("emulator_audio_warned", true).apply()
             }
@@ -1113,7 +1121,7 @@ open class MainActivity : AppCompatActivity() {
             }
             
             if (!isRecognizerReady) {
-                Toast.makeText(this, "Please wait...", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Please wait, initializing...", Toast.LENGTH_SHORT).show()
                 return
             }
             
@@ -2040,9 +2048,18 @@ open class MainActivity : AppCompatActivity() {
     private fun openFileFromUri(uri: Uri) {
         lifecycleScope.launch {
             try {
+                val fileName = getFileName(uri)
+                val isRtf = fileName.endsWith(".rtf", ignoreCase = true)
+                
                 val content = withContext(Dispatchers.IO) {
-                    contentResolver.openInputStream(uri)?.use {
-                        BufferedReader(InputStreamReader(it)).readText()
+                    contentResolver.openInputStream(uri)?.use { inputStream ->
+                        if (isRtf) {
+                            // Read RTF as bytes and convert to plain text
+                            val rtfBytes = inputStream.readBytes()
+                            convertRtfToPlainText(rtfBytes)
+                        } else {
+                            BufferedReader(InputStreamReader(inputStream)).readText()
+                        }
                     }
                 }
                 
@@ -2062,10 +2079,51 @@ open class MainActivity : AppCompatActivity() {
                 updateToolbarTitle()
                 deserializeImagesInText()
                 addToRecents(uri)
-                Toast.makeText(this@MainActivity, "Opened", Toast.LENGTH_SHORT).show()
+                val msg = if (isRtf) "Opened RTF (converted to plain text)" else "Opened"
+                Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 Toast.makeText(this@MainActivity, "Failed to open file: ${e.message}", Toast.LENGTH_SHORT).show()
             }
+        }
+    }
+
+    // Convert RTF to plain text by stripping formatting
+    private fun convertRtfToPlainText(rtfBytes: ByteArray): String {
+        return try {
+            val rtfText = String(rtfBytes, Charsets.UTF_8)
+            
+            // Remove RTF header and control words
+            var text = rtfText
+                .replace(Regex("\\\\rtf[0-9]"), "")
+                .replace(Regex("\\\\ansi"), "")
+                .replace(Regex("\\\\deff[0-9]"), "")
+                .replace(Regex("\\\\fonttbl[^}]*}"), "")
+                .replace(Regex("\\\\colortbl[^}]*}"), "")
+                .replace(Regex("\\\\\\*\\\\[^;]*;"), "")
+                .replace(Regex("\\\\viewkind[0-9]"), "")
+                .replace(Regex("\\\\uc[0-9]"), "")
+                .replace(Regex("\\\\pard"), "")
+            
+            // Convert formatting to plain text equivalents
+            text = text
+                .replace(Regex("\\\\par\\s*"), "\n")
+                .replace(Regex("\\\\line\\s*"), "\n")
+                .replace(Regex("\\\\tab\\s*"), "\t")
+                .replace(Regex("\\\\b\\s"), "")
+                .replace(Regex("\\\\b0\\s"), "")
+                .replace(Regex("\\\\i\\s"), "")
+                .replace(Regex("\\\\i0\\s"), "")
+                .replace(Regex("\\\\ul\\s"), "")
+                .replace(Regex("\\\\ulnone\\s"), "")
+            
+            // Remove all remaining RTF control words
+            text = text.replace(Regex("\\\\[a-z]+[0-9]*\\s*"), "")
+            text = text.replace(Regex("[{}]"), "")
+            text = text.replace(Regex("\\\\'"), "")
+            
+            text.trim()
+        } catch (e: Exception) {
+            "Error parsing RTF: ${e.message}\n\n${String(rtfBytes, Charsets.UTF_8).take(500)}"
         }
     }
 

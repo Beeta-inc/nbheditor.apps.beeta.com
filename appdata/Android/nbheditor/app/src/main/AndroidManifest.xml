@@ -58,6 +58,16 @@
                 <action android:name="android.intent.action.EDIT" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+                <!-- RTF files -->
+                <data android:mimeType="application/rtf" />
+                <data android:mimeType="text/rtf" />
+            </intent-filter>
+
+            <intent-filter android:label="NBH Editor">
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.EDIT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
                 <!-- Code &amp; markup -->
                 <data android:mimeType="text/html" />
                 <data android:mimeType="text/css" />
