@@ -425,24 +425,37 @@ class MediaViewerFragment : Fragment() {
         wv.webViewClient = object : WebViewClient() {
             override fun onPageFinished(view: WebView?, url: String?) {
                 progress.visibility = View.GONE
+                android.util.Log.d("MediaViewer", "WebView page finished loading: $url")
             }
             override fun onReceivedError(view: WebView?, errorCode: Int, description: String?, failingUrl: String?) {
                 progress.visibility = View.GONE
+                android.util.Log.e("MediaViewer", "WebView error: $description")
                 tvError.text = "Could not load document: $description"
+                tvError.visibility = View.VISIBLE
+            }
+            override fun onReceivedError(view: WebView?, request: android.webkit.WebResourceRequest?, error: android.webkit.WebResourceError?) {
+                progress.visibility = View.GONE
+                android.util.Log.e("MediaViewer", "WebView resource error: ${error?.description}")
+                tvError.text = "Could not load document: ${error?.description}"
                 tvError.visibility = View.VISIBLE
             }
         }
 
         val uri = Uri.parse(uriStr)
+        android.util.Log.d("MediaViewer", "Opening document: uri=$uriStr, name=$name, scheme=${uri.scheme}")
+        
         when {
             // Local file — read and display
             uri.scheme == "content" || uri.scheme == "file" || uriStr.startsWith("/") -> {
                 lifecycleScope.launch {
                     try {
                         val mime = mimeForDoc(name)
+                        android.util.Log.d("MediaViewer", "Detected MIME type: $mime for file: $name")
+                        
                         when {
-                            mime == "application/pdf" -> {
+                            mime == "application/pdf" || name.endsWith(".pdf", true) -> {
                                 // Use PdfRenderer for local PDFs
+                                android.util.Log.d("MediaViewer", "Using PdfRenderer for PDF")
                                 progress.visibility = View.GONE
                                 wv.visibility = View.GONE
                                 showPdfRenderer(view, uri, progress, tvError)

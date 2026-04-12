@@ -358,6 +358,9 @@ class CollabChatAdapter(
             // Download from Firebase Realtime Database first
             val progressDialog = android.app.ProgressDialog(ctx).apply {
                 setMessage("Loading...")
+                setProgressStyle(android.app.ProgressDialog.STYLE_HORIZONTAL)
+                max = 100
+                progress = 0
                 setCancelable(false)
                 show()
             }
@@ -371,6 +374,8 @@ class CollabChatAdapter(
                     val sessionId = parts[0]
                     val messageId = parts[1]
                     
+                    withContext(Dispatchers.Main) { progressDialog.progress = 10 }
+                    
                     val database = com.google.firebase.database.FirebaseDatabase.getInstance("https://nbheditior-default-rtdb.firebaseio.com").reference
                     val snapshot = database.child("collaborative_sessions")
                         .child(sessionId)
@@ -379,18 +384,57 @@ class CollabChatAdapter(
                         .get()
                         .await()
                     
-                    val base64 = snapshot.child("base64").getValue(String::class.java)
-                        ?: throw Exception("File data not found")
-                    val fileName = snapshot.child("fileName").getValue(String::class.java) ?: "file"
+                    withContext(Dispatchers.Main) { progressDialog.progress = 30 }
+                    
+                    // Check if file is chunked
+                    val metadata = snapshot.child("metadata")
+                    val base64: String
+                    
+                    if (metadata.exists()) {
+                        // Chunked file - reassemble with progress
+                        val totalChunks = metadata.child("totalChunks").getValue(Int::class.java) ?: 0
+                        val fileName = metadata.child("fileName").getValue(String::class.java) ?: "file"
+                        
+                        val chunks = StringBuilder()
+                        for (i in 0 until totalChunks) {
+                            val chunk = snapshot.child("chunk_$i").getValue(String::class.java)
+                                ?: throw Exception("Missing chunk $i")
+                            chunks.append(chunk)
+                            
+                            val chunkProgress = 30 + ((i + 1) * 40 / totalChunks)
+                            withContext(Dispatchers.Main) { progressDialog.progress = chunkProgress }
+                        }
+                        base64 = chunks.toString()
+                    } else {
+                        // Single file
+                        base64 = snapshot.child("base64").getValue(String::class.java)
+                            ?: throw Exception("File data not found")
+                    }
+                    
+                    withContext(Dispatchers.Main) { progressDialog.progress = 70 }
+                    
+                    val fileName = if (metadata.exists()) {
+                        metadata.child("fileName").getValue(String::class.java) ?: "file"
+                    } else {
+                        snapshot.child("fileName").getValue(String::class.java) ?: "file"
+                    }
+                    
+                    withContext(Dispatchers.Main) { progressDialog.progress = 80 }
                     
                     // Decode base64 to bytes
                     val bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
                     
-                    // Save to cache
-                    val cacheFile = java.io.File(ctx.cacheDir, "temp_$fileName")
+                    withContext(Dispatchers.Main) { progressDialog.progress = 90 }
+                    
+                    // Save to cache - preserve extension from original filename
+                    val extension = fileName.substringAfterLast('.', "")
+                    val baseName = fileName.substringBeforeLast('.', fileName).replace(Regex("[^a-zA-Z0-9_-]"), "_")
+                    val sanitizedName = if (extension.isNotEmpty()) "${baseName}.${extension}" else baseName
+                    val cacheFile = java.io.File(ctx.cacheDir, "temp_$sanitizedName")
                     cacheFile.writeBytes(bytes)
                     
                     withContext(Dispatchers.Main) {
+                        progressDialog.progress = 100
                         progressDialog.dismiss()
                         val localUri = android.net.Uri.fromFile(cacheFile).toString()
                         val fragment = MediaViewerFragment.newInstance(localUri, type, fileName)
@@ -429,6 +473,9 @@ class CollabChatAdapter(
         if (uriStr.startsWith("firebase://")) {
             val progressDialog = android.app.ProgressDialog(ctx).apply {
                 setMessage("Downloading...")
+                setProgressStyle(android.app.ProgressDialog.STYLE_HORIZONTAL)
+                max = 100
+                progress = 0
                 setCancelable(false)
                 show()
             }
@@ -441,6 +488,8 @@ class CollabChatAdapter(
                     val sessionId = parts[0]
                     val messageId = parts[1]
                     
+                    withContext(Dispatchers.Main) { progressDialog.progress = 10 }
+                    
                     val database = com.google.firebase.database.FirebaseDatabase.getInstance("https://nbheditior-default-rtdb.firebaseio.com").reference
                     val snapshot = database.child("collaborative_sessions")
                         .child(sessionId)
@@ -449,9 +498,36 @@ class CollabChatAdapter(
                         .get()
                         .await()
                     
-                    val base64 = snapshot.child("base64").getValue(String::class.java)
-                        ?: throw Exception("File data not found")
-                    val fileName = snapshot.child("fileName").getValue(String::class.java) ?: "file"
+                    withContext(Dispatchers.Main) { progressDialog.progress = 30 }
+                    
+                    // Check if file is chunked
+                    val metadata = snapshot.child("metadata")
+                    val base64: String
+                    
+                    if (metadata.exists()) {
+                        // Chunked file - reassemble
+                        val totalChunks = metadata.child("totalChunks").getValue(Int::class.java) ?: 0
+                        val chunks = StringBuilder()
+                        for (i in 0 until totalChunks) {
+                            val chunk = snapshot.child("chunk_$i").getValue(String::class.java)
+                                ?: throw Exception("Missing chunk $i")
+                            chunks.append(chunk)
+                            
+                            val chunkProgress = 30 + ((i + 1) * 40 / totalChunks)
+                            withContext(Dispatchers.Main) { progressDialog.progress = chunkProgress }
+                        }
+                        base64 = chunks.toString()
+                    } else {
+                        // Single file
+                        base64 = snapshot.child("base64").getValue(String::class.java)
+                            ?: throw Exception("File data not found")
+                    }
+                    
+                    val fileName = if (metadata.exists()) {
+                        metadata.child("fileName").getValue(String::class.java) ?: "file"
+                    } else {
+                        snapshot.child("fileName").getValue(String::class.java) ?: "file"
+                    }
                     
                     val bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
                     val dest = java.io.File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS), fileName)

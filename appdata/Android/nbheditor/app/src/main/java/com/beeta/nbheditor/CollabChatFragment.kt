@@ -385,11 +385,16 @@ class CollabChatFragment : Fragment() {
                 addView(progressBar)
                 addView(tvSpeed)
             }
+            
+            var uploadJob: Job? = null
             val dialog = AlertDialog.Builder(requireContext())
                 .setTitle("Uploading to Firebase")
                 .setView(container)
                 .setCancelable(false)
-                .setNegativeButton("Cancel") { d, _ -> d.dismiss() }
+                .setNegativeButton("Cancel") { d, _ -> 
+                    uploadJob?.cancel()
+                    d.dismiss()
+                }
                 .create()
             dialog.show()
             
@@ -397,45 +402,55 @@ class CollabChatFragment : Fragment() {
             var lastProgress = 0
             
             try {
+                uploadJob = coroutineContext[Job]
                 val result = CollaborativeSessionManager.sendChatMessage(
                     message = name,
                     targetType = messageVisibility,
                     targetUserIds = selectedUserIds.toList(),
                     attachmentUri = uriStr,
                     attachmentType = type,
+                    attachmentFileName = name,
                     onProgress = { progress ->
-                        lifecycleScope.launch(Dispatchers.Main) {
-                            progressBar.progress = progress
-                            tvStatus.text = "Uploading $name... $progress%"
-                            
-                            // Calculate speed and time remaining
-                            if (progress > lastProgress && progress > 0) {
-                                val elapsed = (System.currentTimeMillis() - startTime) / 1000.0
-                                val speed = progress / elapsed
-                                val remaining = ((100 - progress) / speed).toInt()
+                        if (isAdded && !isDetached) {
+                            lifecycleScope.launch(Dispatchers.Main) {
+                                progressBar.progress = progress
+                                tvStatus.text = "Uploading $name... $progress%"
                                 
-                                val speedText = when {
-                                    speed > 10 -> "Fast"
-                                    speed > 5 -> "Normal"
-                                    else -> "Slow"
+                                // Calculate speed and time remaining
+                                if (progress > lastProgress && progress > 0) {
+                                    val elapsed = (System.currentTimeMillis() - startTime) / 1000.0
+                                    val speed = progress / elapsed
+                                    val remaining = ((100 - progress) / speed).toInt()
+                                    
+                                    val speedText = when {
+                                        speed > 10 -> "Fast"
+                                        speed > 5 -> "Normal"
+                                        else -> "Slow"
+                                    }
+                                    
+                                    tvSpeed.text = "Speed: $speedText • ${remaining}s remaining"
+                                    lastProgress = progress
                                 }
-                                
-                                tvSpeed.text = "Speed: $speedText • ${remaining}s remaining"
-                                lastProgress = progress
                             }
                         }
                     }
                 )
                 
-                if (result.isSuccess) {
-                    Toast.makeText(requireContext(), "✓ Sent successfully", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(requireContext(), "Failed: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
+                if (isAdded && !isDetached) {
+                    if (result.isSuccess) {
+                        Toast.makeText(requireContext(), "✓ Sent successfully", Toast.LENGTH_SHORT).show()
+                    } else {
+                        Toast.makeText(requireContext(), "Failed: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
+                    }
                 }
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                if (e !is kotlinx.coroutines.CancellationException && isAdded && !isDetached) {
+                    Toast.makeText(requireContext(), "Error: ${e.message}", Toast.LENGTH_LONG).show()
+                }
             } finally {
-                dialog.dismiss()
+                if (dialog.isShowing) {
+                    dialog.dismiss()
+                }
             }
         }
     }
@@ -508,6 +523,8 @@ class CollabChatFragment : Fragment() {
     }
 
     private suspend fun doUpload(uriStr: String, name: String, startPct: Int = 0) {
+        if (!isAdded || isDetached) return
+        
         val progressBar = ProgressBar(requireContext(), null, android.R.attr.progressBarStyleHorizontal).apply {
             max = 100; progress = startPct; isIndeterminate = false
         }
@@ -543,46 +560,53 @@ class CollabChatFragment : Fragment() {
                 targetUserIds = selectedUserIds.toList(),
                 attachmentUri = uriStr,
                 attachmentType = "video",
+                attachmentFileName = name,
                 onProgress = { progress ->
-                    lifecycleScope.launch(Dispatchers.Main) {
-                        val adjustedProgress = startPct + ((progress * (100 - startPct)) / 100)
-                        progressBar.progress = adjustedProgress
-                        tvStatus.text = "Uploading... $adjustedProgress%"
-                        
-                        if (adjustedProgress > lastProgress && adjustedProgress > startPct) {
-                            val elapsed = (System.currentTimeMillis() - startTime) / 1000.0
-                            val speed = (adjustedProgress - startPct) / elapsed
-                            val remaining = ((100 - adjustedProgress) / speed).toInt()
+                    if (isAdded && !isDetached) {
+                        lifecycleScope.launch(Dispatchers.Main) {
+                            val adjustedProgress = startPct + ((progress * (100 - startPct)) / 100)
+                            progressBar.progress = adjustedProgress
+                            tvStatus.text = "Uploading... $adjustedProgress%"
                             
-                            val speedText = when {
-                                speed > 10 -> "Fast"
-                                speed > 5 -> "Normal"
-                                else -> "Slow"
+                            if (adjustedProgress > lastProgress && adjustedProgress > startPct) {
+                                val elapsed = (System.currentTimeMillis() - startTime) / 1000.0
+                                val speed = (adjustedProgress - startPct) / elapsed
+                                val remaining = ((100 - adjustedProgress) / speed).toInt()
+                                
+                                val speedText = when {
+                                    speed > 10 -> "Fast"
+                                    speed > 5 -> "Normal"
+                                    else -> "Slow"
+                                }
+                                
+                                tvSpeed.text = "Speed: $speedText • ${remaining}s remaining"
+                                lastProgress = adjustedProgress
                             }
-                            
-                            tvSpeed.text = "Speed: $speedText • ${remaining}s remaining"
-                            lastProgress = adjustedProgress
                         }
                     }
                 }
             )
             
-            if (result.isSuccess) {
-                withContext(Dispatchers.Main) {
-                    progressBar.progress = 100
-                    tvStatus.text = "Done!"
-                    tvSpeed.text = "Upload complete"
+            if (isAdded && !isDetached) {
+                if (result.isSuccess) {
+                    withContext(Dispatchers.Main) {
+                        progressBar.progress = 100
+                        tvStatus.text = "Done!"
+                        tvSpeed.text = "Upload complete"
+                    }
+                    kotlinx.coroutines.delay(500)
+                    Toast.makeText(requireContext(), "✓ Sent", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(requireContext(), "Upload failed: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
                 }
-                kotlinx.coroutines.delay(500)
-                Toast.makeText(requireContext(), "✓ Sent", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(requireContext(), "Upload failed: ${result.exceptionOrNull()?.message}", Toast.LENGTH_LONG).show()
             }
         } catch (e: Exception) {
-            if (e !is kotlinx.coroutines.CancellationException)
+            if (e !is kotlinx.coroutines.CancellationException && isAdded && !isDetached)
                 Toast.makeText(requireContext(), "Upload failed: ${e.message}", Toast.LENGTH_SHORT).show()
         } finally {
-            withContext(Dispatchers.Main) { dialog.dismiss() }
+            if (dialog.isShowing) {
+                withContext(Dispatchers.Main) { dialog.dismiss() }
+            }
         }
     }
 

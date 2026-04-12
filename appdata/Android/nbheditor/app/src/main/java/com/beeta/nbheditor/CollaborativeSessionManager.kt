@@ -7,6 +7,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.*
 import kotlin.random.Random
 
 data class SessionUser(
@@ -506,6 +507,7 @@ object CollaborativeSessionManager {
         targetUserIds: List<String> = emptyList(),
         attachmentUri: String? = null,
         attachmentType: String? = null,
+        attachmentFileName: String? = null,
         onProgress: ((Int) -> Unit)? = null
     ): Result<String> {
         return try {
@@ -524,7 +526,7 @@ object CollaborativeSessionManager {
             var finalAttachmentUri = attachmentUri
             if (!attachmentUri.isNullOrBlank() && !attachmentType.isNullOrBlank()) {
                 onProgress?.invoke(0)
-                val uploadResult = uploadFileToStorage(sessionId, messageId, attachmentUri, attachmentType, onProgress)
+                val uploadResult = uploadFileToStorage(sessionId, messageId, attachmentUri, attachmentType, attachmentFileName, onProgress)
                 if (uploadResult.isSuccess) {
                     finalAttachmentUri = uploadResult.getOrNull()
                     onProgress?.invoke(100)
@@ -564,6 +566,7 @@ object CollaborativeSessionManager {
         messageId: String,
         localUri: String,
         fileType: String,
+        fileName: String?,
         onProgress: ((Int) -> Unit)?
     ): Result<String> {
         return try {
@@ -612,42 +615,101 @@ object CollaborativeSessionManager {
                 }
             }
             
-            onProgress?.invoke(40)
+            onProgress?.invoke(35)
             
             // Convert to base64
             val base64 = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+                onProgress?.invoke(40)
+                val encoded = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+                onProgress?.invoke(50)
+                encoded
             }
             
-            onProgress?.invoke(60)
+            onProgress?.invoke(55)
             
             // Store in Firebase Realtime Database under attachments
-            val fileName = uri.lastPathSegment ?: "file_${System.currentTimeMillis()}"
+            val finalFileName = fileName ?: uri.lastPathSegment ?: "file_${System.currentTimeMillis()}"
             val attachmentData = mapOf(
                 "base64" to base64,
-                "fileName" to fileName,
+                "fileName" to finalFileName,
                 "fileType" to fileType,
                 "size" to bytes.size,
                 "uploadedAt" to com.google.firebase.database.ServerValue.TIMESTAMP
             )
             
-            onProgress?.invoke(80)
+            onProgress?.invoke(60)
             
-            // Upload to Firebase
-            database.child(SESSIONS_PATH)
-                .child(sessionId)
-                .child("attachments")
-                .child(messageId)
-                .setValue(attachmentData)
-                .await()
+            // Upload to Firebase - split large files into chunks
+            val maxChunkSize = 1024 * 1024 // 1MB chunks
+            if (base64.length > maxChunkSize) {
+                Log.d(TAG, "Large file detected, splitting into chunks...")
+                val chunks = base64.chunked(maxChunkSize)
+                val totalChunks = chunks.size
+                
+                onProgress?.invoke(65)
+                
+                // Upload chunks
+                chunks.forEachIndexed { index, chunk ->
+                    database.child(SESSIONS_PATH)
+                        .child(sessionId)
+                        .child("attachments")
+                        .child(messageId)
+                        .child("chunk_$index")
+                        .setValue(chunk)
+                        .await()
+                    
+                    val chunkProgress = 65 + ((index + 1) * 30 / totalChunks)
+                    onProgress?.invoke(chunkProgress)
+                    Log.d(TAG, "Uploaded chunk ${index + 1}/$totalChunks")
+                }
+                
+                // Store metadata
+                val metadata = mapOf(
+                    "fileName" to finalFileName,
+                    "fileType" to fileType,
+                    "size" to bytes.size,
+                    "totalChunks" to totalChunks,
+                    "uploadedAt" to com.google.firebase.database.ServerValue.TIMESTAMP
+                )
+                database.child(SESSIONS_PATH)
+                    .child(sessionId)
+                    .child("attachments")
+                    .child(messageId)
+                    .child("metadata")
+                    .setValue(metadata)
+                    .await()
+                    
+                onProgress?.invoke(95)
+                Log.d(TAG, "All chunks uploaded, invoking 95%")
+            } else {
+                // Small file, upload directly
+                Log.d(TAG, "Small file, uploading directly...")
+                val attachmentData = mapOf(
+                    "base64" to base64,
+                    "fileName" to finalFileName,
+                    "fileType" to fileType,
+                    "size" to bytes.size,
+                    "uploadedAt" to com.google.firebase.database.ServerValue.TIMESTAMP
+                )
+                
+                onProgress?.invoke(70)
+                database.child(SESSIONS_PATH)
+                    .child(sessionId)
+                    .child("attachments")
+                    .child(messageId)
+                    .setValue(attachmentData)
+                    .await()
+                onProgress?.invoke(95)
+                Log.d(TAG, "Small file uploaded, invoking 95%")
+            }
             
-            onProgress?.invoke(95)
+            Log.d(TAG, "Upload complete, invoking 100%")
+            onProgress?.invoke(100)
             
             // Return a reference path that other clients can use
             val referencePath = "firebase://attachments/$sessionId/$messageId"
             
             Log.d(TAG, "File uploaded to Realtime Database: $referencePath (${String.format("%.2f", bytes.size / (1024.0 * 1024.0))}MB)")
-            onProgress?.invoke(100)
             Result.success(referencePath)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to upload file to database", e)
