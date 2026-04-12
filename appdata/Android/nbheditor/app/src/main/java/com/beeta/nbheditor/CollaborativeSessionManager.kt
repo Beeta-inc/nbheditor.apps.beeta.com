@@ -550,14 +550,14 @@ object CollaborativeSessionManager {
             
             onProgress?.invoke(10)
             
-            val bytes = withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val bytes = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
             } ?: return Result.failure(Exception("Could not read file"))
             
             onProgress?.invoke(30)
             
             // Convert to base64 in chunks to show progress
-            val base64 = withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val base64 = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 android.util.Base64.encodeToString(bytes, android.util.Base64.DEFAULT)
             }
             
