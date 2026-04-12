@@ -546,7 +546,7 @@ object CollaborativeSessionManager {
         return try {
             // Read file as bytes
             val uri = android.net.Uri.parse(localUri)
-            val context = com.google.firebase.Firebase.app.applicationContext
+            val context = com.google.firebase.FirebaseApp.getInstance().applicationContext
             
             onProgress?.invoke(10)
             
