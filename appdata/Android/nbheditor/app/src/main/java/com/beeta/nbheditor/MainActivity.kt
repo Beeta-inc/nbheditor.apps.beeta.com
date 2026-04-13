@@ -2222,44 +2222,109 @@ open class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    // Convert RTF to plain text by stripping formatting
     private fun convertRtfToPlainText(rtfBytes: ByteArray): String {
         return try {
             val rtfText = String(rtfBytes, Charsets.UTF_8)
+            val result = StringBuilder()
+            var i = 0
+            var inGroup = 0
+            var skipGroup = false
+            val groupStack = mutableListOf<Boolean>()
             
-            // Remove RTF header and control words
-            var text = rtfText
-                .replace(Regex("\\\\rtf[0-9]"), "")
-                .replace(Regex("\\\\ansi"), "")
-                .replace(Regex("\\\\deff[0-9]"), "")
-                .replace(Regex("\\\\fonttbl[^}]*}"), "")
-                .replace(Regex("\\\\colortbl[^}]*}"), "")
-                .replace(Regex("\\\\\\*\\\\[^;]*;"), "")
-                .replace(Regex("\\\\viewkind[0-9]"), "")
-                .replace(Regex("\\\\uc[0-9]"), "")
-                .replace(Regex("\\\\pard"), "")
-            
-            // Convert formatting to plain text equivalents
-            text = text
-                .replace(Regex("\\\\par\\s*"), "\n")
-                .replace(Regex("\\\\line\\s*"), "\n")
-                .replace(Regex("\\\\tab\\s*"), "\t")
-                .replace(Regex("\\\\b\\s"), "")
-                .replace(Regex("\\\\b0\\s"), "")
-                .replace(Regex("\\\\i\\s"), "")
-                .replace(Regex("\\\\i0\\s"), "")
-                .replace(Regex("\\\\ul\\s"), "")
-                .replace(Regex("\\\\ulnone\\s"), "")
-            
-            // Remove all remaining RTF control words
-            text = text.replace(Regex("\\\\[a-z]+[0-9]*\\s*"), "")
-            text = text.replace(Regex("[{}]"), "")
-            text = text.replace(Regex("\\\\'"), "")
-            
-            text.trim()
+            while (i < rtfText.length) {
+                val c = rtfText[i]
+                when {
+                    c == '{' -> {
+                        inGroup++
+                        groupStack.add(skipGroup)
+                        val ahead = rtfText.substring(i, (i + 20).coerceAtMost(rtfText.length))
+                        if (ahead.contains("\\fonttbl") || ahead.contains("\\colortbl") || 
+                            ahead.contains("\\stylesheet") || ahead.contains("\\*")) {
+                            skipGroup = true
+                        }
+                        i++
+                    }
+                    c == '}' -> {
+                        inGroup--
+                        if (groupStack.isNotEmpty()) {
+                            skipGroup = groupStack.removeAt(groupStack.size - 1)
+                        }
+                        i++
+                    }
+                    c == '\\' && i + 1 < rtfText.length -> {
+                        val (controlWord, param, nextPos) = parseRtfControl(rtfText, i)
+                        i = nextPos
+                        if (!skipGroup) {
+                            when (controlWord) {
+                                "par" -> result.append("\n")
+                                "line" -> result.append("\n")
+                                "tab" -> result.append("\t")
+                                "bullet" -> result.append("• ")
+                                "emdash" -> result.append("—")
+                                "endash" -> result.append("–")
+                                "lquote" -> result.append("'")
+                                "rquote" -> result.append("'")
+                                "ldblquote" -> result.append("\"")
+                                "rdblquote" -> result.append("\"")
+                                "~" -> result.append(" ")
+                                "_" -> result.append("-")
+                                "'" -> {
+                                    if (param.length == 2) {
+                                        try {
+                                            result.append(param.toInt(16).toChar())
+                                        } catch (e: Exception) { }
+                                    }
+                                }
+                                "u" -> {
+                                    try {
+                                        val unicode = param.toIntOrNull()
+                                        if (unicode != null) {
+                                            val actualCode = if (unicode < 0) 65536 + unicode else unicode
+                                            result.append(actualCode.toChar())
+                                        }
+                                    } catch (e: Exception) { }
+                                }
+                                "pict" -> {
+                                    result.append("[Image]")
+                                    skipGroup = true
+                                }
+                            }
+                        }
+                    }
+                    else -> {
+                        if (!skipGroup && inGroup >= 0 && c != '\r' && c != '\n') {
+                            result.append(c)
+                        }
+                        i++
+                    }
+                }
+            }
+            result.toString().replace(Regex("\n{3,}"), "\n\n").replace(Regex(" {2,}"), " ").trim()
         } catch (e: Exception) {
-            "Error parsing RTF: ${e.message}\n\n${String(rtfBytes, Charsets.UTF_8).take(500)}"
+            Log.e("RTF", "Error parsing RTF", e)
+            "Error parsing RTF: ${e.message}"
         }
+    }
+    
+    private fun parseRtfControl(rtf: String, startPos: Int): Triple<String, String, Int> {
+        var pos = startPos + 1
+        if (pos >= rtf.length) return Triple("", "", pos)
+        val firstChar = rtf[pos]
+        if (firstChar in "\\{}~_-") return Triple(firstChar.toString(), "", pos + 1)
+        if (firstChar == '\'' && pos + 2 < rtf.length) {
+            return Triple("'", rtf.substring(pos + 1, pos + 3), pos + 3)
+        }
+        val wordStart = pos
+        while (pos < rtf.length && rtf[pos].isLetter()) pos++
+        val controlWord = rtf.substring(wordStart, pos)
+        val paramStart = pos
+        if (pos < rtf.length && (rtf[pos] == '-' || rtf[pos].isDigit())) {
+            pos++
+            while (pos < rtf.length && rtf[pos].isDigit()) pos++
+        }
+        val param = rtf.substring(paramStart, pos)
+        if (pos < rtf.length && rtf[pos] == ' ') pos++
+        return Triple(controlWord, param, pos)
     }
 
     private fun saveToFile(uri: Uri) {
