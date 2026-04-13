@@ -621,7 +621,10 @@ open class MainActivity : AppCompatActivity() {
         // Show loading state if signed in (cloud sync)
         if (GoogleSignInHelper.isSignedIn(this)) {
             homeBinding.emptyHomeState.visibility = View.GONE
-            homeBinding.fileGrid.visibility = View.VISIBLE
+            homeBinding.fileGrid.visibility = View.GONE
+            homeBinding.loadingState.visibility = View.VISIBLE
+            homeBinding.syncStatusText.text = "Syncing from cloud..."
+            homeBinding.syncDetailText.text = "Loading files from all devices"
         }
         
         lifecycleScope.launch {
@@ -656,7 +659,16 @@ open class MainActivity : AppCompatActivity() {
                 // Load cloud files if signed in
                 if (GoogleSignInHelper.isSignedIn(this@MainActivity)) {
                     try {
+                        withContext(Dispatchers.Main) {
+                            homeBinding.syncDetailText.text = "Checking cloud versions..."
+                        }
+                        
                         val cloudFiles = GoogleSignInHelper.getAllCloudFiles(this@MainActivity)
+                        
+                        withContext(Dispatchers.Main) {
+                            homeBinding.syncDetailText.text = "Updating files (${cloudFiles.size} found)..."
+                        }
+                        
                         for ((fileName, content, modifiedTime) in cloudFiles) {
                             if (fileName in processedNames) {
                                 // Check if cloud version is newer
@@ -695,6 +707,9 @@ open class MainActivity : AppCompatActivity() {
                 list.sortedBy { it.name.lowercase() }
             }
 
+            // Hide loading, show content
+            homeBinding.loadingState.visibility = View.GONE
+            
             val cols = when {
                 entries.size <= 2  -> 1
                 entries.size <= 10 -> 2
@@ -916,11 +931,39 @@ open class MainActivity : AppCompatActivity() {
 
     // ── Memory: history dialog with delete ────────────────────────────────────
     private fun showChatHistoryDialog() {
-        val progressDialog = android.app.ProgressDialog(this).apply {
-            setMessage("Syncing chats from cloud...")
-            setCancelable(false)
-            show()
-        }
+        // Create loading dialog
+        val loadingDialog = android.app.AlertDialog.Builder(this)
+            .setView(android.view.LayoutInflater.from(this).inflate(
+                android.R.layout.simple_list_item_1, null
+            ).apply {
+                val progressBar = ProgressBar(this@MainActivity).apply {
+                    indeterminateTintList = android.content.res.ColorStateList.valueOf(
+                        resources.getColor(R.color.accent_primary, theme)
+                    )
+                }
+                val textView = TextView(this@MainActivity).apply {
+                    text = "Syncing chats from cloud..."
+                    textSize = 14f
+                    gravity = android.view.Gravity.CENTER
+                    setPadding(32, 16, 32, 16)
+                    setTextColor(resources.getColor(R.color.editor_text, theme))
+                }
+                val layout = LinearLayout(this@MainActivity).apply {
+                    orientation = LinearLayout.VERTICAL
+                    gravity = android.view.Gravity.CENTER
+                    setPadding(48, 48, 48, 48)
+                    addView(progressBar, LinearLayout.LayoutParams(120, 120).apply {
+                        gravity = android.view.Gravity.CENTER
+                    })
+                    addView(textView)
+                }
+                (this as? android.view.ViewGroup)?.removeAllViews()
+                (this as? android.view.ViewGroup)?.addView(layout)
+            })
+            .setCancelable(false)
+            .create()
+        
+        loadingDialog.show()
         
         lifecycleScope.launch {
             try {
@@ -959,7 +1002,7 @@ open class MainActivity : AppCompatActivity() {
                 }
                 
                 withContext(Dispatchers.Main) {
-                    progressDialog.dismiss()
+                    loadingDialog.dismiss()
                     
                     val files = localFiles.sortedByDescending { it.lastModified() }
                     if (files.isEmpty()) {
@@ -1005,7 +1048,7 @@ open class MainActivity : AppCompatActivity() {
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    progressDialog.dismiss()
+                    loadingDialog.dismiss()
                     Toast.makeText(this@MainActivity, "Failed to load chats: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
