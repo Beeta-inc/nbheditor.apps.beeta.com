@@ -3148,28 +3148,7 @@ open class MainActivity : AppCompatActivity() {
     
     private fun showSetupGuide() {
         val guide = """
-            📋 Firebase Setup Required (100% FREE)
             
-            Error code 10 means Firebase needs to be configured.
-            
-            Quick Steps:
-            1. Go to console.firebase.google.com
-            2. Create project "NBH Editor"
-            3. Add Android app
-            4. Package: com.beeta.nbheditor
-            5. Add SHA-1 fingerprints (tap to copy):
-            
-            Debug SHA-1 (with colons)
-            Release SHA-1 (with colons)
-            
-            6. Download google-services.json
-            7. Place in app/ folder
-            8. Enable Authentication (Google)
-            9. Enable Firestore Database
-            
-            ✅ Completely FREE - No credit card needed!
-            
-            See FIREBASE_SETUP.md for detailed guide.
         """.trimIndent()
         
         androidx.appcompat.app.AlertDialog.Builder(this)
