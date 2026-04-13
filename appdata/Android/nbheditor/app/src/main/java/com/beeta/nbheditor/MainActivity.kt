@@ -618,6 +618,12 @@ open class MainActivity : AppCompatActivity() {
     private fun refreshHomeFiles() {
         val uriStrings = prefs.getStringSet("recent_files", emptySet()) ?: emptySet()
         
+        // Show loading state if signed in (cloud sync)
+        if (GoogleSignInHelper.isSignedIn(this)) {
+            homeBinding.emptyHomeState.visibility = View.GONE
+            homeBinding.fileGrid.visibility = View.VISIBLE
+        }
+        
         lifecycleScope.launch {
             val entries = withContext(Dispatchers.IO) {
                 val list = mutableListOf<FileCardAdapter.FileEntry>()
@@ -652,17 +658,33 @@ open class MainActivity : AppCompatActivity() {
                     try {
                         val cloudFiles = GoogleSignInHelper.getAllCloudFiles(this@MainActivity)
                         for ((fileName, content, modifiedTime) in cloudFiles) {
-                            if (fileName in processedNames) continue // Skip if already loaded locally
+                            if (fileName in processedNames) {
+                                // Check if cloud version is newer
+                                val localSyncTime = prefs.getLong("cloud_sync_${fileName}", 0L)
+                                if (modifiedTime > localSyncTime) {
+                                    // Update local file if it exists
+                                    val localUri = uriStrings.find { getFileName(android.net.Uri.parse(it)) == fileName }
+                                    if (localUri != null) {
+                                        try {
+                                            val uri = android.net.Uri.parse(localUri)
+                                            contentResolver.openOutputStream(uri, "wt")?.use {
+                                                OutputStreamWriter(it).use { w -> w.write(content) }
+                                            }
+                                            prefs.edit().putLong("cloud_sync_${fileName}", modifiedTime).apply()
+                                        } catch (e: Exception) {
+                                            Log.e("HomeFiles", "Failed to update local file", e)
+                                        }
+                                    }
+                                }
+                                continue
+                            }
                             
                             val preview = content
                                 .replace(Regex("\\[img:[^\\]]+\\]"), "[image]")
                                 .take(150).trim()
                             
-                            // Create a virtual URI for cloud files
                             val cloudUri = android.net.Uri.parse("cloud://$fileName")
                             list.add(FileCardAdapter.FileEntry(cloudUri, fileName, preview))
-                            
-                            // Store cloud file metadata
                             prefs.edit().putLong("cloud_time_${fileName}", modifiedTime).apply()
                         }
                     } catch (e: Exception) {
@@ -820,7 +842,6 @@ open class MainActivity : AppCompatActivity() {
         val chatsDir = java.io.File(filesDir, "nbh_chats").also { it.mkdirs() }
         val date = java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault()).format(java.util.Date())
         val file = currentChatFile ?: run {
-            // Count existing files for this date to get next index
             val existing = chatsDir.listFiles { f ->
                 f.name.startsWith(date) && f.name.endsWith("nbhheditorchat")
             }?.size ?: 0
@@ -829,7 +850,6 @@ open class MainActivity : AppCompatActivity() {
         }
         try {
             val gson = com.google.gson.Gson()
-            // Convert all messages to ChatHistoryItem
             val historyItems = chatAdapter.getMessages().map { msg ->
                 when (msg) {
                     is ChatMessage -> ChatHistoryItem("text", msg.role, msg.content)
@@ -840,10 +860,15 @@ open class MainActivity : AppCompatActivity() {
             val jsonContent = gson.toJson(historyItems)
             file.writeText(jsonContent)
             
-            // Sync to cloud if signed in
+            // Sync to cloud in parallel if signed in
             if (GoogleSignInHelper.isSignedIn(this)) {
                 lifecycleScope.launch {
-                    GoogleSignInHelper.syncChatToCloud(this@MainActivity, jsonContent, file.name)
+                    try {
+                        GoogleSignInHelper.syncChatToCloud(this@MainActivity, jsonContent, file.name)
+                        prefs.edit().putLong("chat_sync_${file.name}", System.currentTimeMillis()).apply()
+                    } catch (e: Exception) {
+                        Log.e("ChatSync", "Failed to sync chat", e)
+                    }
                 }
             }
         } catch (_: Exception) {}
@@ -891,48 +916,100 @@ open class MainActivity : AppCompatActivity() {
 
     // ── Memory: history dialog with delete ────────────────────────────────────
     private fun showChatHistoryDialog() {
-        val chatsDir = java.io.File(filesDir, "nbh_chats")
-        val files = chatsDir.listFiles()?.sortedByDescending { it.lastModified() } ?: emptyList()
-        if (files.isEmpty()) {
-            Toast.makeText(this, "No saved chats", Toast.LENGTH_SHORT).show()
-            return
+        val progressDialog = android.app.ProgressDialog(this).apply {
+            setMessage("Syncing chats from cloud...")
+            setCancelable(false)
+            show()
         }
-        val names = files.map { f ->
+        
+        lifecycleScope.launch {
             try {
-                val type = object : com.google.gson.reflect.TypeToken<List<ChatMessage>>() {}.type
-                val msgs: List<ChatMessage> = gson.fromJson(f.readText(), type)
-                val firstUser = msgs.firstOrNull { it.role == "user" }?.content?.take(40) ?: "Empty chat"
-                firstUser.replace("\n", " ").trim()
-            } catch (_: Exception) {
-                "Chat"
-            }
-        }.toTypedArray()
-
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("Chat History")
-            .setItems(names) { _, which -> loadChat(files[which]) }
-            .setNeutralButton("Delete All") { _, _ ->
-                files.forEach { it.delete() }
-                Toast.makeText(this, "All chats deleted", Toast.LENGTH_SHORT).show()
-            }
-            .setNegativeButton("Cancel", null)
-            .show()
-            .also { dialog ->
-                // Long-press on item to delete individual chat
-                (dialog as? androidx.appcompat.app.AlertDialog)
-                    ?.listView?.setOnItemLongClickListener { _, _, pos, _ ->
-                        androidx.appcompat.app.AlertDialog.Builder(this)
-                            .setMessage("Delete ${names[pos]}?")
-                            .setPositiveButton("Delete") { _, _ ->
-                                files[pos].delete()
-                                dialog.dismiss()
-                                Toast.makeText(this, "Deleted", Toast.LENGTH_SHORT).show()
+                val chatsDir = java.io.File(filesDir, "nbh_chats").also { it.mkdirs() }
+                val localFiles = chatsDir.listFiles()?.toMutableList() ?: mutableListOf()
+                val processedNames = localFiles.map { it.name }.toMutableSet()
+                
+                // Load cloud chats if signed in
+                if (GoogleSignInHelper.isSignedIn(this@MainActivity)) {
+                    try {
+                        val cloudChats = withContext(Dispatchers.IO) {
+                            GoogleSignInHelper.getAllCloudChats(this@MainActivity)
+                        }
+                        
+                        for ((fileName, content) in cloudChats) {
+                            val localFile = java.io.File(chatsDir, fileName)
+                            val cloudSyncTime = prefs.getLong("chat_sync_${fileName}", 0L)
+                            
+                            if (!localFile.exists()) {
+                                // Cloud-only chat, download it
+                                withContext(Dispatchers.IO) {
+                                    localFile.writeText(content)
+                                }
+                                localFiles.add(localFile)
+                                processedNames.add(fileName)
+                            } else if (localFile.lastModified() < cloudSyncTime) {
+                                // Cloud version is newer, update local
+                                withContext(Dispatchers.IO) {
+                                    localFile.writeText(content)
+                                }
                             }
-                            .setNegativeButton("Cancel", null)
-                            .show()
-                        true
+                        }
+                    } catch (e: Exception) {
+                        Log.e("ChatHistory", "Failed to load cloud chats", e)
                     }
+                }
+                
+                withContext(Dispatchers.Main) {
+                    progressDialog.dismiss()
+                    
+                    val files = localFiles.sortedByDescending { it.lastModified() }
+                    if (files.isEmpty()) {
+                        Toast.makeText(this@MainActivity, "No saved chats", Toast.LENGTH_SHORT).show()
+                        return@withContext
+                    }
+                    
+                    val names = files.map { f ->
+                        try {
+                            val type = object : com.google.gson.reflect.TypeToken<List<ChatMessage>>() {}.type
+                            val msgs: List<ChatMessage> = gson.fromJson(f.readText(), type)
+                            val firstUser = msgs.firstOrNull { it.role == "user" }?.content?.take(40) ?: "Empty chat"
+                            firstUser.replace("\n", " ").trim()
+                        } catch (_: Exception) {
+                            "Chat"
+                        }
+                    }.toTypedArray()
+
+                    androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                        .setTitle("Chat History")
+                        .setItems(names) { _, which -> loadChat(files[which]) }
+                        .setNeutralButton("Delete All") { _, _ ->
+                            files.forEach { it.delete() }
+                            Toast.makeText(this@MainActivity, "All chats deleted", Toast.LENGTH_SHORT).show()
+                        }
+                        .setNegativeButton("Cancel", null)
+                        .show()
+                        .also { dialog ->
+                            (dialog as? androidx.appcompat.app.AlertDialog)
+                                ?.listView?.setOnItemLongClickListener { _, _, pos, _ ->
+                                    androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                                        .setMessage("Delete ${names[pos]}?")
+                                        .setPositiveButton("Delete") { _, _ ->
+                                            files[pos].delete()
+                                            dialog.dismiss()
+                                            Toast.makeText(this@MainActivity, "Deleted", Toast.LENGTH_SHORT).show()
+                                        }
+                                        .setNegativeButton("Cancel", null)
+                                        .show()
+                                    true
+                                }
+                        }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    progressDialog.dismiss()
+                    Toast.makeText(this@MainActivity, "Failed to load chats: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
             }
+        }
     }
 
     // ── Voice-to-text ─────────────────────────────────────────────────────────
