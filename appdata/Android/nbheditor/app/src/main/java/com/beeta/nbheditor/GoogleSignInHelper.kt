@@ -465,7 +465,7 @@ object GoogleSignInHelper {
         }
     }
     
-    suspend fun getAllCloudFiles(context: Context): List<Pair<String, String>> = withContext(Dispatchers.IO) {
+    suspend fun getAllCloudFiles(context: Context): List<Triple<String, String, Long>> = withContext(Dispatchers.IO) {
         try {
             val drive = driveService ?: return@withContext emptyList()
             
@@ -477,18 +477,55 @@ object GoogleSignInHelper {
             val result: FileList = drive.files().list()
                 .setQ(query)
                 .setSpaces("drive")
-                .setFields("files(id, name)")
+                .setFields("files(id, name, modifiedTime)")
                 .execute()
             
             result.files.mapNotNull { file ->
                 val content = downloadFileContent(file.id)
+                val modifiedTime = file.modifiedTime?.value ?: 0L
                 if (content != null) {
-                    Pair(file.name, content)
+                    Triple(file.name, content, modifiedTime)
                 } else null
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get cloud files", e)
             emptyList()
+        }
+    }
+    
+    suspend fun getFileModifiedTime(context: Context, fileName: String): Long? = withContext(Dispatchers.IO) {
+        try {
+            val drive = driveService ?: return@withContext null
+            
+            val rootFolderId = findFolder(ROOT_FOLDER_NAME, null) ?: return@withContext null
+            val fileFolderId = findFolder(FILE_FOLDER_NAME, rootFolderId) ?: return@withContext null
+            
+            val fileId = findFileInFolder(fileName, fileFolderId) ?: return@withContext null
+            
+            val file = drive.files().get(fileId)
+                .setFields("modifiedTime")
+                .execute()
+            
+            file.modifiedTime?.value
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get file modified time: $fileName", e)
+            null
+        }
+    }
+    
+    suspend fun downloadCloudFile(context: Context, fileName: String): String? = withContext(Dispatchers.IO) {
+        try {
+            val drive = driveService ?: return@withContext null
+            
+            val rootFolderId = findFolder(ROOT_FOLDER_NAME, null) ?: return@withContext null
+            val fileFolderId = findFolder(FILE_FOLDER_NAME, rootFolderId) ?: return@withContext null
+            
+            val fileId = findFileInFolder(fileName, fileFolderId) ?: return@withContext null
+            
+            downloadFileContent(fileId)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to download cloud file: $fileName", e)
+            null
         }
     }
     

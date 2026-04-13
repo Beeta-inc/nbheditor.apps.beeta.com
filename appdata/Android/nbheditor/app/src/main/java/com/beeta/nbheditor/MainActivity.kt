@@ -48,6 +48,7 @@ import com.google.android.material.chip.Chip
 import com.google.gson.Gson
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -616,25 +617,23 @@ open class MainActivity : AppCompatActivity() {
 
     private fun refreshHomeFiles() {
         val uriStrings = prefs.getStringSet("recent_files", emptySet()) ?: emptySet()
-        if (uriStrings.isEmpty()) {
-            homeBinding.emptyHomeState.visibility = View.VISIBLE
-            homeBinding.fileGrid.visibility = View.GONE
-            return
-        }
-
+        
         lifecycleScope.launch {
             val entries = withContext(Dispatchers.IO) {
                 val list = mutableListOf<FileCardAdapter.FileEntry>()
+                val processedNames = mutableSetOf<String>()
+                
+                // Load local files
                 for (uriStr in uriStrings) {
                     try {
                         val uri = android.net.Uri.parse(uriStr)
-                        // Verify we still have permission
                         val hasPerm = contentResolver.persistedUriPermissions
                             .any { it.uri == uri && it.isReadPermission }
                         if (!hasPerm) continue
 
                         val name = getFileName(uri)
                         if (name == "untitled" || name.isBlank()) continue
+                        processedNames.add(name)
 
                         val preview = try {
                             contentResolver.openInputStream(uri)?.use {
@@ -647,6 +646,30 @@ open class MainActivity : AppCompatActivity() {
                         list.add(FileCardAdapter.FileEntry(uri, name, preview))
                     } catch (e: Exception) { /* skip */ }
                 }
+                
+                // Load cloud files if signed in
+                if (GoogleSignInHelper.isSignedIn(this@MainActivity)) {
+                    try {
+                        val cloudFiles = GoogleSignInHelper.getAllCloudFiles(this@MainActivity)
+                        for ((fileName, content, modifiedTime) in cloudFiles) {
+                            if (fileName in processedNames) continue // Skip if already loaded locally
+                            
+                            val preview = content
+                                .replace(Regex("\\[img:[^\\]]+\\]"), "[image]")
+                                .take(150).trim()
+                            
+                            // Create a virtual URI for cloud files
+                            val cloudUri = android.net.Uri.parse("cloud://$fileName")
+                            list.add(FileCardAdapter.FileEntry(cloudUri, fileName, preview))
+                            
+                            // Store cloud file metadata
+                            prefs.edit().putLong("cloud_time_${fileName}", modifiedTime).apply()
+                        }
+                    } catch (e: Exception) {
+                        Log.e("HomeFiles", "Failed to load cloud files", e)
+                    }
+                }
+                
                 list.sortedBy { it.name.lowercase() }
             }
 
@@ -1986,12 +2009,48 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun performAutoSave() {
-        currentFileUri?.let { 
-            saveToFile(it)
-            // Save the file URI so we know user has an active file
-            prefs.edit().putString("last_file_uri", it.toString()).apply()
+        currentFileUri?.let { uri ->
+            val text = serializeSpansToText()
+            
+            // Save locally
+            try {
+                contentResolver.openOutputStream(uri, "wt")?.use {
+                    OutputStreamWriter(it).use { w -> w.write(text) }
+                }
+                prefs.edit().putString("last_file_uri", uri.toString()).apply()
+                addToRecents(uri)
+            } catch (e: Exception) {
+                Log.e("AutoSave", "Failed to save locally", e)
+            }
+            
+            // Sync to cloud in parallel
+            if (GoogleSignInHelper.isSignedIn(this)) {
+                val fileName = getFileName(uri)
+                lifecycleScope.launch {
+                    try {
+                        val success = GoogleSignInHelper.syncFileToCloud(this@MainActivity, text, fileName)
+                        if (!success) {
+                            val authException = GoogleSignInHelper.getLastAuthException()
+                            if (authException != null) {
+                                withContext(Dispatchers.Main) {
+                                    startActivityForResult(authException.intent, RC_DRIVE_PERMISSION)
+                                }
+                            }
+                        } else {
+                            hasSyncedOnce = true
+                            // Store cloud sync timestamp
+                            prefs.edit().putLong("cloud_sync_${fileName}", System.currentTimeMillis()).apply()
+                        }
+                        withContext(Dispatchers.Main) {
+                            lastSyncSuccess = success
+                            updateToolbarTitle()
+                        }
+                    } catch (e: Exception) {
+                        Log.e("AutoSave", "Cloud sync failed", e)
+                    }
+                }
+            }
         } ?: run {
-            // Only save recovery text if there's actual content and no file is open
             val text = editorBinding.textArea.text.toString()
             if (text.isNotBlank()) {
                 prefs.edit()
@@ -2001,7 +2060,7 @@ open class MainActivity : AppCompatActivity() {
             }
         }
         textChanged = false
-        updateToolbarTitle() // Update cloud icon after save
+        updateToolbarTitle()
     }
 
     private fun getFileName(uri: Uri): String {
@@ -2050,15 +2109,67 @@ open class MainActivity : AppCompatActivity() {
             try {
                 val fileName = getFileName(uri)
                 val isRtf = fileName.endsWith(".rtf", ignoreCase = true)
+                val isCloudUri = uri.scheme == "cloud"
                 
-                val content = withContext(Dispatchers.IO) {
-                    contentResolver.openInputStream(uri)?.use { inputStream ->
-                        if (isRtf) {
-                            // Read RTF as bytes and convert to plain text
-                            val rtfBytes = inputStream.readBytes()
-                            convertRtfToPlainText(rtfBytes)
-                        } else {
-                            BufferedReader(InputStreamReader(inputStream)).readText()
+                var content: String? = null
+                var useCloudVersion = false
+                
+                if (isCloudUri) {
+                    // Cloud-only file, download from Drive
+                    content = withContext(Dispatchers.IO) {
+                        GoogleSignInHelper.downloadCloudFile(this@MainActivity, fileName)
+                    }
+                    if (content == null) {
+                        Toast.makeText(this@MainActivity, "Failed to download from cloud", Toast.LENGTH_SHORT).show()
+                        return@launch
+                    }
+                } else {
+                    // Check if cloud has newer version
+                    if (GoogleSignInHelper.isSignedIn(this@MainActivity)) {
+                        val cloudModifiedTime = withContext(Dispatchers.IO) {
+                            GoogleSignInHelper.getFileModifiedTime(this@MainActivity, fileName)
+                        }
+                        val localSyncTime = prefs.getLong("cloud_sync_${fileName}", 0L)
+                        
+                        if (cloudModifiedTime != null && cloudModifiedTime > localSyncTime) {
+                            // Cloud version is newer, ask user
+                            val cloudContent = withContext(Dispatchers.IO) {
+                                GoogleSignInHelper.downloadCloudFile(this@MainActivity, fileName)
+                            }
+                            if (cloudContent != null) {
+                                val choice = withContext(Dispatchers.Main) {
+                                    showCloudVersionDialog()
+                                }
+                                if (choice) {
+                                    content = cloudContent
+                                    useCloudVersion = true
+                                    // Update local file with cloud version
+                                    withContext(Dispatchers.IO) {
+                                        try {
+                                            contentResolver.openOutputStream(uri, "wt")?.use {
+                                                OutputStreamWriter(it).use { w -> w.write(cloudContent) }
+                                            }
+                                            prefs.edit().putLong("cloud_sync_${fileName}", cloudModifiedTime).apply()
+                                        } catch (e: Exception) {
+                                            Log.e("OpenFile", "Failed to update local file", e)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Load local version if not using cloud
+                    if (content == null) {
+                        content = withContext(Dispatchers.IO) {
+                            contentResolver.openInputStream(uri)?.use { inputStream ->
+                                if (isRtf) {
+                                    val rtfBytes = inputStream.readBytes()
+                                    convertRtfToPlainText(rtfBytes)
+                                } else {
+                                    BufferedReader(InputStreamReader(inputStream)).readText()
+                                }
+                            }
                         }
                     }
                 }
@@ -2069,22 +2180,46 @@ open class MainActivity : AppCompatActivity() {
                 }
                 
                 editorBinding.textArea.setText(content)
-                currentFileUri = uri
+                currentFileUri = if (isCloudUri) null else uri // Don't set URI for cloud-only files yet
                 textChanged = false
                 prefs.edit()
                     .remove("recovery_text")
-                    .putString("last_file_uri", uri.toString())
                     .apply()
+                if (!isCloudUri) {
+                    prefs.edit().putString("last_file_uri", uri.toString()).apply()
+                }
                 updateLineNumbers()
                 updateToolbarTitle()
                 deserializeImagesInText()
-                addToRecents(uri)
-                val msg = if (isRtf) "Opened RTF (converted to plain text)" else "Opened"
+                if (!isCloudUri) {
+                    addToRecents(uri)
+                }
+                val msg = when {
+                    useCloudVersion -> "Opened (updated from cloud)"
+                    isCloudUri -> "Opened from cloud"
+                    isRtf -> "Opened RTF (converted to plain text)"
+                    else -> "Opened"
+                }
                 Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 Toast.makeText(this@MainActivity, "Failed to open file: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+    
+    private suspend fun showCloudVersionDialog(): Boolean = suspendCancellableCoroutine { continuation ->
+        val dialog = android.app.AlertDialog.Builder(this)
+            .setTitle("Newer Version Available")
+            .setMessage("A newer version of this file exists in the cloud. Do you want to use the cloud version?")
+            .setPositiveButton("Use Cloud Version") { _, _ ->
+                continuation.resume(true, null)
+            }
+            .setNegativeButton("Use Local Version") { _, _ ->
+                continuation.resume(false, null)
+            }
+            .setCancelable(false)
+            .create()
+        dialog.show()
     }
 
     // Convert RTF to plain text by stripping formatting
@@ -2137,14 +2272,13 @@ open class MainActivity : AppCompatActivity() {
             }
             addToRecents(uri)
             
-            // Auto-sync to cloud if signed in
+            // Sync to cloud in parallel if signed in
             if (GoogleSignInHelper.isSignedIn(this)) {
                 val fileName = getFileName(uri)
                 lifecycleScope.launch {
                     try {
                         val success = GoogleSignInHelper.syncFileToCloud(this@MainActivity, text, fileName)
                         if (!success) {
-                            // Check if we need Drive permission
                             val authException = GoogleSignInHelper.getLastAuthException()
                             if (authException != null) {
                                 withContext(Dispatchers.Main) {
@@ -2152,8 +2286,8 @@ open class MainActivity : AppCompatActivity() {
                                 }
                             }
                         } else {
-                            // Mark that we've successfully synced at least once
                             hasSyncedOnce = true
+                            prefs.edit().putLong("cloud_sync_${fileName}", System.currentTimeMillis()).apply()
                         }
                         withContext(Dispatchers.Main) {
                             lastSyncSuccess = success
