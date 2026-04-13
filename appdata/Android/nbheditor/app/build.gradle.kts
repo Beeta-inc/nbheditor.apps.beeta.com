@@ -6,14 +6,14 @@ plugins {
 
 android {
     namespace = "com.beeta.nbheditor"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.beeta.nbheditor"
         minSdk = 24
-        targetSdk = 36
-        versionCode = 9
-        versionName = "4.2.0"
+        targetSdk = 37
+        versionCode = 10
+        versionName = "4.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
