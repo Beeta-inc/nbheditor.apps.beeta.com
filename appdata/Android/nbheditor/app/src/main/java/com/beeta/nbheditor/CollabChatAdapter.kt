@@ -36,7 +36,8 @@ class CollabChatAdapter(
     private val currentUserId: String,
     private val onMarkImportant: (ChatMessage) -> Unit = {},
     private val onCreateTask: (ChatMessage) -> Unit = {},
-    private val onSetReminder: (ChatMessage) -> Unit = {}
+    private val onSetReminder: (ChatMessage) -> Unit = {},
+    private val onReply: (ChatMessage) -> Unit = {}
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
@@ -66,6 +67,7 @@ class CollabChatAdapter(
 
     fun updatePhotoMap(map: Map<String, String>) { photoMap = map; notifyDataSetChanged() }
     fun updateMessages(new: List<ChatMessage>) { messages = new; notifyDataSetChanged() }
+    fun getMessages(): List<ChatMessage> = messages
     override fun getItemCount() = messages.size
     override fun getItemViewType(position: Int): Int {
         val msg = messages[position]
@@ -99,6 +101,9 @@ class CollabChatAdapter(
         val mediaActionBar: LinearLayout = v.findViewById(R.id.mediaActionBar)
         val btnOpenMedia: TextView = v.findViewById(R.id.btnOpenMedia)
         val btnDownloadMedia: TextView = v.findViewById(R.id.btnDownloadMedia)
+        val replyPreviewBubble: LinearLayout = v.findViewById(R.id.replyPreviewBubble)
+        val tvReplySender: TextView = v.findViewById(R.id.tvReplySender)
+        val tvReplyText: TextView = v.findViewById(R.id.tvReplyText)
     }
 
     class OutgoingVH(v: View) : RecyclerView.ViewHolder(v) {
@@ -116,6 +121,9 @@ class CollabChatAdapter(
         val mediaActionBar: LinearLayout = v.findViewById(R.id.mediaActionBarOut)
         val btnOpenMedia: TextView = v.findViewById(R.id.btnOpenMediaOut)
         val btnDownloadMedia: TextView = v.findViewById(R.id.btnDownloadMediaOut)
+        val replyPreviewBubble: LinearLayout = v.findViewById(R.id.replyPreviewBubbleOut)
+        val tvReplySender: TextView = v.findViewById(R.id.tvReplySenderOut)
+        val tvReplyText: TextView = v.findViewById(R.id.tvReplyTextOut)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -138,6 +146,14 @@ class CollabChatAdapter(
     private fun bindOutgoing(h: OutgoingVH, msg: ChatMessage, ctx: Context) {
         h.tvMessage.text = msg.message
         h.tvTimestamp.text = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(msg.timestamp))
+        // Bind reply preview
+        if (!msg.replyToMessageId.isNullOrBlank()) {
+            h.replyPreviewBubble.visibility = View.VISIBLE
+            h.tvReplySender.text = msg.replyToUserName ?: ""
+            h.tvReplyText.text = msg.replyToMessage ?: ""
+        } else {
+            h.replyPreviewBubble.visibility = View.GONE
+        }
         bindMedia(msg, h.tvMessage, h.ivMediaPreview, h.attachmentCard,
             h.tvAttachmentIcon, h.tvAttachmentName, h.mediaActionBar, h.btnOpenMedia, h.btnDownloadMedia, ctx)
         h.messageContainer.setOnLongClickListener {
@@ -156,6 +172,14 @@ class CollabChatAdapter(
         h.tvReadTick.visibility = View.GONE
         h.tvImportantBadge.visibility = if (msg.isImportant) View.VISIBLE else View.GONE
         h.tvLinkedTaskBadge.visibility = if (msg.linkedTaskId != null) View.VISIBLE else View.GONE
+        // Bind reply preview
+        if (!msg.replyToMessageId.isNullOrBlank()) {
+            h.replyPreviewBubble.visibility = View.VISIBLE
+            h.tvReplySender.text = msg.replyToUserName ?: ""
+            h.tvReplyText.text = msg.replyToMessage ?: ""
+        } else {
+            h.replyPreviewBubble.visibility = View.GONE
+        }
 
         if (msg.isAI || msg.userId == "__ai__") {
             // Beeta AI

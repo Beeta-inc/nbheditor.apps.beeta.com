@@ -125,7 +125,7 @@ class MediaViewerFragment : Fragment() {
     // ── Image ─────────────────────────────────────────────────────────────────
 
     private fun showImage(view: View, uriStr: String, progress: ProgressBar, tvError: TextView) {
-        val iv = view.findViewById<ImageView>(R.id.imageViewer)
+        val iv = view.findViewById<ZoomableImageView>(R.id.imageViewer)
         iv.visibility = View.VISIBLE
         progress.visibility = View.VISIBLE
 

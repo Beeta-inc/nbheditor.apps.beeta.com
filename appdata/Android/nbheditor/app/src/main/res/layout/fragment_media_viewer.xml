@@ -57,12 +57,11 @@
     </LinearLayout>
 
     <!-- IMAGE viewer -->
-    <ImageView
+    <com.beeta.nbheditor.ZoomableImageView
         android:id="@+id/imageViewer"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:visibility="gone"
-        android:scaleType="fitCenter"
         android:background="#FF000000"
         android:contentDescription="Image"
         app:layout_constraintTop_toBottomOf="@id/viewerHeader"

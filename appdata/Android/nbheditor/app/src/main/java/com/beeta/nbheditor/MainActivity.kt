@@ -91,8 +91,7 @@ open class MainActivity : AppCompatActivity() {
     private val gson = Gson()
 
     // ── AI Backend ────────────────────────────────────────────────────────────
-    // Priority: OpenRouter free models (1→6) then Google Gemini as final fallback
-    // Each model is skipped on 429 rate-limit and the next one is tried.
+
 
     private val OPENROUTER_API_KEY = ""
 
@@ -102,16 +101,15 @@ open class MainActivity : AppCompatActivity() {
 
     // 6 free OpenRouter models tried in order
     private val OR_MODELS = listOf(
-        "stepfun/step-3.5-flash:free",            // 1 — fast, generous limits
-        "mistralai/mistral-7b-instruct:free",     // 2 — reliable
-        "meta-llama/llama-3.2-3b-instruct:free",  // 3 — Meta Llama free
-        "google/gemma-3-4b-it:free",              // 4 — Google Gemma free
-        "qwen/qwen3-0.6b:free",                   // 5 — Qwen tiny, very fast
-        "microsoft/phi-3-mini-128k-instruct:free" // 6 — Microsoft Phi-3 free
+        "stepfun/step-3.5-flash:free",
+        "mistralai/mistral-7b-instruct:free",
+        "meta-llama/llama-3.2-3b-instruct:free",
+        "google/gemma-3-4b-it:free",
+        "qwen/qwen3-0.6b:free",
+        "microsoft/phi-3-mini-128k-instruct:free"
     )
 
-    // Google AI Studio — final fallback (1500 req/day free)
-    // Get your key at: https://aistudio.google.com/apikey
+
     private val GEMINI_API_KEY = "AIzaSyAjO1m3x5uh5oqKt05nPRsS_H4MlgkUqN0"
     private val GEMINI_MODEL = "gemini-2.0-flash"
 
@@ -1365,11 +1363,17 @@ open class MainActivity : AppCompatActivity() {
                     val et = speechTarget
                     if (et != null) {
                         val pos = et.selectionStart.coerceAtLeast(0)
-                        val toInsert = if (pos > 0 && et.text?.getOrNull(pos - 1)?.isWhitespace() == false) " $text" else text
+                        val toInsert = if (pos > 0 && et.text?.getOrNull(pos - 1)?.isWhitespace() == false) " $text " else "$text "
                         try {
-                            et.text?.insert(pos, toInsert) ?: et.setText(toInsert)
+                            et.text?.insert(pos, toInsert)
                             et.setSelection((pos + toInsert.length).coerceAtMost(et.text?.length ?: 0))
-                        } catch (_: Exception) {}
+                            // Trigger text changed for autosave
+                            if (et == editorBinding.textArea) {
+                                textChanged = true
+                            }
+                        } catch (e: Exception) {
+                            Log.e("VoiceInput", "Failed to insert text", e)
+                        }
                     }
                     speechTarget?.hint = ""
                 }
@@ -2350,7 +2354,10 @@ open class MainActivity : AppCompatActivity() {
             var inGroup = 0
             var skipGroup = false
             val groupStack = mutableListOf<Boolean>()
-            
+            var inPict = false
+            val pictHex = StringBuilder()
+            var pictType = "png" // default
+
             while (i < rtfText.length) {
                 val c = rtfText[i]
                 when {
@@ -2358,13 +2365,34 @@ open class MainActivity : AppCompatActivity() {
                         inGroup++
                         groupStack.add(skipGroup)
                         val ahead = rtfText.substring(i, (i + 20).coerceAtMost(rtfText.length))
-                        if (ahead.contains("\\fonttbl") || ahead.contains("\\colortbl") || 
+                        if (ahead.contains("\\fonttbl") || ahead.contains("\\colortbl") ||
                             ahead.contains("\\stylesheet") || ahead.contains("\\*")) {
                             skipGroup = true
                         }
                         i++
                     }
                     c == '}' -> {
+                        if (inPict && pictHex.isNotEmpty()) {
+                            // Decode image and save to cache
+                            try {
+                                val hexStr = pictHex.toString().replace("\n", "").replace(" ", "").replace("\r", "")
+                                val bytes = ByteArray(hexStr.length / 2) { idx ->
+                                    hexStr.substring(idx * 2, idx * 2 + 2).toInt(16).toByte()
+                                }
+                                val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                                if (bmp != null) {
+                                    val name = "rtf_img_${System.currentTimeMillis()}_${(Math.random() * 1000).toInt()}.$pictType"
+                                    val file = java.io.File(cacheDir, name)
+                                    file.outputStream().use { bmp.compress(Bitmap.CompressFormat.PNG, 90, it) }
+                                    result.append("[img:$name]")
+                                }
+                            } catch (e: Exception) {
+                                Log.e("RTF", "Failed to decode image", e)
+                                result.append("[Image]")
+                            }
+                            pictHex.clear()
+                            inPict = false
+                        }
                         inGroup--
                         if (groupStack.isNotEmpty()) {
                             skipGroup = groupStack.removeAt(groupStack.size - 1)
@@ -2390,9 +2418,7 @@ open class MainActivity : AppCompatActivity() {
                                 "_" -> result.append("-")
                                 "'" -> {
                                     if (param.length == 2) {
-                                        try {
-                                            result.append(param.toInt(16).toChar())
-                                        } catch (e: Exception) { }
+                                        try { result.append(param.toInt(16).toChar()) } catch (e: Exception) { }
                                     }
                                 }
                                 "u" -> {
@@ -2404,15 +2430,18 @@ open class MainActivity : AppCompatActivity() {
                                         }
                                     } catch (e: Exception) { }
                                 }
-                                "pict" -> {
-                                    result.append("[Image]")
-                                    skipGroup = true
-                                }
+                                "pict" -> { inPict = true; pictHex.clear() }
+                                "pngblip" -> { pictType = "png" }
+                                "jpegblip" -> { pictType = "jpg" }
+                                "emfblip", "wmetafile" -> { pictType = "png" }
                             }
                         }
                     }
                     else -> {
-                        if (!skipGroup && inGroup >= 0 && c != '\r' && c != '\n') {
+                        if (inPict && !skipGroup) {
+                            // Collect hex data for image
+                            if (c.isLetterOrDigit()) pictHex.append(c)
+                        } else if (!skipGroup && inGroup >= 0 && c != '\r' && c != '\n') {
                             result.append(c)
                         }
                         i++

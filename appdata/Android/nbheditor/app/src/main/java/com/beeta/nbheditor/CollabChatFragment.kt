@@ -28,6 +28,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.ItemTouchHelper
 import com.beeta.nbheditor.databinding.FragmentCollabChatBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -55,6 +56,9 @@ class CollabChatFragment : Fragment() {
     private var recordingTimerRunnable: Runnable? = null
     private var videoJob: Job? = null
     private var userPhotoMap = mapOf<String, String>() // userId -> photoUrl
+    
+    // Reply functionality
+    private var replyToMessage: ChatMessage? = null
 
     // Mention popup
     private lateinit var mentionAdapter: MentionAdapter
@@ -97,6 +101,7 @@ class CollabChatFragment : Fragment() {
         loadUsers(sessionCode, currentUserId)
 
         binding.btnCloseChat.setOnClickListener { parentFragmentManager.popBackStack() }
+        binding.btnCancelReply.setOnClickListener { hideReplyPreview() }
 
         view.translationX = view.width.toFloat()
         view.animate().translationX(0f).setDuration(280)
@@ -148,6 +153,25 @@ class CollabChatFragment : Fragment() {
         )
         binding.rvChatMessages.layoutManager = LinearLayoutManager(requireContext()).apply { stackFromEnd = true }
         binding.rvChatMessages.adapter = adapter
+        
+        // Add swipe-to-reply functionality
+        val itemTouchHelper = ItemTouchHelper(object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
+            override fun onMove(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder): Boolean = false
+            
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val position = viewHolder.adapterPosition
+                if (position >= 0 && position < adapter.itemCount) {
+                    val messages = adapter.getMessages()
+                    if (position < messages.size) {
+                        showReplyPreview(messages[position])
+                        adapter.notifyItemChanged(position) // Reset swipe
+                    }
+                }
+            }
+            
+            override fun getSwipeThreshold(viewHolder: RecyclerView.ViewHolder): Float = 0.3f
+        })
+        itemTouchHelper.attachToRecyclerView(binding.rvChatMessages)
     }
 
     // ── Mention popup ─────────────────────────────────────────────────────────
@@ -275,7 +299,14 @@ class CollabChatFragment : Fragment() {
             hideMentionPopup()
             lifecycleScope.launch {
                 if (messageVisibility != "ai_only") {
-                    CollaborativeSessionManager.sendChatMessage(message = message, targetType = messageVisibility, targetUserIds = selectedUserIds.toList())
+                    CollaborativeSessionManager.sendChatMessage(
+                        message = message,
+                        targetType = messageVisibility,
+                        targetUserIds = selectedUserIds.toList(),
+                        replyToMessageId = replyToMessage?.messageId,
+                        replyToUserName = replyToMessage?.userName,
+                        replyToMessage = replyToMessage?.message
+                    )
                 }
                 if (messageVisibility in listOf("ai_only", "everyone_and_ai")) {
                     Toast.makeText(requireContext(), "🤖 AI is thinking...", Toast.LENGTH_SHORT).show()
@@ -286,9 +317,24 @@ class CollabChatFragment : Fragment() {
                     }
                 }
                 binding.etChatMessage.text.clear()
+                replyToMessage = null
+                hideReplyPreview()
                 messageVisibility = "everyone"; selectedUserIds.clear(); binding.tvTargetDisplay.text = "@all"
             }
         }
+    }
+    
+    private fun showReplyPreview(message: ChatMessage) {
+        replyToMessage = message
+        // Show reply UI (will be added to layout)
+        binding.replyPreviewLayout?.visibility = View.VISIBLE
+        binding.replyPreviewSender?.text = message.userName
+        binding.replyPreviewText?.text = message.message.take(50) + if (message.message.length > 50) "..." else ""
+    }
+    
+    private fun hideReplyPreview() {
+        binding.replyPreviewLayout?.visibility = View.GONE
+        replyToMessage = null
     }
 
     // ── Attachments ───────────────────────────────────────────────────────────

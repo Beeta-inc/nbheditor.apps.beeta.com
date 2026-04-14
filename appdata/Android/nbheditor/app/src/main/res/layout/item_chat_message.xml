@@ -68,6 +68,48 @@
             android:padding="10dp"
             android:maxWidth="240dp">
 
+            <!-- Reply preview inside bubble -->
+            <LinearLayout
+                android:id="@+id/replyPreviewBubble"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:background="#1A4C6EF5"
+                android:padding="6dp"
+                android:layout_marginBottom="6dp"
+                android:visibility="gone">
+
+                <View
+                    android:layout_width="3dp"
+                    android:layout_height="match_parent"
+                    android:background="@color/accent_primary"
+                    android:layout_marginEnd="8dp" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvReplySender"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/accent_primary" />
+
+                    <TextView
+                        android:id="@+id/tvReplyText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="12sp"
+                        android:textColor="@color/editor_hint"
+                        android:maxLines="2"
+                        android:ellipsize="end" />
+                </LinearLayout>
+            </LinearLayout>
+
             <TextView
                 android:id="@+id/tvMessage"
                 android:layout_width="wrap_content"

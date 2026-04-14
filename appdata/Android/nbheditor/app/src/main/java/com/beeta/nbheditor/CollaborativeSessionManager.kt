@@ -43,7 +43,11 @@ data class ChatMessage(
     // attachment fields — null means plain text message
     val attachmentUri: String? = null,   // content URI or file path
     val attachmentType: String? = null,   // "image", "video", "audio", "document"
-    val attachmentThumbnail: String? = null  // local path to thumbnail for video
+    val attachmentThumbnail: String? = null,  // local path to thumbnail for video
+    // reply fields
+    val replyToMessageId: String? = null,
+    val replyToUserName: String? = null,
+    val replyToMessage: String? = null
 )
 
 data class TaskItem(
@@ -508,7 +512,10 @@ object CollaborativeSessionManager {
         attachmentUri: String? = null,
         attachmentType: String? = null,
         attachmentFileName: String? = null,
-        onProgress: ((Int) -> Unit)? = null
+        onProgress: ((Int) -> Unit)? = null,
+        replyToMessageId: String? = null,
+        replyToUserName: String? = null,
+        replyToMessage: String? = null
     ): Result<String> {
         return try {
             val sessionId = currentSessionId ?: return Result.failure(Exception("Not in a session"))
@@ -547,7 +554,10 @@ object CollaborativeSessionManager {
                 targetType = targetType,
                 targetUserIds = targetUserIds,
                 attachmentUri = finalAttachmentUri,
-                attachmentType = attachmentType
+                attachmentType = attachmentType,
+                replyToMessageId = replyToMessageId,
+                replyToUserName = replyToUserName,
+                replyToMessage = replyToMessage
             )
             
             database.child(SESSIONS_PATH).child(sessionId)
