@@ -66,9 +66,8 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0de2c8aa-c6b7-419c-b7cd-e9cbf2927e27" name="Changes" comment="bug fixes and improvement">
-      <change afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/ZoomableImageView.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/checksums/checksums.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/checksums/checksums.lock" afterDir="false" />
+    <list default="true" id="0de2c8aa-c6b7-419c-b7cd-e9cbf2927e27" name="Changes" comment="improvements">
+      <change afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabSessionService.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.bin" afterDir="false" />
@@ -76,15 +75,12 @@
       <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/resourceHashesCache.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/resourceHashesCache.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/RELEASE_NOTES_v4.2.0.md" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/AndroidManifest.xml" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/AndroidManifest.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatFragment.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatFragment.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollaborativeSessionManager.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollaborativeSessionManager.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MediaViewerFragment.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MediaViewerFragment.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/layout/fragment_collab_chat.xml" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/layout/fragment_collab_chat.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/layout/fragment_media_viewer.xml" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/layout/fragment_media_viewer.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/layout/item_chat_message.xml" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/layout/item_chat_message.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/layout/item_chat_message_out.xml" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/layout/item_chat_message_out.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -391,14 +387,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1774176942839</updated>
-    </task>
-    <task id="LOCAL-00076" summary="improvements">
-      <option name="closed" value="true" />
-      <created>1775208340375</created>
-      <option name="number" value="00076" />
-      <option name="presentableId" value="LOCAL-00076" />
-      <option name="project" value="LOCAL" />
-      <updated>1775208340376</updated>
     </task>
     <task id="LOCAL-00077" summary="improvements">
       <option name="closed" value="true" />
@@ -784,7 +772,15 @@
       <option name="project" value="LOCAL" />
       <updated>1776154948368</updated>
     </task>
-    <option name="localTasksCounter" value="125" />
+    <task id="LOCAL-00125" summary="bug fixes and improvement">
+      <option name="closed" value="true" />
+      <created>1776157040422</created>
+      <option name="number" value="00125" />
+      <option name="presentableId" value="LOCAL-00125" />
+      <option name="project" value="LOCAL" />
+      <updated>1776157040422</updated>
+    </task>
+    <option name="localTasksCounter" value="126" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -804,7 +800,6 @@
     <MESSAGE value="version 3 initialisation and bring login and cloud support" />
     <MESSAGE value="updated to the the real google-service.json file" />
     <MESSAGE value="updated dp profile" />
-    <MESSAGE value="improvements" />
     <MESSAGE value="use users google drive for storing their data insted of of firestore" />
     <MESSAGE value="updated cloud sync icon" />
     <MESSAGE value="version 4 start added collaborative session" />
@@ -824,19 +819,20 @@
     <MESSAGE value="bug fixes" />
     <MESSAGE value="api updated to 37" />
     <MESSAGE value="bug fixes and improvement" />
-    <option name="LAST_COMMIT_MESSAGE" value="bug fixes and improvement" />
+    <MESSAGE value="improvements" />
+    <option name="LAST_COMMIT_MESSAGE" value="improvements" />
   </component>
   <component name="play_dynamic_filters_status">
     <option name="appIdToCheckInfo">
       <map>
         <entry key="com.beeta.nbheditor">
           <value>
-            <CheckInfo lastCheckTimestamp="1776071996428" />
+            <CheckInfo lastCheckTimestamp="1776159006872" />
           </value>
         </entry>
         <entry key="com.beeta.nbheditor.test">
           <value>
-            <CheckInfo lastCheckTimestamp="1776071996428" />
+            <CheckInfo lastCheckTimestamp="1776159006862" />
           </value>
         </entry>
         <entry key="com.example.nbheditor">

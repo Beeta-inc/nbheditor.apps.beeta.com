@@ -493,11 +493,37 @@ object CollaborativeSessionManager {
     // Check if user is in a session
     fun isInSession(): Boolean = currentSessionId != null
     
-    // Get current session ID
     fun getCurrentSessionId(): String? = currentSessionId
     
-    // Get current user ID
     fun getCurrentUserId(): String? = currentUserId
+    
+    // ── Typing Indicator ─────────────────────────────────────────────────────
+    
+    suspend fun setTypingInChat(isTyping: Boolean) {
+        val sessionId = currentSessionId ?: return
+        val userId = currentUserId ?: return
+        try {
+            database.child(SESSIONS_PATH).child(sessionId)
+                .child("chatTyping").child(userId).setValue(
+                    if (isTyping) mapOf("typing" to true, "ts" to System.currentTimeMillis())
+                    else null
+                ).await()
+        } catch (e: Exception) { Log.e(TAG, "setTypingInChat failed", e) }
+    }
+    
+    fun observeChatTyping(sessionId: String, currentUserId: String): Flow<List<String>> = callbackFlow {
+        val ref = database.child(SESSIONS_PATH).child(sessionId).child("chatTyping")
+        val listener = ref.addValueEventListener(object : com.google.firebase.database.ValueEventListener {
+            override fun onDataChange(snapshot: com.google.firebase.database.DataSnapshot) {
+                val typingUsers = snapshot.children.mapNotNull { child ->
+                    if (child.key != currentUserId) child.key else null
+                }
+                trySend(typingUsers)
+            }
+            override fun onCancelled(error: com.google.firebase.database.DatabaseError) { trySend(emptyList()) }
+        })
+        awaitClose { ref.removeEventListener(listener) }
+    }
     
     // ── Chat Functions ────────────────────────────────────────────────────────
     

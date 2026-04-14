@@ -901,6 +901,7 @@ class CollabChatFragment : Fragment() {
     // ── Observe messages ──────────────────────────────────────────────────────
 
     private fun observeMessages(sessionCode: String) {
+        val currentUserId = CollaborativeSessionManager.getCurrentUserId() ?: return
         lifecycleScope.launch {
             CollaborativeSessionManager.observeChatMessages(sessionCode).collect { messages ->
                 val oldCount = adapter.itemCount
@@ -912,8 +913,56 @@ class CollabChatFragment : Fragment() {
                             binding.rvChatMessages.findViewHolderForAdapterPosition(messages.size - 1)
                                 ?.itemView?.apply { alpha = 0f; animate().alpha(1f).setDuration(200).start() }
                         }
+                        // Notify MainActivity about new message for chat icon badge
+                        (activity as? MainActivity)?.onNewChatMessage()
                     }
                 }
+            }
+        }
+        // Observe typing indicators
+        lifecycleScope.launch {
+            CollaborativeSessionManager.observeChatTyping(sessionCode, currentUserId).collect { typingUsers ->
+                if (typingUsers.isEmpty()) {
+                    binding.typingIndicatorBar.visibility = View.GONE
+                } else {
+                    binding.typingIndicatorBar.visibility = View.VISIBLE
+                    val names = typingUsers.joinToString(", ")
+                    val text = if (typingUsers.size == 1) "$names is typing..." else "$names are typing..."
+                    binding.tvTypingText.text = text
+                    animateTypingDots()
+                }
+            }
+        }
+        // Send typing state when user types
+        binding.etChatMessage.addTextChangedListener(object : android.text.TextWatcher {
+            private val typingHandler = android.os.Handler(android.os.Looper.getMainLooper())
+            private val stopTypingRunnable = Runnable {
+                lifecycleScope.launch { CollaborativeSessionManager.setTypingInChat(false) }
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                typingHandler.removeCallbacks(stopTypingRunnable)
+                if (!s.isNullOrEmpty()) {
+                    lifecycleScope.launch { CollaborativeSessionManager.setTypingInChat(true) }
+                    typingHandler.postDelayed(stopTypingRunnable, 3000)
+                } else {
+                    lifecycleScope.launch { CollaborativeSessionManager.setTypingInChat(false) }
+                }
+            }
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        })
+    }
+    
+    private var typingDotsJob: kotlinx.coroutines.Job? = null
+    private fun animateTypingDots() {
+        typingDotsJob?.cancel()
+        typingDotsJob = lifecycleScope.launch {
+            val frames = listOf("●◦◦", "◦●◦", "◦◦●")
+            var idx = 0
+            while (true) {
+                binding.tvTypingDots.text = frames[idx % frames.size]
+                idx++
+                kotlinx.coroutines.delay(400)
             }
         }
     }

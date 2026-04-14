@@ -2639,7 +2639,36 @@ open class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        // Handle notification tap to rejoin session
+        val sessionIdFromNotif = intent.getStringExtra(CollabSessionService.EXTRA_SESSION_ID)
+        if (!sessionIdFromNotif.isNullOrBlank() && !CollaborativeSessionManager.isInSession()) {
+            joinCollaborativeSession(sessionIdFromNotif)
+            return
+        }
         handleOpenIntent(intent)
+    }
+    
+    override fun onResume() {
+        super.onResume()
+        checkUnexpectedSessionExit()
+    }
+    
+    private fun checkUnexpectedSessionExit() {
+        val savedSessionId = CollabSessionService.getActiveSessionId(this)
+        if (!savedSessionId.isNullOrBlank() && !CollaborativeSessionManager.isInSession()) {
+            // User was in a session but app was closed unexpectedly
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("🔗 Session Interrupted")
+                .setMessage("You left the collaborative session \"$savedSessionId\" unexpectedly.\n\nWould you like to rejoin?")
+                .setPositiveButton("Rejoin") { _, _ ->
+                    joinCollaborativeSession(savedSessionId)
+                }
+                .setNegativeButton("Leave Session") { _, _ ->
+                    CollabSessionService.stop(this)
+                }
+                .setCancelable(false)
+                .show()
+        }
     }
 
     private fun registerBackHandler() {
@@ -3404,6 +3433,13 @@ open class MainActivity : AppCompatActivity() {
         return dialog
     }
     
+    fun onNewChatMessage() {
+        // Update chat button badge if chat is not open
+        val infoBar = editorBinding.root.findViewWithTag<View>("session_info_bar")
+        val chatBtn = infoBar?.findViewWithTag<com.google.android.material.button.MaterialButton>("session_chat_btn")
+        chatBtn?.text = "💬 Chat •"
+    }
+    
     private fun showSuccessToast(message: String) {
         val toast = Toast.makeText(this, message, Toast.LENGTH_LONG)
         toast.show()
@@ -3544,20 +3580,13 @@ open class MainActivity : AppCompatActivity() {
     private var contentSyncJob: Job? = null
     
     private fun showActiveSessionUI(sessionId: String, isCreator: Boolean) {
-        // Switch to editor view
         showEditor()
-        
-        // Update toolbar to show session indicator
         updateToolbarWithSession(sessionId)
-        
-        // Show brief toast notification
         Toast.makeText(this, "✓ Connected to session: $sessionId", Toast.LENGTH_SHORT).show()
-        
-        // Show compact session info bar at top of editor (non-blocking)
         showSessionInfoBar(sessionId, isCreator)
-        
-        // Start syncing
         startCollaborativeSync(sessionId)
+        // Start persistent notification
+        CollabSessionService.start(this, sessionId)
     }
     
     private fun showSessionInfoBar(sessionId: String, isCreator: Boolean) {
@@ -3614,6 +3643,7 @@ open class MainActivity : AppCompatActivity() {
         // Chat button
         val btnChat = com.google.android.material.button.MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
             text = "💬 Chat"
+            tag = "session_chat_btn"
             setTextColor(0xFFFFFFFF.toInt())
             strokeColor = android.content.res.ColorStateList.valueOf(0xFFFFFFFF.toInt())
             strokeWidth = 2
@@ -3629,6 +3659,7 @@ open class MainActivity : AppCompatActivity() {
             textSize = 11f
             setPadding(20, 4, 20, 4)
             setOnClickListener {
+                text = "💬 Chat" // clear badge on open
                 showCollabChatDialog()
             }
         }
@@ -3652,10 +3683,12 @@ open class MainActivity : AppCompatActivity() {
             textSize = 13f
             setPadding(16, 4, 16, 4)
             setOnClickListener {
+                val creatorName = GoogleSignInHelper.getUserName(this@MainActivity) ?: "Someone"
+                val inviteText = "$creatorName is inviting you to join a collaborative session on NbhEditor!\n\nUse this code to join:\n\n🔗 $sessionId\n\nOpen NbhEditor → Menu → Collaborative Session → Join Session"
                 val clipboard = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                val clip = android.content.ClipData.newPlainText("Session Code", sessionId)
+                val clip = android.content.ClipData.newPlainText("Session Invite", inviteText)
                 clipboard.setPrimaryClip(clip)
-                Toast.makeText(this@MainActivity, "✓ Copied: $sessionId", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@MainActivity, "✓ Invite copied!", Toast.LENGTH_SHORT).show()
             }
         }
         infoBar.addView(btnCopy)
@@ -3697,6 +3730,7 @@ open class MainActivity : AppCompatActivity() {
                             progressDialog.dismiss()
                             
                             removeSessionInfoBar()
+                            CollabSessionService.stop(this@MainActivity)
                             
                             // Clear editor and go back to home with animation
                             editorBinding.textArea.animate()
