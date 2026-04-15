@@ -3794,6 +3794,209 @@ open class MainActivity : AppCompatActivity() {
             .show()
     }
     
+    private fun showSessionInviteDialog(sessionId: String) {
+        val creatorName = GoogleSignInHelper.getUserName(this) ?: "Someone"
+        val inviteText = "$creatorName is inviting you to join a collaborative session on NbhEditor!\n\nUse this code to join:\n\n🔗 $sessionId\n\nOpen NbhEditor → Menu → Collaborative Session → Join Session"
+        
+        val dialogView = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(60, 40, 60, 40)
+        }
+        
+        // Title
+        val titleView = TextView(this).apply {
+            text = "✅ Session Created!"
+            textSize = 20f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = 24 }
+        }
+        
+        // Session code display
+        val codeCard = androidx.cardview.widget.CardView(this).apply {
+            radius = 16f
+            cardElevation = 4f
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = 24 }
+        }
+        
+        val codeLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(32, 24, 32, 24)
+            gravity = Gravity.CENTER
+        }
+        
+        val codeLabel = TextView(this).apply {
+            text = "Session Code:"
+            textSize = 14f
+            alpha = 0.7f
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = 8 }
+        }
+        
+        val codeText = TextView(this).apply {
+            text = sessionId
+            textSize = 28f
+            typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
+            gravity = Gravity.CENTER
+            setTextColor(resources.getColor(R.color.accent_primary, theme))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+        
+        codeLayout.addView(codeLabel)
+        codeLayout.addView(codeText)
+        codeCard.addView(codeLayout)
+        
+        // Message
+        val messageView = TextView(this).apply {
+            text = "Share this code with others to collaborate in real-time!"
+            textSize = 14f
+            gravity = Gravity.CENTER
+            alpha = 0.8f
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = 32 }
+        }
+        
+        // Buttons layout
+        val buttonsLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+        
+        // Copy button
+        val btnCopy = com.google.android.material.button.MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+            text = "📋 Copy"
+            layoutParams = LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f
+            ).apply { marginEnd = 8 }
+            setOnClickListener {
+                val clipboard = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                val clip = android.content.ClipData.newPlainText("Session Invite", inviteText)
+                clipboard.setPrimaryClip(clip)
+                Toast.makeText(this@MainActivity, "✓ Invite copied to clipboard!", Toast.LENGTH_SHORT).show()
+            }
+        }
+        
+        // Share button
+        val btnShare = com.google.android.material.button.MaterialButton(this).apply {
+            text = "📤 Share"
+            layoutParams = LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f
+            ).apply { marginStart = 8 }
+            setOnClickListener {
+                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_SUBJECT, "Join my NbhEditor session!")
+                    putExtra(Intent.EXTRA_TEXT, inviteText)
+                }
+                startActivity(Intent.createChooser(shareIntent, "Share session code via"))
+            }
+        }
+        
+        buttonsLayout.addView(btnCopy)
+        buttonsLayout.addView(btnShare)
+        
+        // Close button
+        val btnClose = com.google.android.material.button.MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+            text = "Close"
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = 16 }
+        }
+        
+        dialogView.addView(titleView)
+        dialogView.addView(codeCard)
+        dialogView.addView(messageView)
+        dialogView.addView(buttonsLayout)
+        dialogView.addView(btnClose)
+        
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(true)
+            .create()
+        
+        btnClose.setOnClickListener {
+            dialog.dismiss()
+        }
+        
+        dialog.setOnShowListener {
+            dialog.window?.apply {
+                setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+                
+                val bgColor = if (isGlassMode) {
+                    0xDD0D1117.toInt()
+                } else {
+                    val isDark = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
+                    if (isDark) 0xFF1E1E1E.toInt() else 0xFFFFFFFF.toInt()
+                }
+                
+                val textColor = if (isGlassMode || (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES)) {
+                    0xFFFFFFFF.toInt()
+                } else {
+                    0xFF212121.toInt()
+                }
+                
+                dialogView.setBackgroundColor(bgColor)
+                dialogView.background = android.graphics.drawable.GradientDrawable().apply {
+                    setColor(bgColor)
+                    cornerRadius = 24f
+                    if (isGlassMode) {
+                        setStroke(2, 0x33FFFFFF)
+                    }
+                }
+                
+                titleView.setTextColor(textColor)
+                codeLabel.setTextColor(textColor)
+                messageView.setTextColor(textColor)
+                
+                // Card background
+                val cardBg = if (isGlassMode) {
+                    0xBB1A1F26.toInt()
+                } else {
+                    val isDark = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
+                    if (isDark) 0xFF2A2A2A.toInt() else 0xFFF5F5F5.toInt()
+                }
+                codeCard.setCardBackgroundColor(cardBg)
+            }
+            
+            // Fade in animation
+            dialogView.alpha = 0f
+            dialogView.scaleX = 0.9f
+            dialogView.scaleY = 0.9f
+            dialogView.animate()
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setDuration(300)
+                .setInterpolator(android.view.animation.OvershootInterpolator())
+                .start()
+        }
+        
+        dialog.show()
+    }
+    
     private fun showCollaborativeSessionDialog() {
         // Check if user is signed in
         if (!GoogleSignInHelper.isSignedIn(this)) {
@@ -3863,7 +4066,8 @@ open class MainActivity : AppCompatActivity() {
                 result.onSuccess { sessionId ->
                     showSuccessToast("✓ Session created: $sessionId")
                     showActiveSessionUI(sessionId, isCreator = true)
-                    // startCollaborativeSync is called inside showActiveSessionUI
+                    // Show invite dialog after session is created
+                    showSessionInviteDialog(sessionId)
                 }.onFailure { e ->
                     showErrorDialog("Failed to create session", e.message ?: "Unknown error")
                 }
