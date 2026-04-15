@@ -92,6 +92,7 @@ open class MainActivity : AppCompatActivity() {
     
     // MediaPlayer for collaborative session join sound
     private var joinSoundPlayer: android.media.MediaPlayer? = null
+    private var audioFocusRequest: android.media.AudioFocusRequest? = null
 
     // ── AI Backend ────────────────────────────────────────────────────────────
 
@@ -3308,15 +3309,52 @@ open class MainActivity : AppCompatActivity() {
             // Stop any existing player
             stopJoinSound()
             
+            // Request audio focus
+            val audioManager = getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+            
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                audioFocusRequest = android.media.AudioFocusRequest.Builder(android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+                    .setAudioAttributes(
+                        android.media.AudioAttributes.Builder()
+                            .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+                            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
+                            .build()
+                    )
+                    .build()
+                audioManager.requestAudioFocus(audioFocusRequest!!)
+            } else {
+                @Suppress("DEPRECATION")
+                audioManager.requestAudioFocus(
+                    null,
+                    android.media.AudioManager.STREAM_MUSIC,
+                    android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
+                )
+            }
+            
             // Create and start new player
-            joinSoundPlayer = android.media.MediaPlayer.create(this, R.raw.nbheditortrimed)
+            joinSoundPlayer = android.media.MediaPlayer.create(this, R.raw.join_sound)
             joinSoundPlayer?.apply {
                 isLooping = false
-                setVolume(0.5f, 0.5f) // 50% volume
+                setVolume(0.8f, 0.8f) // 80% volume
                 setOnCompletionListener {
                     stopJoinSound()
                 }
+                setOnErrorListener { mp, what, extra ->
+                    Log.e("JoinSound", "MediaPlayer error: what=$what, extra=$extra")
+                    stopJoinSound()
+                    true
+                }
                 start()
+                Log.d("JoinSound", "Join sound started playing")
+            } ?: run {
+                Log.e("JoinSound", "Failed to create MediaPlayer - resource not found or invalid")
+                // Abandon audio focus if player creation failed
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    audioFocusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
+                } else {
+                    @Suppress("DEPRECATION")
+                    audioManager.abandonAudioFocus(null)
+                }
             }
         } catch (e: Exception) {
             Log.e("JoinSound", "Failed to play join sound", e)
@@ -3332,6 +3370,18 @@ open class MainActivity : AppCompatActivity() {
                 release()
             }
             joinSoundPlayer = null
+            
+            // Abandon audio focus
+            val audioManager = getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                audioFocusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
+                audioFocusRequest = null
+            } else {
+                @Suppress("DEPRECATION")
+                audioManager.abandonAudioFocus(null)
+            }
+            
+            Log.d("JoinSound", "Join sound stopped")
         } catch (e: Exception) {
             Log.e("JoinSound", "Failed to stop join sound", e)
         }
