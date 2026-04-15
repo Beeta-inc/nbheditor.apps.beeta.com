@@ -89,6 +89,9 @@ open class MainActivity : AppCompatActivity() {
         .writeTimeout(15, TimeUnit.SECONDS)
         .build()
     private val gson = Gson()
+    
+    // MediaPlayer for collaborative session join sound
+    private var joinSoundPlayer: android.media.MediaPlayer? = null
 
     // ── AI Backend ────────────────────────────────────────────────────────────
 
@@ -298,6 +301,7 @@ open class MainActivity : AppCompatActivity() {
         destroySpeechRecognizer()
         if (memoryEnabled) saveCurrentChat()
         if (isGlassMode) GlassTextAdapter.stop()
+        stopJoinSound()
     }
 
     var isGlassMode = false
@@ -3297,6 +3301,42 @@ open class MainActivity : AppCompatActivity() {
             .show()
     }
     
+    // ── Join Sound Helper Functions ──────────────────────────────────────────
+    
+    private fun playJoinSound() {
+        try {
+            // Stop any existing player
+            stopJoinSound()
+            
+            // Create and start new player
+            joinSoundPlayer = android.media.MediaPlayer.create(this, R.raw.nbheditortrimed)
+            joinSoundPlayer?.apply {
+                isLooping = false
+                setVolume(0.5f, 0.5f) // 50% volume
+                setOnCompletionListener {
+                    stopJoinSound()
+                }
+                start()
+            }
+        } catch (e: Exception) {
+            Log.e("JoinSound", "Failed to play join sound", e)
+        }
+    }
+    
+    private fun stopJoinSound() {
+        try {
+            joinSoundPlayer?.apply {
+                if (isPlaying) {
+                    stop()
+                }
+                release()
+            }
+            joinSoundPlayer = null
+        } catch (e: Exception) {
+            Log.e("JoinSound", "Failed to stop join sound", e)
+        }
+    }
+    
     // ── Collaborative Session ─────────────────────────────────────────────────
     
     private fun createLoadingDialog(title: String, message: String): androidx.appcompat.app.AlertDialog {
@@ -3520,6 +3560,9 @@ open class MainActivity : AppCompatActivity() {
         )
         loadingDialog.show()
         
+        // Play join sound
+        playJoinSound()
+        
         lifecycleScope.launch {
             try {
                 val photoUrl = GoogleSignInHelper.getUserPhotoUrl(this@MainActivity) ?: ""
@@ -3529,6 +3572,7 @@ open class MainActivity : AppCompatActivity() {
                 delay(800)
                 
                 loadingDialog.dismiss()
+                stopJoinSound()
                 
                 result.onSuccess { sessionId ->
                     showSuccessToast("✓ Session created: $sessionId")
@@ -3539,6 +3583,7 @@ open class MainActivity : AppCompatActivity() {
                 }
             } catch (e: Exception) {
                 loadingDialog.dismiss()
+                stopJoinSound()
                 showErrorDialog("Error", e.message ?: "Unknown error")
             }
         }
@@ -3556,6 +3601,9 @@ open class MainActivity : AppCompatActivity() {
         )
         loadingDialog.show()
         
+        // Play join sound
+        playJoinSound()
+        
         lifecycleScope.launch {
             try {
                 val photoUrl = GoogleSignInHelper.getUserPhotoUrl(this@MainActivity) ?: ""
@@ -3565,6 +3613,7 @@ open class MainActivity : AppCompatActivity() {
                 delay(800)
                 
                 loadingDialog.dismiss()
+                stopJoinSound()
                 
                 result.onSuccess { session ->
                     showSuccessToast("✓ Joined session: $sessionId")
@@ -3576,6 +3625,7 @@ open class MainActivity : AppCompatActivity() {
                 }
             } catch (e: Exception) {
                 loadingDialog.dismiss()
+                stopJoinSound()
                 showErrorDialog("Error", e.message ?: "Unknown error")
             }
         }
