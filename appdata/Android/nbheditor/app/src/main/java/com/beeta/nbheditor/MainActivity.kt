@@ -2761,8 +2761,24 @@ open class MainActivity : AppCompatActivity() {
                 aiChatBinding.chatRecyclerView.visibility = View.VISIBLE
                 scrollChatToBottom()
 
-                // Extract frames from video (5 frames for better analysis)
-                val frames = extractVideoFrames(uri, maxFrames = 5)
+                // Check video size first
+                val videoSize = withContext(Dispatchers.IO) {
+                    try {
+                        contentResolver.openFileDescriptor(uri, "r")?.use { it.statSize } ?: 0L
+                    } catch (e: Exception) { 0L }
+                }
+                
+                Log.d("VideoAnalysis", "Video size: ${videoSize / 1024 / 1024}MB")
+                
+                // Adjust frame count based on video size
+                val maxFrames = when {
+                    videoSize > 50 * 1024 * 1024 -> 2 // >50MB: 2 frames
+                    videoSize > 20 * 1024 * 1024 -> 3 // >20MB: 3 frames
+                    else -> 3 // <=20MB: 3 frames
+                }
+
+                // Extract frames from video
+                val frames = extractVideoFrames(uri, maxFrames)
                 if (frames.isEmpty()) {
                     aiChatBinding.typingRow.visibility = View.GONE
                     showChatError("Could not extract video frames. Please try a different video.")
@@ -2799,7 +2815,7 @@ open class MainActivity : AppCompatActivity() {
                     }
                     scrollChatToBottom()
                 } else {
-                    showChatError("Video analysis failed. Please try again or use a shorter video.")
+                    showChatError("Video analysis failed. Try a shorter video or reduce quality.")
                 }
             } catch (e: Exception) {
                 Log.e("VideoAnalysis", "Analysis error: ${e.message}", e)
@@ -2810,7 +2826,7 @@ open class MainActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun extractVideoFrames(uri: android.net.Uri, maxFrames: Int = 5): List<String> = withContext(Dispatchers.IO) {
+    private suspend fun extractVideoFrames(uri: android.net.Uri, maxFrames: Int = 3): List<String> = withContext(Dispatchers.IO) {
         val frames = mutableListOf<String>()
         var retriever: android.media.MediaMetadataRetriever? = null
         try {
@@ -2824,20 +2840,27 @@ open class MainActivity : AppCompatActivity() {
             Log.d("VideoAnalysis", "Video duration: ${duration}ms, size: ${width}x${height}")
             
             if (duration > 0) {
-                // Extract frames at strategic points: start, middle sections, and end
-                val interval = duration / (maxFrames + 1)
+                // Extract frames at strategic points
                 val extractionPoints = mutableListOf<Long>()
                 
-                // Add start frame (skip first 500ms to avoid black frames)
-                extractionPoints.add(500L)
-                
-                // Add evenly distributed frames
-                for (i in 1..maxFrames - 2) {
-                    extractionPoints.add(interval * i)
+                if (maxFrames == 1) {
+                    // Single frame from middle
+                    extractionPoints.add(duration / 2)
+                } else {
+                    // Start frame (skip first 500ms to avoid black frames)
+                    extractionPoints.add(500L)
+                    
+                    // Middle frames
+                    val interval = duration / (maxFrames + 1)
+                    for (i in 1 until maxFrames - 1) {
+                        extractionPoints.add(interval * i)
+                    }
+                    
+                    // End frame (500ms before end)
+                    if (maxFrames > 1) {
+                        extractionPoints.add((duration - 500).coerceAtLeast(1000L))
+                    }
                 }
-                
-                // Add end frame (500ms before end)
-                extractionPoints.add((duration - 500).coerceAtLeast(1000L))
                 
                 extractionPoints.take(maxFrames).forEach { timeMs ->
                     try {
@@ -2848,8 +2871,8 @@ open class MainActivity : AppCompatActivity() {
                         )
                         
                         if (bitmap != null) {
-                            // Resize to max 1024px on longest side for better quality
-                            val maxDim = 1024
+                            // Resize to max 512px for smaller payload (was 1024px)
+                            val maxDim = 512
                             val scale = maxDim.toFloat() / Math.max(bitmap.width, bitmap.height)
                             val newWidth = (bitmap.width * scale).toInt()
                             val newHeight = (bitmap.height * scale).toInt()
@@ -2859,14 +2882,15 @@ open class MainActivity : AppCompatActivity() {
                             )
                             
                             val stream = java.io.ByteArrayOutputStream()
-                            resized.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, stream)
+                            // Reduce quality to 70% for smaller size (was 90%)
+                            resized.compress(android.graphics.Bitmap.CompressFormat.JPEG, 70, stream)
                             val base64 = android.util.Base64.encodeToString(
                                 stream.toByteArray(), 
                                 android.util.Base64.NO_WRAP
                             )
                             
                             frames.add(base64)
-                            Log.d("VideoAnalysis", "Extracted frame at ${timeMs}ms (${newWidth}x${newHeight})")
+                            Log.d("VideoAnalysis", "Extracted frame at ${timeMs}ms (${newWidth}x${newHeight}, ${stream.size() / 1024}KB)")
                             
                             bitmap.recycle()
                             resized.recycle()
