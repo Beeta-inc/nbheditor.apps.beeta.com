@@ -497,6 +497,18 @@ object CollaborativeSessionManager {
     
     fun getCurrentUserId(): String? = currentUserId
     
+    // Get current session data
+    suspend fun getCurrentSession(): CollaborativeSession? {
+        return try {
+            val sessionId = currentSessionId ?: return null
+            val snapshot = database.child(SESSIONS_PATH).child(sessionId).get().await()
+            snapshot.getValue(CollaborativeSession::class.java)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get current session", e)
+            null
+        }
+    }
+    
     // ── Typing Indicator ─────────────────────────────────────────────────────
     
     suspend fun setTypingInChat(isTyping: Boolean) {

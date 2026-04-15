@@ -4392,6 +4392,14 @@ open class MainActivity : AppCompatActivity() {
                                 .create()
                             progressDialog.show()
                             
+                            // Save session content before leaving
+                            val currentContent = editorBinding.textArea.text.toString()
+                            val currentSession = CollaborativeSessionManager.getCurrentSession()
+                            if (currentSession != null && currentContent.isNotBlank()) {
+                                val creatorName = currentSession.users.values.firstOrNull { it.userId == currentSession.creatorId }?.userName ?: "Unknown"
+                                saveCollaborativeSessionFile(currentSession.sessionId, currentContent, creatorName)
+                            }
+                            
                             CollaborativeSessionManager.leaveSession()
                             contentSyncJob?.cancel()
                             
