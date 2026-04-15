@@ -249,6 +249,30 @@
 
         </LinearLayout>
 
+        <!-- File grid -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/fileGrid"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:nestedScrollingEnabled="false"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="16dp"
+            android:clipToPadding="false"
+            android:visibility="gone" />
+
+        <!-- Divider -->
+        <View
+            android:id="@+id/sectionDivider"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="8dp"
+            android:background="@color/divider"
+            android:visibility="gone" />
+
         <!-- Collaborative Sessions Section -->
         <TextView
             android:id="@+id/collabSessionsLabel"
@@ -268,21 +292,10 @@
             android:id="@+id/collabSessionsGrid"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:paddingBottom="8dp"
-            android:clipToPadding="false"
-            android:visibility="gone" />
-
-        <!-- File grid -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/fileGrid"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
             android:nestedScrollingEnabled="false"
             android:paddingStart="8dp"
             android:paddingEnd="8dp"
-            android:paddingBottom="8dp"
+            android:paddingBottom="80dp"
             android:clipToPadding="false"
             android:visibility="gone" />
 

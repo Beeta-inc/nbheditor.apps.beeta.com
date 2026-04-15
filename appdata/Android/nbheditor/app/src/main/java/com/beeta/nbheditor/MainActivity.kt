@@ -302,6 +302,21 @@ open class MainActivity : AppCompatActivity() {
         isListening = false
         destroySpeechRecognizer()
         if (memoryEnabled) saveCurrentChat()
+        
+        // Save collaborative session if in one
+        if (CollaborativeSessionManager.isInSession()) {
+            val currentContent = editorBinding.textArea.text.toString()
+            if (currentContent.isNotBlank()) {
+                lifecycleScope.launch {
+                    val currentSession = CollaborativeSessionManager.getCurrentSession()
+                    if (currentSession != null) {
+                        val creatorName = currentSession.users.values.firstOrNull { it.userId == currentSession.creatorId }?.userName ?: "Unknown"
+                        saveCollaborativeSessionFile(currentSession.sessionId, currentContent, creatorName)
+                    }
+                }
+            }
+        }
+        
         if (isGlassMode) GlassTextAdapter.stop()
         stopJoinSound()
     }
@@ -759,14 +774,72 @@ open class MainActivity : AppCompatActivity() {
                     sessionsDir.listFiles()?.sortedByDescending { it.lastModified() } ?: emptyList()
                 }
                 
-                if (sessionFiles.isEmpty()) {
+                val localFileNames = sessionFiles.map { it.name }.toMutableSet()
+                val allFiles = sessionFiles.toMutableList()
+                
+                // Load from Google Drive if signed in
+                if (GoogleSignInHelper.isSignedIn(this@MainActivity)) {
+                    try {
+                        val cloudFiles = withContext(Dispatchers.IO) {
+                            GoogleSignInHelper.getAllCloudFiles(this@MainActivity)
+                        }
+                        
+                        // Filter for collaborative session files
+                        val collabCloudFiles = cloudFiles.filter { (fileName, _, _) ->
+                            fileName.startsWith("collab_session_")
+                        }
+                        
+                        for ((cloudFileName, content, modifiedTime) in collabCloudFiles) {
+                            val localFileName = cloudFileName.removePrefix("collab_session_")
+                            
+                            if (localFileName in localFileNames) {
+                                // Check if cloud version is newer
+                                val localSyncTime = prefs.getLong("collab_sync_${localFileName}", 0L)
+                                if (modifiedTime > localSyncTime) {
+                                    // Update local file with cloud version
+                                    withContext(Dispatchers.IO) {
+                                        try {
+                                            val sessionsDir = java.io.File(filesDir, "collab_sessions")
+                                            val localFile = java.io.File(sessionsDir, localFileName)
+                                            localFile.writeText(content)
+                                            prefs.edit().putLong("collab_sync_${localFileName}", modifiedTime).apply()
+                                            Log.d("CollabSessions", "Updated from cloud: $localFileName")
+                                        } catch (e: Exception) {
+                                            Log.e("CollabSessions", "Failed to update local file", e)
+                                        }
+                                    }
+                                }
+                            } else {
+                                // Cloud-only file, download it
+                                withContext(Dispatchers.IO) {
+                                    try {
+                                        val sessionsDir = java.io.File(filesDir, "collab_sessions")
+                                        val newFile = java.io.File(sessionsDir, localFileName)
+                                        newFile.writeText(content)
+                                        allFiles.add(newFile)
+                                        localFileNames.add(localFileName)
+                                        prefs.edit().putLong("collab_sync_${localFileName}", modifiedTime).apply()
+                                        Log.d("CollabSessions", "Downloaded from cloud: $localFileName")
+                                    } catch (e: Exception) {
+                                        Log.e("CollabSessions", "Failed to download cloud file", e)
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e("CollabSessions", "Failed to load from cloud", e)
+                    }
+                }
+                
+                if (allFiles.isEmpty()) {
                     homeBinding.collabSessionsLabel.visibility = View.GONE
                     homeBinding.collabSessionsGrid.visibility = View.GONE
+                    homeBinding.root.findViewById<View>(R.id.sectionDivider)?.visibility = View.GONE
                     return@launch
                 }
                 
                 // Convert to FileEntry format
-                val entries = sessionFiles.mapNotNull { file ->
+                val entries = allFiles.mapNotNull { file ->
                     try {
                         val content = file.readText()
                         val preview = content.take(150).trim()
@@ -796,9 +869,11 @@ open class MainActivity : AppCompatActivity() {
                 if (entries.isEmpty()) {
                     homeBinding.collabSessionsLabel.visibility = View.GONE
                     homeBinding.collabSessionsGrid.visibility = View.GONE
+                    homeBinding.root.findViewById<View>(R.id.sectionDivider)?.visibility = View.GONE
                 } else {
                     homeBinding.collabSessionsLabel.visibility = View.VISIBLE
                     homeBinding.collabSessionsGrid.visibility = View.VISIBLE
+                    homeBinding.root.findViewById<View>(R.id.sectionDivider)?.visibility = View.VISIBLE
                     
                     // Setup adapter if not initialized
                     if (!::collabSessionsAdapter.isInitialized) {
@@ -4111,9 +4186,30 @@ open class MainActivity : AppCompatActivity() {
                 val fileName = "${sessionId}_${sanitizedName}_${timestamp}.txt"
                 val file = java.io.File(sessionsDir, fileName)
                 file.writeText(content)
-                Log.d("CollabSession", "Saved session file: $fileName")
+                Log.d("CollabSession", "✓ Saved session file: $fileName (${content.length} chars)")
+                
+                // Sync to Google Drive if signed in
+                if (GoogleSignInHelper.isSignedIn(this@MainActivity)) {
+                    try {
+                        val driveFileName = "collab_session_$fileName"
+                        val success = GoogleSignInHelper.syncFileToCloud(this@MainActivity, content, driveFileName)
+                        if (success) {
+                            prefs.edit().putLong("collab_sync_${fileName}", timestamp).apply()
+                            Log.d("CollabSession", "✓ Synced to Drive: $driveFileName")
+                        }
+                    } catch (e: Exception) {
+                        Log.e("CollabSession", "Failed to sync to Drive", e)
+                    }
+                }
+                
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@MainActivity, "✓ Session saved locally", Toast.LENGTH_SHORT).show()
+                }
             } catch (e: Exception) {
                 Log.e("CollabSession", "Failed to save session file", e)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@MainActivity, "Failed to save session: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
@@ -4554,6 +4650,14 @@ open class MainActivity : AppCompatActivity() {
                                         .setCancelable(false)
                                         .create()
                                     progressDialog.show()
+                                    
+                                    // Save session content before leaving
+                                    val currentContent = editorBinding.textArea.text.toString()
+                                    val currentSession = CollaborativeSessionManager.getCurrentSession()
+                                    if (currentSession != null && currentContent.isNotBlank()) {
+                                        val creatorName = currentSession.users.values.firstOrNull { it.userId == currentSession.creatorId }?.userName ?: "Unknown"
+                                        saveCollaborativeSessionFile(currentSession.sessionId, currentContent, creatorName)
+                                    }
                                     
                                     CollaborativeSessionManager.leaveSession()
                                     contentSyncJob?.cancel()
@@ -5280,6 +5384,14 @@ open class MainActivity : AppCompatActivity() {
                             .setCancelable(false)
                             .create()
                         progressDialog.show()
+                        
+                        // Save session content before ending
+                        val currentContent = editorBinding.textArea.text.toString()
+                        val currentSession = CollaborativeSessionManager.getCurrentSession()
+                        if (currentSession != null && currentContent.isNotBlank()) {
+                            val creatorName = currentSession.users.values.firstOrNull { it.userId == currentSession.creatorId }?.userName ?: "Unknown"
+                            saveCollaborativeSessionFile(currentSession.sessionId, currentContent, creatorName)
+                        }
                         
                         val result = CollaborativeSessionManager.endSession(sessionId)
                         progressDialog.dismiss()
