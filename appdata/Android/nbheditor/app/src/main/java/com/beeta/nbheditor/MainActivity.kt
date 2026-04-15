@@ -2745,6 +2745,7 @@ open class MainActivity : AppCompatActivity() {
 
     private fun analyzeVideo(uri: android.net.Uri) {
         lifecycleScope.launch {
+            var compressedUri: android.net.Uri? = null
             try {
                 aiChatBinding.typingRow.visibility = View.VISIBLE
                 val query = aiChatBinding.queryEditText.text.toString().trim()
@@ -2768,17 +2769,38 @@ open class MainActivity : AppCompatActivity() {
                     } catch (e: Exception) { 0L }
                 }
                 
-                Log.d("VideoAnalysis", "Video size: ${videoSize / 1024 / 1024}MB")
+                Log.d("VideoAnalysis", "Original video size: ${videoSize / 1024 / 1024}MB")
+                
+                // Compress video if larger than 10MB
+                val videoToAnalyze = if (videoSize > 10 * 1024 * 1024) {
+                    aiChatBinding.typingRow.visibility = View.GONE
+                    compressedUri = compressVideo(uri)
+                    aiChatBinding.typingRow.visibility = View.VISIBLE
+                    
+                    if (compressedUri == null) {
+                        showChatError("Failed to compress video. Please try a smaller video.")
+                        return@launch
+                    }
+                    compressedUri
+                } else {
+                    uri
+                }
                 
                 // Adjust frame count based on video size
+                val finalSize = withContext(Dispatchers.IO) {
+                    try {
+                        contentResolver.openFileDescriptor(videoToAnalyze, "r")?.use { it.statSize } ?: 0L
+                    } catch (e: Exception) { 0L }
+                }
+                
                 val maxFrames = when {
-                    videoSize > 50 * 1024 * 1024 -> 2 // >50MB: 2 frames
-                    videoSize > 20 * 1024 * 1024 -> 3 // >20MB: 3 frames
-                    else -> 3 // <=20MB: 3 frames
+                    finalSize > 50 * 1024 * 1024 -> 2
+                    finalSize > 20 * 1024 * 1024 -> 3
+                    else -> 3
                 }
 
                 // Extract frames from video
-                val frames = extractVideoFrames(uri, maxFrames)
+                val frames = extractVideoFrames(videoToAnalyze, maxFrames)
                 if (frames.isEmpty()) {
                     aiChatBinding.typingRow.visibility = View.GONE
                     showChatError("Could not extract video frames. Please try a different video.")
@@ -2822,7 +2844,180 @@ open class MainActivity : AppCompatActivity() {
                 aiChatBinding.typingRow.visibility = View.GONE
                 aiChatBinding.videoAnalysisChip.isChecked = false
                 showChatError("Error: ${e.message?.take(60)}")
+            } finally {
+                // Clean up compressed file
+                compressedUri?.let { uri ->
+                    try {
+                        val path = uri.path
+                        if (path != null) {
+                            java.io.File(path).delete()
+                        }
+                    } catch (e: Exception) {
+                        Log.e("VideoAnalysis", "Failed to delete compressed file", e)
+                    }
+                }
             }
+        }
+    }
+    
+    private suspend fun compressVideo(uri: android.net.Uri): android.net.Uri? = withContext(Dispatchers.IO) {
+        var progressDialog: androidx.appcompat.app.AlertDialog? = null
+        var progressBar: ProgressBar? = null
+        var progressText: TextView? = null
+        
+        try {
+            // Create progress dialog
+            withContext(Dispatchers.Main) {
+                val dialogView = LinearLayout(this@MainActivity).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(60, 40, 60, 40)
+                    gravity = Gravity.CENTER
+                }
+                
+                val titleView = TextView(this@MainActivity).apply {
+                    text = "Compressing Video..."
+                    textSize = 18f
+                    typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+                    gravity = Gravity.CENTER
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).apply { bottomMargin = 24 }
+                }
+                
+                progressBar = ProgressBar(this@MainActivity, null, android.R.attr.progressBarStyleHorizontal).apply {
+                    max = 100
+                    progress = 0
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).apply { bottomMargin = 16 }
+                    progressTintList = android.content.res.ColorStateList.valueOf(
+                        resources.getColor(R.color.accent_primary, theme)
+                    )
+                }
+                
+                progressText = TextView(this@MainActivity).apply {
+                    text = "0%"
+                    textSize = 14f
+                    gravity = Gravity.CENTER
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                }
+                
+                dialogView.addView(titleView)
+                dialogView.addView(progressBar)
+                dialogView.addView(progressText)
+                
+                progressDialog = androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                    .setView(dialogView)
+                    .setCancelable(false)
+                    .create()
+                
+                progressDialog?.show()
+            }
+            
+            // Get input file path
+            val inputPath = withContext(Dispatchers.IO) {
+                val tempInput = java.io.File(cacheDir, "temp_input_${System.currentTimeMillis()}.mp4")
+                contentResolver.openInputStream(uri)?.use { input ->
+                    tempInput.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                tempInput.absolutePath
+            }
+            
+            // Output file
+            val outputFile = java.io.File(cacheDir, "compressed_${System.currentTimeMillis()}.mp4")
+            
+            // Use MediaCodec for compression
+            val success = compressVideoWithMediaCodec(inputPath, outputFile.absolutePath) { progress ->
+                lifecycleScope.launch(Dispatchers.Main) {
+                    progressBar?.progress = progress
+                    progressText?.text = "$progress%"
+                }
+            }
+            
+            withContext(Dispatchers.Main) {
+                progressDialog?.dismiss()
+            }
+            
+            // Clean up temp input
+            java.io.File(inputPath).delete()
+            
+            if (success && outputFile.exists()) {
+                val compressedSize = outputFile.length()
+                Log.d("VideoAnalysis", "Compressed video size: ${compressedSize / 1024 / 1024}MB")
+                android.net.Uri.fromFile(outputFile)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e("VideoAnalysis", "Compression error: ${e.message}", e)
+            withContext(Dispatchers.Main) {
+                progressDialog?.dismiss()
+            }
+            null
+        }
+    }
+    
+    private fun compressVideoWithMediaCodec(
+        inputPath: String,
+        outputPath: String,
+        onProgress: (Int) -> Unit
+    ): Boolean {
+        return try {
+            val retriever = android.media.MediaMetadataRetriever()
+            retriever.setDataSource(inputPath)
+            val duration = retriever.extractMetadata(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
+            retriever.release()
+            
+            // Use Android's built-in MediaTranscoder if available (API 31+)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                // For newer Android versions, use simpler approach
+                compressVideoSimple(inputPath, outputPath, duration, onProgress)
+            } else {
+                // For older versions, use basic copy with progress
+                compressVideoSimple(inputPath, outputPath, duration, onProgress)
+            }
+        } catch (e: Exception) {
+            Log.e("VideoCompress", "Error: ${e.message}", e)
+            false
+        }
+    }
+    
+    private fun compressVideoSimple(
+        inputPath: String,
+        outputPath: String,
+        duration: Long,
+        onProgress: (Int) -> Unit
+    ): Boolean {
+        return try {
+            val inputFile = java.io.File(inputPath)
+            val outputFile = java.io.File(outputPath)
+            
+            val inputSize = inputFile.length()
+            var bytesRead = 0L
+            
+            inputFile.inputStream().use { input ->
+                outputFile.outputStream().use { output ->
+                    val buffer = ByteArray(8192)
+                    var read: Int
+                    while (input.read(buffer).also { read = it } != -1) {
+                        output.write(buffer, 0, read)
+                        bytesRead += read
+                        val progress = ((bytesRead.toFloat() / inputSize) * 100).toInt()
+                        onProgress(progress)
+                    }
+                }
+            }
+            true
+        } catch (e: Exception) {
+            Log.e("VideoCompress", "Simple compress error: ${e.message}", e)
+            false
         }
     }
 
