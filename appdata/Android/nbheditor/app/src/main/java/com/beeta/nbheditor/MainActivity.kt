@@ -1365,11 +1365,17 @@ open class MainActivity : AppCompatActivity() {
                         val pos = et.selectionStart.coerceAtLeast(0)
                         val toInsert = if (pos > 0 && et.text?.getOrNull(pos - 1)?.isWhitespace() == false) " $text " else "$text "
                         try {
+                            // Temporarily disable undo tracking for voice input
+                            val wasUndoing = isUndoing
+                            isUndoing = true
                             et.text?.insert(pos, toInsert)
                             et.setSelection((pos + toInsert.length).coerceAtMost(et.text?.length ?: 0))
+                            isUndoing = wasUndoing
                             // Trigger text changed for autosave
                             if (et == editorBinding.textArea) {
                                 textChanged = true
+                                handler.removeCallbacks(typingDelayRunnable)
+                                handler.postDelayed(typingDelayRunnable, 2000)
                             }
                         } catch (e: Exception) {
                             Log.e("VoiceInput", "Failed to insert text", e)
@@ -3951,6 +3957,7 @@ open class MainActivity : AppCompatActivity() {
                         activeSessionDialog?.dismiss()
                         activeSessionDialog = null
                         removeSessionInfoBar()
+                        CollabSessionService.stop(this@MainActivity)
                         editorBinding.textArea.setText("")
                         this@MainActivity.currentFileUri = null
                         textChanged = false
@@ -3977,6 +3984,7 @@ open class MainActivity : AppCompatActivity() {
                         activeSessionDialog?.dismiss()
                         activeSessionDialog = null
                         removeSessionInfoBar()
+                        CollabSessionService.stop(this@MainActivity)
                         editorBinding.textArea.setText("")
                         this@MainActivity.currentFileUri = null
                         textChanged = false
