@@ -751,12 +751,6 @@ open class MainActivity : AppCompatActivity() {
     private lateinit var collabSessionsAdapter: FileCardAdapter
     
     private fun loadCollaborativeSessions() {
-        if (!GoogleSignInHelper.isSignedIn(this)) {
-            homeBinding.collabSessionsLabel.visibility = View.GONE
-            homeBinding.collabSessionsGrid.visibility = View.GONE
-            return
-        }
-        
         lifecycleScope.launch {
             try {
                 // Load collaborative session files from local storage

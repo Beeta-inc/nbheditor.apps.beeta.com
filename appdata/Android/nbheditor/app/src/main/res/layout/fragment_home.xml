@@ -131,39 +131,6 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Sort / Open row -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingStart="20dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="8dp"
-            android:paddingBottom="6dp">
-
-            <TextView
-                android:id="@+id/sortLabel"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="📄 My Files"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:textColor="@color/editor_text" />
-
-            <TextView
-                android:id="@+id/btnOpenFile"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Open file..."
-                android:textSize="12sp"
-                android:textColor="@color/accent_primary"
-                android:padding="6dp"
-                android:background="?attr/selectableItemBackgroundBorderless" />
-
-        </LinearLayout>
-
         <!-- Empty state -->
         <LinearLayout
             android:id="@+id/emptyHomeState"
@@ -237,18 +204,51 @@
 
         </LinearLayout>
 
-        <!-- File grid -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/fileGrid"
+        <!-- Scrollable content -->
+        <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:paddingBottom="8dp"
-            android:clipToPadding="false"
-            android:visibility="gone" />
-        
+            android:fillViewport="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+        <!-- Sort / Open row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="20dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="6dp">
+
+            <TextView
+                android:id="@+id/sortLabel"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="📄 My Files"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/editor_text" />
+
+            <TextView
+                android:id="@+id/btnOpenFile"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Open file..."
+                android:textSize="12sp"
+                android:textColor="@color/accent_primary"
+                android:padding="6dp"
+                android:background="?attr/selectableItemBackgroundBorderless" />
+
+        </LinearLayout>
+
         <!-- Collaborative Sessions Section -->
         <TextView
             android:id="@+id/collabSessionsLabel"
@@ -270,9 +270,24 @@
             android:layout_height="wrap_content"
             android:paddingStart="8dp"
             android:paddingEnd="8dp"
-            android:paddingBottom="80dp"
+            android:paddingBottom="8dp"
             android:clipToPadding="false"
             android:visibility="gone" />
+
+        <!-- File grid -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/fileGrid"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:nestedScrollingEnabled="false"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="8dp"
+            android:clipToPadding="false"
+            android:visibility="gone" />
+
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
 
     </LinearLayout>
 
