@@ -1,6 +1,6 @@
 <div align="center">
   <img src="assets/logo-beeta.png" alt="NbhEditor Logo" width="150"/>
-  <h1>NbhEditor</h1>
+  <h1>NbhEditor v4.4.0</h1>
   <p><b>A fast, modern, and AI-powered open-source text editor for Linux and Android.</b></p>
 </div>
 
@@ -8,12 +8,24 @@
 
 **NbhEditor** is built with performance, simplicity, and intelligent assistance in mind. Whether you are a casual user taking notes or a developer writing code, it combines a lightweight editing experience with powerful, opt-in AI tools to boost your productivity.
 
+## ✨ What's New in v4.4.0
+
+* 🔗 **Collaborative Session Auto-Save:** Sessions automatically save when you end or leave
+* 📂 **Organized Home Screen:** Separate sections for regular files and collaborative sessions
+* ☁️ **Drive Sync for Sessions:** Collaborative sessions sync across all your devices
+* 🎯 **Smart Session Management:** Tap to open, long-press to delete saved sessions
+* 🔄 **Cross-Device Sync:** Work on any device, your sessions follow you
+
+See [CHANGELOG.md](CHANGELOG.md) for complete version history.
+
 ## 🚀 Core Features
 
 * ⚡ **Fast & Lightweight:** Optimized for smooth performance, even on lower-end systems.
 * ✨ **Modern Glass UI:** A clean, aesthetic interface that stays out of your way.
 * 🌙 **Dynamic Theming:** Seamlessly switch between Dark and Light modes.
 * ☁️ **Google Drive Sync:** Keep your files updated and accessible across all your devices.
+* 🔗 **Real-Time Collaboration:** Work together with others in real-time collaborative sessions.
+* 💾 **Session Management:** Auto-save and sync collaborative sessions across devices.
 * 🧩 **Plugin Ready (WIP):** Extensible architecture for future community plugins and add-ons.
 
 ## 🧠 AI-Powered Assistance

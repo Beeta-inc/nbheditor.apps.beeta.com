@@ -3675,7 +3675,7 @@ open class MainActivity : AppCompatActivity() {
     
     private fun showAboutDialog() {
         val message = """
-            📝 NBH Editor v4.3.0
+            📝 NBH Editor v4.4.0
             
             A blazing-fast, modern text editor built for Linux users.
             
