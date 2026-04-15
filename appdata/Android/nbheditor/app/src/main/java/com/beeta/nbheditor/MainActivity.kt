@@ -3588,11 +3588,11 @@ open class MainActivity : AppCompatActivity() {
     private fun showActiveSessionUI(sessionId: String, isCreator: Boolean) {
         showEditor()
         updateToolbarWithSession(sessionId)
-        Toast.makeText(this, "✓ Connected to session: $sessionId", Toast.LENGTH_SHORT).show()
         showSessionInfoBar(sessionId, isCreator)
         startCollaborativeSync(sessionId)
         // Start persistent notification
         CollabSessionService.start(this, sessionId)
+        Toast.makeText(this, "✓ Connected to session: $sessionId", Toast.LENGTH_SHORT).show()
     }
     
     private fun showSessionInfoBar(sessionId: String, isCreator: Boolean) {

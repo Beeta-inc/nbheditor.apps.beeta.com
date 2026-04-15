@@ -12,6 +12,11 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import androidx.core.app.NotificationCompat
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 
 class CollabSessionService : Service() {
 
@@ -56,6 +61,7 @@ class CollabSessionService : Service() {
     private var sessionId = ""
     private var sessionStart = 0L
     private val handler = Handler(Looper.getMainLooper())
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val timerRunnable = object : Runnable {
         override fun run() {
             updateNotification()
@@ -73,11 +79,17 @@ class CollabSessionService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_LEAVE) {
             // User tapped Leave in notification
+            serviceScope.launch {
+                CollaborativeSessionManager.leaveSession()
+            }
             stop(this)
             return START_NOT_STICKY
         }
         sessionId = intent?.getStringExtra(EXTRA_SESSION_ID) ?: ""
         sessionStart = intent?.getLongExtra(EXTRA_SESSION_START, System.currentTimeMillis()) ?: System.currentTimeMillis()
+        
+        // Ensure notification channel exists before starting foreground
+        createNotificationChannel()
         startForeground(NOTIF_ID, buildNotification("00:00"))
         handler.post(timerRunnable)
         return START_STICKY
@@ -85,6 +97,7 @@ class CollabSessionService : Service() {
 
     override fun onDestroy() {
         handler.removeCallbacks(timerRunnable)
+        serviceScope.cancel()
         super.onDestroy()
     }
 
@@ -120,10 +133,13 @@ class CollabSessionService : Service() {
             .setContentTitle("🔗 Collaborative Session Active")
             .setContentText("Session: $sessionId  •  $timer")
             .setOngoing(true)
+            .setAutoCancel(false)
             .setOnlyAlertOnce(true)
             .setContentIntent(openIntent)
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Leave", leaveIntent)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setCategory(NotificationCompat.CATEGORY_SERVICE)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .build()
     }
 
@@ -132,10 +148,13 @@ class CollabSessionService : Service() {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "Collaborative Session",
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
                 description = "Shows active collaborative session timer"
                 setShowBadge(false)
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                enableVibration(false)
+                enableLights(false)
             }
             (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
                 .createNotificationChannel(channel)
