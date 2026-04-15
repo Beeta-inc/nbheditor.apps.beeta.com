@@ -730,6 +730,9 @@ open class MainActivity : AppCompatActivity() {
                 homeBinding.fileGrid.visibility = View.VISIBLE
                 fileCardAdapter.setFiles(entries)
             }
+            
+            // Load collaborative sessions
+            loadCollaborativeSessions()
         }
     }
 
@@ -743,6 +746,114 @@ open class MainActivity : AppCompatActivity() {
         val set = prefs.getStringSet("recent_files", mutableSetOf())!!.toMutableSet()
         set.remove(uri.toString())
         prefs.edit().putStringSet("recent_files", set).apply()
+    }
+    
+    private lateinit var collabSessionsAdapter: FileCardAdapter
+    
+    private fun loadCollaborativeSessions() {
+        if (!GoogleSignInHelper.isSignedIn(this)) {
+            homeBinding.collabSessionsLabel.visibility = View.GONE
+            homeBinding.collabSessionsGrid.visibility = View.GONE
+            return
+        }
+        
+        lifecycleScope.launch {
+            try {
+                // Load collaborative session files from local storage
+                val sessionFiles = withContext(Dispatchers.IO) {
+                    val sessionsDir = java.io.File(filesDir, "collab_sessions").also { it.mkdirs() }
+                    sessionsDir.listFiles()?.sortedByDescending { it.lastModified() } ?: emptyList()
+                }
+                
+                if (sessionFiles.isEmpty()) {
+                    homeBinding.collabSessionsLabel.visibility = View.GONE
+                    homeBinding.collabSessionsGrid.visibility = View.GONE
+                    return@launch
+                }
+                
+                // Convert to FileEntry format
+                val entries = sessionFiles.mapNotNull { file ->
+                    try {
+                        val content = file.readText()
+                        val preview = content.take(150).trim()
+                        
+                        // Parse filename: format is "sessionId_creatorName_timestamp.txt"
+                        val parts = file.nameWithoutExtension.split("_")
+                        val sessionId = parts.getOrNull(0) ?: "Unknown"
+                        val creatorName = parts.getOrNull(1)?.replace("-", " ") ?: "Unknown"
+                        val timestamp = parts.getOrNull(2)?.toLongOrNull() ?: file.lastModified()
+                        
+                        val date = java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault())
+                            .format(java.util.Date(timestamp))
+                        
+                        val displayName = "🔗 $sessionId - by $creatorName ($date)"
+                        
+                        FileCardAdapter.FileEntry(
+                            uri = android.net.Uri.fromFile(file),
+                            name = displayName,
+                            preview = preview
+                        )
+                    } catch (e: Exception) {
+                        Log.e("CollabSessions", "Failed to parse session file", e)
+                        null
+                    }
+                }
+                
+                if (entries.isEmpty()) {
+                    homeBinding.collabSessionsLabel.visibility = View.GONE
+                    homeBinding.collabSessionsGrid.visibility = View.GONE
+                } else {
+                    homeBinding.collabSessionsLabel.visibility = View.VISIBLE
+                    homeBinding.collabSessionsGrid.visibility = View.VISIBLE
+                    
+                    // Setup adapter if not initialized
+                    if (!::collabSessionsAdapter.isInitialized) {
+                        collabSessionsAdapter = FileCardAdapter(
+                            onOpen = { entry ->
+                                // Open collaborative session file
+                                try {
+                                    val content = java.io.File(entry.uri.path!!).readText()
+                                    editorBinding.textArea.setText(content)
+                                    currentFileUri = null
+                                    textChanged = false
+                                    updateToolbarTitle()
+                                    showEditor()
+                                    Toast.makeText(this@MainActivity, "Opened session file", Toast.LENGTH_SHORT).show()
+                                } catch (e: Exception) {
+                                    Toast.makeText(this@MainActivity, "Failed to open: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            onLongClick = { entry ->
+                                // Delete session file
+                                androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                                    .setTitle("Delete Session File?")
+                                    .setMessage("This will remove the collaborative session file from your device.")
+                                    .setPositiveButton("Delete") { _, _ ->
+                                        try {
+                                            java.io.File(entry.uri.path!!).delete()
+                                            loadCollaborativeSessions()
+                                            Toast.makeText(this@MainActivity, "Deleted", Toast.LENGTH_SHORT).show()
+                                        } catch (e: Exception) {
+                                            Toast.makeText(this@MainActivity, "Failed to delete", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                    .setNegativeButton("Cancel", null)
+                                    .show()
+                            }
+                        )
+                        collabSessionsAdapter.isGlassMode = fileCardAdapter.isGlassMode
+                        homeBinding.collabSessionsGrid.layoutManager = androidx.recyclerview.widget.GridLayoutManager(this@MainActivity, 1)
+                        homeBinding.collabSessionsGrid.adapter = collabSessionsAdapter
+                    }
+                    
+                    collabSessionsAdapter.setFiles(entries)
+                }
+            } catch (e: Exception) {
+                Log.e("CollabSessions", "Failed to load sessions", e)
+                homeBinding.collabSessionsLabel.visibility = View.GONE
+                homeBinding.collabSessionsGrid.visibility = View.GONE
+            }
+        }
     }
 
     private fun setupBottomNav() {
@@ -3997,6 +4108,22 @@ open class MainActivity : AppCompatActivity() {
         dialog.show()
     }
     
+    private fun saveCollaborativeSessionFile(sessionId: String, content: String, creatorName: String) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            try {
+                val sessionsDir = java.io.File(filesDir, "collab_sessions").also { it.mkdirs() }
+                val timestamp = System.currentTimeMillis()
+                val sanitizedName = creatorName.replace(" ", "-").replace("[^a-zA-Z0-9-]".toRegex(), "")
+                val fileName = "${sessionId}_${sanitizedName}_${timestamp}.txt"
+                val file = java.io.File(sessionsDir, fileName)
+                file.writeText(content)
+                Log.d("CollabSession", "Saved session file: $fileName")
+            } catch (e: Exception) {
+                Log.e("CollabSession", "Failed to save session file", e)
+            }
+        }
+    }
+    
     private fun showCollaborativeSessionDialog() {
         // Check if user is signed in
         if (!GoogleSignInHelper.isSignedIn(this)) {
@@ -4471,15 +4598,28 @@ open class MainActivity : AppCompatActivity() {
         val syncHandler = android.os.Handler(android.os.Looper.getMainLooper())
         var syncRunnable: Runnable? = null
         var cursorRunnable: Runnable? = null
+        var lastRemoteContent = ""
 
         // Listen to remote content changes
         contentSyncJob = lifecycleScope.launch {
             CollaborativeSessionManager.observeContent(sessionId).collect { content ->
-                if (!suppressWatcher) {
-                    suppressWatcher = true          // block watcher during setText
-                    val cursor = editorBinding.textArea.selectionStart
-                    editorBinding.textArea.setText(content)
-                    editorBinding.textArea.setSelection(cursor.coerceIn(0, content.length))
+                if (!suppressWatcher && content != lastRemoteContent) {
+                    lastRemoteContent = content
+                    suppressWatcher = true
+                    
+                    // Smart merge: preserve cursor position
+                    val currentCursor = editorBinding.textArea.selectionStart
+                    val currentText = editorBinding.textArea.text.toString()
+                    
+                    // Only update if content actually changed
+                    if (currentText != content) {
+                        // Calculate cursor offset based on text diff
+                        val newCursor = calculateNewCursorPosition(currentText, content, currentCursor)
+                        
+                        editorBinding.textArea.setText(content)
+                        editorBinding.textArea.setSelection(newCursor.coerceIn(0, content.length))
+                    }
+                    
                     suppressWatcher = false
                 }
             }
@@ -4504,7 +4644,6 @@ open class MainActivity : AppCompatActivity() {
                         updateToolbarTitle()
                         showHome()
                         
-                        // Show popup
                         androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
                             .setTitle("Removed from Session")
                             .setMessage("You have been removed from the session by the host.")
@@ -4515,7 +4654,6 @@ open class MainActivity : AppCompatActivity() {
                 }
             }
             
-            // Observe session existence (for when host ends session)
             lifecycleScope.launch {
                 CollaborativeSessionManager.observeSessionExists(sessionId).collect { exists ->
                     if (!exists) {
@@ -4531,7 +4669,6 @@ open class MainActivity : AppCompatActivity() {
                         updateToolbarTitle()
                         showHome()
                         
-                        // Show popup
                         androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
                             .setTitle("Session Ended")
                             .setMessage("The session has been ended by the host.")
@@ -4546,19 +4683,19 @@ open class MainActivity : AppCompatActivity() {
         val textWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                if (suppressWatcher) return          // remote setText — ignore
+                if (suppressWatcher) return
                 val snapshot = s.toString()
 
-                // Debounce content push: cancel previous, schedule new after 500ms
+                // Debounce content push: 300ms for faster sync
                 syncRunnable?.let { syncHandler.removeCallbacks(it) }
                 syncRunnable = Runnable {
                     lifecycleScope.launch {
                         CollaborativeSessionManager.updateContent(snapshot)
                     }
                 }
-                syncHandler.postDelayed(syncRunnable!!, 500)
+                syncHandler.postDelayed(syncRunnable!!, 300)
 
-                // Debounce cursor: set typing=true now, typing=false after 2s of silence
+                // Update cursor immediately
                 cursorRunnable?.let { syncHandler.removeCallbacks(it) }
                 val pos = editorBinding.textArea.selectionStart
                 lifecycleScope.launch {
@@ -4571,7 +4708,7 @@ open class MainActivity : AppCompatActivity() {
                         )
                     }
                 }
-                syncHandler.postDelayed(cursorRunnable!!, 2000)
+                syncHandler.postDelayed(cursorRunnable!!, 1000)
             }
             override fun afterTextChanged(s: Editable?) {}
         }
@@ -4585,6 +4722,26 @@ open class MainActivity : AppCompatActivity() {
             }
         }
         editorBinding.textArea.setTag(R.id.nav_collaborative_session, textWatcher)
+    }
+    
+    private fun calculateNewCursorPosition(oldText: String, newText: String, oldCursor: Int): Int {
+        // Simple algorithm: try to maintain relative position
+        if (oldText.isEmpty()) return 0
+        if (newText.isEmpty()) return 0
+        
+        // If cursor is at end, keep it at end
+        if (oldCursor >= oldText.length) return newText.length
+        
+        // Try to find the same context around cursor
+        val contextBefore = oldText.substring(0, oldCursor.coerceAtMost(oldText.length))
+        val matchIndex = newText.indexOf(contextBefore)
+        
+        return if (matchIndex >= 0) {
+            matchIndex + contextBefore.length
+        } else {
+            // Fallback: maintain relative position
+            ((oldCursor.toFloat() / oldText.length) * newText.length).toInt()
+        }
     }
     
     private fun showCollabChatDialog() {

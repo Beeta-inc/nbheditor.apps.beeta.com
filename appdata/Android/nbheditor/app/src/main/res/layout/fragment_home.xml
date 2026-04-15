@@ -147,10 +147,10 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Recent files"
-                android:textSize="12sp"
+                android:text="📄 My Files"
+                android:textSize="13sp"
                 android:textStyle="bold"
-                android:textColor="@color/editor_line_number_text" />
+                android:textColor="@color/editor_text" />
 
             <TextView
                 android:id="@+id/btnOpenFile"
@@ -243,6 +243,31 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="8dp"
+            android:clipToPadding="false"
+            android:visibility="gone" />
+        
+        <!-- Collaborative Sessions Section -->
+        <TextView
+            android:id="@+id/collabSessionsLabel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="🔗 Collaborative Sessions"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="@color/editor_text"
+            android:paddingStart="20dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="6dp"
+            android:visibility="gone" />
+        
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/collabSessionsGrid"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:paddingStart="8dp"
             android:paddingEnd="8dp"
             android:paddingBottom="80dp"
