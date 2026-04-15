@@ -3312,15 +3312,31 @@ open class MainActivity : AppCompatActivity() {
             // Stop any existing player
             stopJoinSound()
             
-            // Request audio focus
+            // Get audio manager and check volume
             val audioManager = getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
+            val currentVolume = audioManager.getStreamVolume(android.media.AudioManager.STREAM_MUSIC)
+            val maxVolume = audioManager.getStreamMaxVolume(android.media.AudioManager.STREAM_MUSIC)
+            Log.d("JoinSound", "Current volume: $currentVolume/$maxVolume")
             
+            // If volume is too low, temporarily increase it
+            val originalVolume = currentVolume
+            if (currentVolume < maxVolume / 3) {
+                val targetVolume = (maxVolume * 0.5f).toInt()
+                audioManager.setStreamVolume(
+                    android.media.AudioManager.STREAM_MUSIC,
+                    targetVolume,
+                    0 // No UI flags
+                )
+                Log.d("JoinSound", "Temporarily increased volume to $targetVolume")
+            }
+            
+            // Request audio focus
             val focusResult = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 audioFocusRequest = android.media.AudioFocusRequest.Builder(android.media.AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
                     .setAudioAttributes(
                         android.media.AudioAttributes.Builder()
-                            .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
-                            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
+                            .setUsage(android.media.AudioAttributes.USAGE_NOTIFICATION)
+                            .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
                             .build()
                     )
                     .build()
@@ -3336,44 +3352,15 @@ open class MainActivity : AppCompatActivity() {
             
             Log.d("JoinSound", "Audio focus result: $focusResult")
             
-            // Try to create MediaPlayer
-            Log.d("JoinSound", "Creating MediaPlayer with resource ID: ${R.raw.join_sound}")
-            joinSoundPlayer = android.media.MediaPlayer.create(this, R.raw.join_sound)
-            
-            if (joinSoundPlayer == null) {
-                Log.e("JoinSound", "MediaPlayer.create() returned null - trying alternative method")
-                
-                // Try alternative method: create empty player and set data source
-                try {
-                    joinSoundPlayer = android.media.MediaPlayer().apply {
-                        setAudioAttributes(
-                            android.media.AudioAttributes.Builder()
-                                .setUsage(android.media.AudioAttributes.USAGE_MEDIA)
-                                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_MUSIC)
-                                .build()
-                        )
-                        val afd = resources.openRawResourceFd(R.raw.join_sound)
-                        setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
-                        afd.close()
-                        prepare()
-                        Log.d("JoinSound", "Alternative MediaPlayer creation successful")
-                    }
-                } catch (e: Exception) {
-                    Log.e("JoinSound", "Alternative MediaPlayer creation also failed", e)
-                    // Abandon audio focus
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        audioFocusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
-                    } else {
-                        @Suppress("DEPRECATION")
-                        audioManager.abandonAudioFocus(null)
-                    }
-                    return
-                }
-            }
-            
-            joinSoundPlayer?.apply {
+            // Create MediaPlayer with explicit audio stream type
+            joinSoundPlayer = android.media.MediaPlayer().apply {
+                setAudioStreamType(android.media.AudioManager.STREAM_MUSIC)
+                val afd = resources.openRawResourceFd(R.raw.join_sound)
+                setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                afd.close()
+                prepare()
                 isLooping = false
-                setVolume(0.8f, 0.8f)
+                setVolume(1.0f, 1.0f) // Max volume
                 setOnCompletionListener {
                     Log.d("JoinSound", "Playback completed")
                     stopJoinSound()
@@ -3384,7 +3371,7 @@ open class MainActivity : AppCompatActivity() {
                     true
                 }
                 start()
-                Log.d("JoinSound", "Join sound started playing (duration: ${duration}ms)")
+                Log.d("JoinSound", "Join sound started playing (duration: ${duration}ms, isPlaying: $isPlaying)")
             }
         } catch (e: Exception) {
             Log.e("JoinSound", "Failed to play join sound", e)
