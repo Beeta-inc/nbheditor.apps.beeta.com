@@ -133,7 +133,7 @@ open class MainActivity : AppCompatActivity() {
     data class GeminiCandidate(val content: GeminiContent)
     data class GeminiResponse(val candidates: List<GeminiCandidate>)
 
-    // Broad file type support
+    // Broad file type support - removed size limitations
     private val SUPPORTED_MIME_TYPES = arrayOf(
         "text/*", "application/json", "application/xml",
         "application/javascript", "application/typescript",
@@ -142,6 +142,11 @@ open class MainActivity : AppCompatActivity() {
         "application/rtf", "text/rtf",
         "application/octet-stream"
     )
+    
+    // Maximum file size for instant loading (5MB)
+    private val INSTANT_LOAD_SIZE_MB = 5L
+    // Maximum file size with progress dialog (no limit, but warn for very large files)
+    private val WARN_SIZE_GB = 1L
 
     // Image generation data classes
     data class ImageGenRequest(val model: String, val prompt: String)
@@ -1548,16 +1553,15 @@ open class MainActivity : AppCompatActivity() {
                     updateVoiceActivity()
                     val et = speechTarget
                     if (et != null) {
-                        val pos = et.selectionStart.coerceAtLeast(0)
+                        // Ensure the target has focus so selectionStart is valid
+                        if (!et.hasFocus()) {
+                            et.requestFocus()
+                        }
+                        val pos = et.selectionStart.coerceAtLeast(et.text?.length ?: 0)
                         val toInsert = if (pos > 0 && et.text?.getOrNull(pos - 1)?.isWhitespace() == false) " $text " else "$text "
                         try {
-                            // Temporarily disable undo tracking for voice input
-                            val wasUndoing = isUndoing
-                            isUndoing = true
                             et.text?.insert(pos, toInsert)
                             et.setSelection((pos + toInsert.length).coerceAtMost(et.text?.length ?: 0))
-                            isUndoing = wasUndoing
-                            // Trigger text changed for autosave
                             if (et == editorBinding.textArea) {
                                 textChanged = true
                                 handler.removeCallbacks(typingDelayRunnable)
@@ -2427,6 +2431,37 @@ open class MainActivity : AppCompatActivity() {
                 val isRtf = fileName.endsWith(".rtf", ignoreCase = true)
                 val isCloudUri = uri.scheme == "cloud"
                 
+                // Check file size first
+                val fileSize = if (!isCloudUri) {
+                    withContext(Dispatchers.IO) {
+                        try {
+                            contentResolver.openFileDescriptor(uri, "r")?.use { it.statSize } ?: 0L
+                        } catch (e: Exception) { 0L }
+                    }
+                } else 0L
+                
+                val fileSizeMB = fileSize / (1024 * 1024)
+                val fileSizeGB = fileSize / (1024 * 1024 * 1024)
+                Log.d("FileOpen", "Opening file: $fileName, size: ${fileSizeMB}MB")
+                
+                // Warn for extremely large files (>1GB)
+                if (fileSizeGB >= WARN_SIZE_GB) {
+                    val shouldContinue = withContext(Dispatchers.Main) {
+                        showLargeFileWarningDialog(fileName, fileSizeGB)
+                    }
+                    if (!shouldContinue) {
+                        Toast.makeText(this@MainActivity, "File loading cancelled", Toast.LENGTH_SHORT).show()
+                        return@launch
+                    }
+                }
+                
+                // Show progress dialog for files larger than 5MB
+                val progressDialog = if (fileSizeMB > INSTANT_LOAD_SIZE_MB) {
+                    createFileLoadingDialog(fileName, fileSizeMB)
+                } else null
+                
+                progressDialog?.show()
+                
                 var content: String? = null
                 var useCloudVersion = false
                 
@@ -2436,6 +2471,7 @@ open class MainActivity : AppCompatActivity() {
                         GoogleSignInHelper.downloadCloudFile(this@MainActivity, fileName)
                     }
                     if (content == null) {
+                        progressDialog?.dismiss()
                         Toast.makeText(this@MainActivity, "Failed to download from cloud", Toast.LENGTH_SHORT).show()
                         return@launch
                     }
@@ -2454,6 +2490,7 @@ open class MainActivity : AppCompatActivity() {
                             }
                             if (cloudContent != null) {
                                 val choice = withContext(Dispatchers.Main) {
+                                    progressDialog?.dismiss()
                                     showCloudVersionDialog()
                                 }
                                 if (choice) {
@@ -2471,6 +2508,7 @@ open class MainActivity : AppCompatActivity() {
                                         }
                                     }
                                 }
+                                progressDialog?.show()
                             }
                         }
                     }
@@ -2478,17 +2516,16 @@ open class MainActivity : AppCompatActivity() {
                     // Load local version if not using cloud
                     if (content == null) {
                         content = withContext(Dispatchers.IO) {
-                            contentResolver.openInputStream(uri)?.use { inputStream ->
-                                if (isRtf) {
-                                    val rtfBytes = inputStream.readBytes()
-                                    convertRtfToPlainText(rtfBytes)
-                                } else {
-                                    BufferedReader(InputStreamReader(inputStream)).readText()
+                            loadLargeFile(uri, isRtf) { progress ->
+                                lifecycleScope.launch(Dispatchers.Main) {
+                                    updateProgressDialog(progressDialog, progress)
                                 }
                             }
                         }
                     }
                 }
+                
+                progressDialog?.dismiss()
                 
                 if (content == null) {
                     Toast.makeText(this@MainActivity, "Failed to read file", Toast.LENGTH_SHORT).show()
@@ -2514,6 +2551,7 @@ open class MainActivity : AppCompatActivity() {
                     useCloudVersion -> "Opened (updated from cloud)"
                     isCloudUri -> "Opened from cloud"
                     isRtf -> "Opened RTF (converted to plain text)"
+                    fileSizeMB > 5 -> "Opened large file (${fileSizeMB}MB)"
                     else -> "Opened"
                 }
                 Toast.makeText(this@MainActivity, msg, Toast.LENGTH_SHORT).show()
@@ -2521,6 +2559,21 @@ open class MainActivity : AppCompatActivity() {
                 Toast.makeText(this@MainActivity, "Failed to open file: ${e.message}", Toast.LENGTH_SHORT).show()
             }
         }
+    }
+    
+    private suspend fun showLargeFileWarningDialog(fileName: String, fileSizeGB: Long): Boolean = suspendCancellableCoroutine { continuation ->
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("⚠️ Large File Warning")
+            .setMessage("The file '$fileName' is ${fileSizeGB}GB in size.\n\nLoading very large files may:\n• Take several minutes\n• Use significant memory\n• Slow down the app\n\nDo you want to continue?")
+            .setPositiveButton("Load Anyway") { _, _ ->
+                continuation.resume(true, null)
+            }
+            .setNegativeButton("Cancel") { _, _ ->
+                continuation.resume(false, null)
+            }
+            .setCancelable(false)
+            .create()
+        dialog.show()
     }
     
     private suspend fun showCloudVersionDialog(): Boolean = suspendCancellableCoroutine { continuation ->
@@ -2536,6 +2589,211 @@ open class MainActivity : AppCompatActivity() {
             .setCancelable(false)
             .create()
         dialog.show()
+    }
+    
+    private fun createFileLoadingDialog(fileName: String, fileSizeMB: Long): androidx.appcompat.app.AlertDialog {
+        val dialogView = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(60, 40, 60, 40)
+            gravity = Gravity.CENTER
+        }
+        
+        // Title
+        val titleView = TextView(this).apply {
+            text = "Loading Large File"
+            textSize = 18f
+            typeface = Typeface.create(Typeface.DEFAULT, Typeface.BOLD)
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = 16 }
+        }
+        
+        // File info
+        val fileInfoView = TextView(this).apply {
+            text = "$fileName (${fileSizeMB}MB)"
+            textSize = 14f
+            gravity = Gravity.CENTER
+            alpha = 0.8f
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = 24 }
+        }
+        
+        // Progress bar
+        val progressBar = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
+            max = 100
+            progress = 0
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = 16 }
+            progressTintList = android.content.res.ColorStateList.valueOf(
+                resources.getColor(R.color.accent_primary, theme)
+            )
+        }
+        
+        // Progress text
+        val progressText = TextView(this).apply {
+            text = "0%"
+            textSize = 14f
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            tag = "progress_text"
+        }
+        
+        dialogView.addView(titleView)
+        dialogView.addView(fileInfoView)
+        dialogView.addView(progressBar)
+        dialogView.addView(progressText)
+        dialogView.tag = "progress_bar"
+        
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+        
+        // Apply theming
+        dialog.setOnShowListener {
+            dialog.window?.apply {
+                setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+                
+                val bgColor = if (isGlassMode) {
+                    0xDD0D1117.toInt()
+                } else {
+                    val isDark = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES
+                    if (isDark) 0xFF1E1E1E.toInt() else 0xFFFFFFFF.toInt()
+                }
+                
+                val textColor = if (isGlassMode || (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK == android.content.res.Configuration.UI_MODE_NIGHT_YES)) {
+                    0xFFFFFFFF.toInt()
+                } else {
+                    0xFF212121.toInt()
+                }
+                
+                dialogView.setBackgroundColor(bgColor)
+                dialogView.background = android.graphics.drawable.GradientDrawable().apply {
+                    setColor(bgColor)
+                    cornerRadius = 24f
+                    if (isGlassMode) {
+                        setStroke(2, 0x33FFFFFF)
+                    }
+                }
+                
+                titleView.setTextColor(textColor)
+                fileInfoView.setTextColor(textColor)
+                progressText.setTextColor(textColor)
+            }
+            
+            // Fade in animation
+            dialogView.alpha = 0f
+            dialogView.scaleX = 0.9f
+            dialogView.scaleY = 0.9f
+            dialogView.animate()
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setDuration(300)
+                .setInterpolator(android.view.animation.OvershootInterpolator())
+                .start()
+        }
+        
+        return dialog
+    }
+    
+    private fun updateProgressDialog(dialog: androidx.appcompat.app.AlertDialog?, progress: Int) {
+        dialog?.let { d ->
+            val dialogView = d.findViewById<View>(android.R.id.custom) ?: d.window?.decorView?.findViewWithTag<LinearLayout>("progress_bar")
+            val progressBar = dialogView?.findViewWithTag<ProgressBar>("progress_bar")
+            val progressText = dialogView?.findViewWithTag<TextView>("progress_text")
+            
+            progressBar?.progress = progress
+            progressText?.text = "$progress%"
+            
+            // Add estimated time remaining for large files
+            if (progress > 10 && progress < 100) {
+                val estimatedSeconds = ((100 - progress) * 2) // Rough estimate
+                val timeText = if (estimatedSeconds > 60) {
+                    "${estimatedSeconds / 60}m ${estimatedSeconds % 60}s remaining"
+                } else {
+                    "${estimatedSeconds}s remaining"
+                }
+                progressText?.text = "$progress% - $timeText"
+            } else if (progress == 100) {
+                progressText?.text = "100% - Complete!"
+            }
+        }
+    }
+    
+    private fun loadLargeFile(uri: Uri, isRtf: Boolean, onProgress: (Int) -> Unit): String? {
+        return try {
+            contentResolver.openInputStream(uri)?.use { inputStream ->
+                if (isRtf) {
+                    // For RTF files, read all bytes first then convert
+                    val fileDescriptor = contentResolver.openFileDescriptor(uri, "r")
+                    val totalSize = fileDescriptor?.statSize ?: inputStream.available().toLong()
+                    fileDescriptor?.close()
+                    
+                    val buffer = ByteArray(16384) // 16KB buffer for better performance
+                    val outputStream = java.io.ByteArrayOutputStream()
+                    var bytesRead = 0L
+                    var read: Int
+                    var lastProgressUpdate = 0
+                    
+                    while (inputStream.read(buffer).also { read = it } != -1) {
+                        outputStream.write(buffer, 0, read)
+                        bytesRead += read
+                        if (totalSize > 0) {
+                            val progress = ((bytesRead.toFloat() / totalSize) * 100).toInt()
+                            // Update progress every 5% to avoid too many UI updates
+                            if (progress >= lastProgressUpdate + 5 || progress == 100) {
+                                onProgress(progress)
+                                lastProgressUpdate = progress
+                            }
+                        }
+                    }
+                    
+                    onProgress(100)
+                    convertRtfToPlainText(outputStream.toByteArray())
+                } else {
+                    // For text files, read with progress tracking
+                    val fileDescriptor = contentResolver.openFileDescriptor(uri, "r")
+                    val totalSize = fileDescriptor?.statSize ?: inputStream.available().toLong()
+                    fileDescriptor?.close()
+                    
+                    val reader = BufferedReader(InputStreamReader(inputStream), 32768) // 32KB buffer
+                    val stringBuilder = StringBuilder()
+                    val buffer = CharArray(16384) // 16KB char buffer
+                    var bytesRead = 0L
+                    var read: Int
+                    var lastProgressUpdate = 0
+                    
+                    while (reader.read(buffer).also { read = it } != -1) {
+                        stringBuilder.append(buffer, 0, read)
+                        bytesRead += read * 2 // Approximate bytes (char = 2 bytes)
+                        if (totalSize > 0) {
+                            val progress = ((bytesRead.toFloat() / totalSize) * 100).toInt().coerceAtMost(100)
+                            // Update progress every 5% to avoid too many UI updates
+                            if (progress >= lastProgressUpdate + 5 || progress == 100) {
+                                onProgress(progress)
+                                lastProgressUpdate = progress
+                            }
+                        }
+                    }
+                    
+                    onProgress(100)
+                    stringBuilder.toString()
+                }
+            }
+        } catch (e: Exception) {
+            Log.e("FileLoad", "Error loading large file", e)
+            null
+        }
     }
 
     private fun convertRtfToPlainText(rtfBytes: ByteArray): String {
@@ -2952,30 +3210,14 @@ open class MainActivity : AppCompatActivity() {
                 Log.d("VideoAnalysis", "Original video size: ${videoSize / 1024 / 1024}MB")
                 
                 // Compress video if larger than 10MB
-                val videoToAnalyze = if (videoSize > 10 * 1024 * 1024) {
-                    aiChatBinding.typingRow.visibility = View.GONE
-                    compressedUri = compressVideo(uri)
-                    aiChatBinding.typingRow.visibility = View.VISIBLE
-                    
-                    if (compressedUri == null) {
-                        showChatError("Failed to compress video. Please try a smaller video.")
-                        return@launch
-                    }
-                    compressedUri
-                } else {
-                    uri
-                }
+                // Skip the fake compress step — compressVideoSimple is just a file copy.
+                // Frame extraction with low res/quality handles size reduction instead.
+                val videoToAnalyze = uri
                 
                 // Adjust frame count based on video size
-                val finalSize = withContext(Dispatchers.IO) {
-                    try {
-                        contentResolver.openFileDescriptor(videoToAnalyze, "r")?.use { it.statSize } ?: 0L
-                    } catch (e: Exception) { 0L }
-                }
-                
                 val maxFrames = when {
-                    finalSize > 50 * 1024 * 1024 -> 2
-                    finalSize > 20 * 1024 * 1024 -> 3
+                    videoSize > 20 * 1024 * 1024 -> 1
+                    videoSize > 5 * 1024 * 1024 -> 2
                     else -> 3
                 }
 
@@ -3017,13 +3259,18 @@ open class MainActivity : AppCompatActivity() {
                     }
                     scrollChatToBottom()
                 } else {
-                    showChatError("Video analysis failed. Try a shorter video or reduce quality.")
+                    showChatError("Video analysis failed. Check that your Gemini API key is valid and has quota remaining.")
                 }
             } catch (e: Exception) {
                 Log.e("VideoAnalysis", "Analysis error: ${e.message}", e)
                 aiChatBinding.typingRow.visibility = View.GONE
                 aiChatBinding.videoAnalysisChip.isChecked = false
-                showChatError("Error: ${e.message?.take(60)}")
+                val userMsg = when (e.message) {
+                    "API_KEY_INVALID" -> "Video analysis failed: Gemini API key is invalid or revoked. Please update it in settings."
+                    "API_QUOTA_EXCEEDED" -> "Video analysis failed: Gemini API quota exceeded. Check your billing at ai.google.dev."
+                    else -> "Video analysis failed: ${e.message?.take(80)}"
+                }
+                showChatError(userMsg)
             } finally {
                 // Clean up compressed file
                 compressedUri?.let { uri ->
@@ -3246,19 +3493,18 @@ open class MainActivity : AppCompatActivity() {
                         )
                         
                         if (bitmap != null) {
-                            // Resize to max 512px for smaller payload (was 1024px)
-                            val maxDim = 512
+                            // Cap at 320px and 50% quality to keep base64 payload under API limits
+                            val maxDim = 320
                             val scale = maxDim.toFloat() / Math.max(bitmap.width, bitmap.height)
-                            val newWidth = (bitmap.width * scale).toInt()
-                            val newHeight = (bitmap.height * scale).toInt()
+                            val newWidth = (bitmap.width * scale).toInt().coerceAtLeast(1)
+                            val newHeight = (bitmap.height * scale).toInt().coerceAtLeast(1)
                             
                             val resized = android.graphics.Bitmap.createScaledBitmap(
                                 bitmap, newWidth, newHeight, true
                             )
                             
                             val stream = java.io.ByteArrayOutputStream()
-                            // Reduce quality to 70% for smaller size (was 90%)
-                            resized.compress(android.graphics.Bitmap.CompressFormat.JPEG, 70, stream)
+                            resized.compress(android.graphics.Bitmap.CompressFormat.JPEG, 50, stream)
                             val base64 = android.util.Base64.encodeToString(
                                 stream.toByteArray(), 
                                 android.util.Base64.NO_WRAP
@@ -3329,7 +3575,13 @@ open class MainActivity : AppCompatActivity() {
                 Log.d("VideoAnalysisGemini", "Response code: ${response.code}")
                 
                 if (!response.isSuccessful) {
-                    Log.e("VideoAnalysisGemini", "Error: $responseBody")
+                    Log.e("VideoAnalysisGemini", "Error ${response.code}: $responseBody")
+                    if (response.code == 403 || response.code == 401) {
+                        throw Exception("API_KEY_INVALID")
+                    }
+                    if (response.code == 429) {
+                        throw Exception("API_QUOTA_EXCEEDED")
+                    }
                     return@withContext null
                 }
                 

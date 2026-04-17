@@ -10,13 +10,13 @@
     <LinearLayout
         android:id="@+id/chatHeader"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="64dp"
         android:orientation="horizontal"
-        android:background="@color/accent_primary"
-        android:paddingStart="4dp"
-        android:paddingEnd="12dp"
+        android:background="@drawable/bg_glass_bar"
+        android:paddingStart="8dp"
+        android:paddingEnd="16dp"
         android:gravity="center_vertical"
-        android:elevation="4dp"
+        android:elevation="8dp"
         app:layout_constraintTop_toTopOf="parent">
 
         <ImageButton
@@ -28,19 +28,19 @@
             android:tint="@color/white"
             android:contentDescription="Back" />
 
-        <!-- Avatar circle -->
+        <!-- Avatar circle with improved styling -->
         <com.google.android.material.card.MaterialCardView
-            android:layout_width="38dp"
-            android:layout_height="38dp"
-            app:cardCornerRadius="19dp"
-            app:cardElevation="0dp"
-            app:cardBackgroundColor="#33FFFFFF"
-            android:layout_marginEnd="10dp">
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            app:cardCornerRadius="22dp"
+            app:cardElevation="2dp"
+            app:cardBackgroundColor="@color/accent_primary"
+            android:layout_marginEnd="12dp">
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:text="💬"
-                android:textSize="18sp"
+                android:textSize="20sp"
                 android:gravity="center" />
         </com.google.android.material.card.MaterialCardView>
 
@@ -54,51 +54,56 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Team Chat"
-                android:textSize="16sp"
+                android:textSize="18sp"
                 android:textStyle="bold"
-                android:textColor="@color/white" />
+                android:textColor="@color/white"
+                android:letterSpacing="0.02" />
 
             <TextView
                 android:id="@+id/tvChatStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="● online"
-                android:textSize="11sp"
-                android:textColor="#CCFFFFFF" />
+                android:textSize="12sp"
+                android:textColor="#CCFFFFFF"
+                android:drawablePadding="4dp" />
         </LinearLayout>
 
-        <!-- Attachment buttons in header -->
+        <!-- Enhanced attachment buttons in header -->
         <ImageButton
             android:id="@+id/btnAttachImage"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:src="@android:drawable/ic_menu_gallery"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:tint="@color/white"
-            android:contentDescription="Image" />
+            android:contentDescription="Image"
+            android:layout_marginEnd="4dp" />
 
         <ImageButton
             android:id="@+id/btnAttachDocument"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:src="@android:drawable/ic_menu_agenda"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:tint="@color/white"
-            android:contentDescription="Document" />
+            android:contentDescription="Document"
+            android:layout_marginEnd="4dp" />
 
         <ImageButton
             android:id="@+id/btnAttachVoice"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:src="@android:drawable/ic_btn_speak_now"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:tint="@color/white"
-            android:contentDescription="Voice" />
+            android:contentDescription="Voice"
+            android:layout_marginEnd="4dp" />
 
         <ImageButton
             android:id="@+id/btnAttachVideo"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
             android:src="@android:drawable/ic_menu_camera"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:tint="@color/white"
@@ -128,17 +133,20 @@
             android:nestedScrollingEnabled="false" />
     </androidx.cardview.widget.CardView>
 
-    <!-- Messages RecyclerView -->
+    <!-- Enhanced Messages RecyclerView -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvChatMessages"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
         android:clipToPadding="false"
         android:background="@color/editor_bg"
+        android:scrollbars="vertical"
+        android:fadeScrollbars="true"
+        android:scrollbarStyle="outsideOverlay"
         app:layout_constraintTop_toBottomOf="@id/chatHeader"
         app:layout_constraintBottom_toTopOf="@id/typingIndicatorBar" />
 
@@ -233,19 +241,19 @@
             android:contentDescription="Cancel reply" />
     </LinearLayout>
 
-    <!-- Input Bar -->
+    <!-- Enhanced Input Bar -->
     <LinearLayout
         android:id="@+id/inputBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:background="@color/editor_surface"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
-        android:paddingTop="6dp"
-        android:paddingBottom="6dp"
+        android:background="@drawable/bg_glass_panel"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
         android:gravity="bottom"
-        android:elevation="8dp"
+        android:elevation="12dp"
         app:layout_constraintBottom_toBottomOf="parent">
 
         <!-- To: chip -->
@@ -289,14 +297,14 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Text input -->
+        <!-- Enhanced text input -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             app:cardBackgroundColor="@color/input_bg"
-            app:cardCornerRadius="22dp"
-            app:cardElevation="0dp"
+            app:cardCornerRadius="24dp"
+            app:cardElevation="2dp"
             app:strokeWidth="1dp"
             app:strokeColor="@color/divider">
 
@@ -304,17 +312,18 @@
                 android:id="@+id/etChatMessage"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="Message..."
+                android:hint="Type a message..."
                 android:background="@null"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:paddingTop="10dp"
-                android:paddingBottom="10dp"
-                android:maxLines="5"
-                android:textSize="15sp"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp"
+                android:maxLines="6"
+                android:textSize="16sp"
                 android:textColor="@color/editor_text"
                 android:textColorHint="@color/editor_hint"
-                android:inputType="textMultiLine|textCapSentences" />
+                android:inputType="textMultiLine|textCapSentences"
+                android:scrollbars="vertical" />
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Task button -->

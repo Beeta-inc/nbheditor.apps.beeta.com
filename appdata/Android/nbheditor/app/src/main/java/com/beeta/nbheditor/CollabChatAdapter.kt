@@ -146,20 +146,32 @@ class CollabChatAdapter(
     private fun bindOutgoing(h: OutgoingVH, msg: ChatMessage, ctx: Context) {
         h.tvMessage.text = msg.message
         h.tvTimestamp.text = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(msg.timestamp))
-        // Bind reply preview
+        
+        // Enhanced reply preview styling
         if (!msg.replyToMessageId.isNullOrBlank()) {
             h.replyPreviewBubble.visibility = View.VISIBLE
             h.tvReplySender.text = msg.replyToUserName ?: ""
             h.tvReplyText.text = msg.replyToMessage ?: ""
+            // Add subtle animation
+            h.replyPreviewBubble.alpha = 0.9f
         } else {
             h.replyPreviewBubble.visibility = View.GONE
         }
+        
         bindMedia(msg, h.tvMessage, h.ivMediaPreview, h.attachmentCard,
             h.tvAttachmentIcon, h.tvAttachmentName, h.mediaActionBar, h.btnOpenMedia, h.btnDownloadMedia, ctx)
+        
+        // Enhanced long click handling with haptic feedback
         h.messageContainer.setOnLongClickListener {
             h.messageActions.visibility = if (h.messageActions.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+            // Add haptic feedback
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                val vibrator = ctx.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? android.os.Vibrator
+                vibrator?.vibrate(android.os.VibrationEffect.createOneShot(50, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+            }
             true
         }
+        
         h.btnMarkImportant.setOnClickListener { onMarkImportant(msg); h.messageActions.visibility = View.GONE }
         h.btnCreateTask.setOnClickListener { onCreateTask(msg); h.messageActions.visibility = View.GONE }
         h.btnSetReminder.setOnClickListener { onSetReminder(msg); h.messageActions.visibility = View.GONE }
@@ -172,23 +184,27 @@ class CollabChatAdapter(
         h.tvReadTick.visibility = View.GONE
         h.tvImportantBadge.visibility = if (msg.isImportant) View.VISIBLE else View.GONE
         h.tvLinkedTaskBadge.visibility = if (msg.linkedTaskId != null) View.VISIBLE else View.GONE
-        // Bind reply preview
+        
+        // Enhanced reply preview styling
         if (!msg.replyToMessageId.isNullOrBlank()) {
             h.replyPreviewBubble.visibility = View.VISIBLE
             h.tvReplySender.text = msg.replyToUserName ?: ""
             h.tvReplyText.text = msg.replyToMessage ?: ""
+            // Add subtle animation
+            h.replyPreviewBubble.alpha = 0.9f
         } else {
             h.replyPreviewBubble.visibility = View.GONE
         }
 
         if (msg.isAI || msg.userId == "__ai__") {
-            // Beeta AI
+            // Enhanced Beeta AI styling
             h.tvSenderName.visibility = View.VISIBLE
-            h.tvSenderName.text = "Beeta AI"
+            h.tvSenderName.text = "✦ Beeta AI"
             h.tvSenderName.setTextColor(0xFF4C6EF5.toInt())
             h.messageContainer.setBackgroundResource(R.drawable.bg_bubble_ai)
             h.tvMessage.setTextColor(0xFF1A1A1A.toInt())
             setCircleColor(h.avatarBg, 0xFF4C6EF5.toInt())
+            
             val aiBmp = getAiBitmap(ctx)
             if (aiBmp != null) {
                 h.ivAvatar.setImageBitmap(aiBmp)
@@ -200,7 +216,7 @@ class CollabChatAdapter(
                 h.tvAvatarInitial.text = "AI"
             }
         } else {
-            // Human sender
+            // Enhanced human sender styling
             val color = senderColors[Math.abs(msg.userId.hashCode()) % senderColors.size]
             h.tvSenderName.visibility = View.VISIBLE
             h.tvSenderName.text = msg.userName
@@ -223,10 +239,18 @@ class CollabChatAdapter(
 
         bindMedia(msg, h.tvMessage, h.ivMediaPreview, h.attachmentCard,
             h.tvAttachmentIcon, h.tvAttachmentName, h.mediaActionBar, h.btnOpenMedia, h.btnDownloadMedia, ctx)
+        
+        // Enhanced long click handling
         h.messageContainer.setOnLongClickListener {
             h.messageActions.visibility = if (h.messageActions.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+            // Add haptic feedback
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                val vibrator = ctx.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? android.os.Vibrator
+                vibrator?.vibrate(android.os.VibrationEffect.createOneShot(50, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+            }
             true
         }
+        
         h.btnMarkImportant.setOnClickListener { onMarkImportant(msg); h.messageActions.visibility = View.GONE }
         h.btnCreateTask.setOnClickListener { onCreateTask(msg); h.messageActions.visibility = View.GONE }
         h.btnSetReminder.setOnClickListener { onSetReminder(msg); h.messageActions.visibility = View.GONE }
