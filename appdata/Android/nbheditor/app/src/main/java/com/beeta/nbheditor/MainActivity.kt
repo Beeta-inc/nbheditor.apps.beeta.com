@@ -294,9 +294,42 @@ open class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Show home screen unless launched via "Open with"
-        if (intent?.action == Intent.ACTION_VIEW || intent?.action == Intent.ACTION_EDIT) {
-            showEditor()
+        // Show home screen unless launched via "Open with" or deep link
+        if (intent?.action == Intent.ACTION_VIEW) {
+            val uri = intent.data
+            if (uri != null && uri.host == "nbheditor.pages.dev" && uri.pathSegments.size >= 2) {
+                val path = uri.pathSegments[0]
+                val sessionId = uri.pathSegments[1]
+                if (path == "collaborative" && sessionId.matches(Regex("NE[A-Z0-9]{5}"))) {
+                    // Handle collaborative session deep link
+                    if (!GoogleSignInHelper.isSignedIn(this)) {
+                        showHome()
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            androidx.appcompat.app.AlertDialog.Builder(this)
+                                .setTitle("Sign In Required")
+                                .setMessage("You need to sign in with Google to join collaborative sessions.")
+                                .setPositiveButton("Sign In") { _, _ -> 
+                                    startGoogleSignIn()
+                                    prefs.edit().putString("pending_session_join", sessionId).apply()
+                                }
+                                .setNegativeButton("Cancel", null)
+                                .show()
+                        }, 500)
+                    } else {
+                        showEditor()
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            joinCollaborativeSession(sessionId)
+                        }, 500)
+                    }
+                } else {
+                    // Regular file open
+                    showEditor()
+                }
+            } else if (intent.action == Intent.ACTION_EDIT) {
+                showEditor()
+            } else {
+                showEditor()
+            }
         } else {
             showHome()
         }
@@ -3089,6 +3122,35 @@ open class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        setIntent(intent)
+        
+        // Handle deep link for collaborative session
+        if (intent.action == Intent.ACTION_VIEW) {
+            val uri = intent.data
+            if (uri != null && uri.host == "nbheditor.pages.dev" && uri.pathSegments.size >= 2) {
+                val path = uri.pathSegments[0]
+                val sessionId = uri.pathSegments[1]
+                if (path == "collaborative" && sessionId.matches(Regex("NE[A-Z0-9]{5}"))) {
+                    // Check if user is signed in
+                    if (!GoogleSignInHelper.isSignedIn(this)) {
+                        androidx.appcompat.app.AlertDialog.Builder(this)
+                            .setTitle("Sign In Required")
+                            .setMessage("You need to sign in with Google to join collaborative sessions.")
+                            .setPositiveButton("Sign In") { _, _ -> 
+                                startGoogleSignIn()
+                                // Store session ID to join after sign-in
+                                prefs.edit().putString("pending_session_join", sessionId).apply()
+                            }
+                            .setNegativeButton("Cancel", null)
+                            .show()
+                        return
+                    }
+                    joinCollaborativeSession(sessionId)
+                    return
+                }
+            }
+        }
+        
         // Handle notification tap to rejoin session
         val sessionIdFromNotif = intent.getStringExtra(CollabSessionService.EXTRA_SESSION_ID)
         if (!sessionIdFromNotif.isNullOrBlank() && !CollaborativeSessionManager.isInSession()) {
@@ -3787,6 +3849,15 @@ open class MainActivity : AppCompatActivity() {
                         Toast.makeText(this@MainActivity, "✓ Signed in as ${account.email}", Toast.LENGTH_LONG).show()
                         invalidateOptionsMenu() // Refresh toolbar
                         
+                        // Check for pending session join
+                        val pendingSessionId = prefs.getString("pending_session_join", null)
+                        if (pendingSessionId != null) {
+                            prefs.edit().remove("pending_session_join").apply()
+                            Handler(Looper.getMainLooper()).postDelayed({
+                                joinCollaborativeSession(pendingSessionId)
+                            }, 1000)
+                        }
+                        
                         // Start syncing chats and files
                         syncAllDataToCloud()
                     } catch (e: Exception) {
@@ -4228,7 +4299,8 @@ open class MainActivity : AppCompatActivity() {
     
     private fun showSessionInviteDialog(sessionId: String) {
         val creatorName = GoogleSignInHelper.getUserName(this) ?: "Someone"
-        val inviteText = "$creatorName is inviting you to join a collaborative session on NbhEditor!\n\nUse this code to join:\n\n🔗 $sessionId\n\nOpen NbhEditor → Menu → Collaborative Session → Join Session"
+        val sessionLink = "https://nbheditor.pages.dev/collaborative/$sessionId"
+        val inviteText = "$creatorName is inviting you to join a collaborative session on NbhEditor!\n\nClick the link to join:\n$sessionLink\n\nOr use this code in the app:\n$sessionId\n\nOpen NbhEditor → Menu → Collaborative Session → Join Session"
         
         val dialogView = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -4254,7 +4326,7 @@ open class MainActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { bottomMargin = 24 }
+            ).apply { bottomMargin = 16 }
         }
         
         val codeLayout = LinearLayout(this).apply {
@@ -4290,9 +4362,52 @@ open class MainActivity : AppCompatActivity() {
         codeLayout.addView(codeText)
         codeCard.addView(codeLayout)
         
+        // Link display card
+        val linkCard = androidx.cardview.widget.CardView(this).apply {
+            radius = 16f
+            cardElevation = 4f
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = 24 }
+        }
+        
+        val linkLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(32, 24, 32, 24)
+            gravity = Gravity.CENTER
+        }
+        
+        val linkLabel = TextView(this).apply {
+            text = "Or click the link to join:"
+            textSize = 14f
+            alpha = 0.7f
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = 8 }
+        }
+        
+        val linkText = TextView(this).apply {
+            text = sessionLink
+            textSize = 12f
+            typeface = Typeface.create(Typeface.MONOSPACE, Typeface.NORMAL)
+            gravity = Gravity.CENTER
+            setTextColor(resources.getColor(R.color.accent_secondary, theme))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+        
+        linkLayout.addView(linkLabel)
+        linkLayout.addView(linkText)
+        linkCard.addView(linkLayout)
+        
         // Message
         val messageView = TextView(this).apply {
-            text = "Share this code with others to collaborate in real-time!"
+            text = "Share this code or link with others to collaborate in real-time!"
             textSize = 14f
             gravity = Gravity.CENTER
             alpha = 0.8f
@@ -4360,6 +4475,7 @@ open class MainActivity : AppCompatActivity() {
         
         dialogView.addView(titleView)
         dialogView.addView(codeCard)
+        dialogView.addView(linkCard)
         dialogView.addView(messageView)
         dialogView.addView(buttonsLayout)
         dialogView.addView(btnClose)
@@ -4401,6 +4517,7 @@ open class MainActivity : AppCompatActivity() {
                 
                 titleView.setTextColor(textColor)
                 codeLabel.setTextColor(textColor)
+                linkLabel.setTextColor(textColor)
                 messageView.setTextColor(textColor)
                 
                 // Card background
@@ -4411,6 +4528,7 @@ open class MainActivity : AppCompatActivity() {
                     if (isDark) 0xFF2A2A2A.toInt() else 0xFFF5F5F5.toInt()
                 }
                 codeCard.setCardBackgroundColor(cardBg)
+                linkCard.setCardBackgroundColor(cardBg)
             }
             
             // Fade in animation
@@ -4699,7 +4817,8 @@ open class MainActivity : AppCompatActivity() {
             setPadding(16, 4, 16, 4)
             setOnClickListener {
                 val creatorName = GoogleSignInHelper.getUserName(this@MainActivity) ?: "Someone"
-                val inviteText = "$creatorName is inviting you to join a collaborative session on NbhEditor!\n\nUse this code to join:\n\n🔗 $sessionId\n\nOpen NbhEditor → Menu → Collaborative Session → Join Session"
+                val sessionLink = "https://nbheditor.pages.dev/collaborative/$sessionId"
+                val inviteText = "$creatorName is inviting you to join a collaborative session on NbhEditor!\n\nClick the link to join:\n$sessionLink\n\nOr use this code in the app:\n$sessionId\n\nOpen NbhEditor → Menu → Collaborative Session → Join Session"
                 val clipboard = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                 val clip = android.content.ClipData.newPlainText("Session Invite", inviteText)
                 clipboard.setPrimaryClip(clip)
