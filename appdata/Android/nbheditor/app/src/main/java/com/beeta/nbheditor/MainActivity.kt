@@ -297,10 +297,21 @@ open class MainActivity : AppCompatActivity() {
         // Show home screen unless launched via "Open with" or deep link
         if (intent?.action == Intent.ACTION_VIEW) {
             val uri = intent.data
-            if (uri != null && uri.host == "nbheditor.pages.dev" && uri.pathSegments.size >= 2) {
-                val path = uri.pathSegments[0]
-                val sessionId = uri.pathSegments[1]
-                if (path == "collaborative" && sessionId.matches(Regex("NE[A-Z0-9]{5}"))) {
+            if (uri != null) {
+                // Handle collaborative session deep links
+                val sessionId = when {
+                    // HTTPS: https://nbheditor.pages.dev/collaborative/NE5SDT2
+                    uri.scheme == "https" && uri.host == "nbheditor.pages.dev" && uri.pathSegments.size >= 2 -> {
+                        if (uri.pathSegments[0] == "collaborative") uri.pathSegments[1] else null
+                    }
+                    // Custom scheme: nbheditor://collaborative/NE5SDT2
+                    uri.scheme == "nbheditor" && uri.host == "collaborative" && uri.pathSegments.isNotEmpty() -> {
+                        uri.pathSegments[0]
+                    }
+                    else -> null
+                }
+                
+                if (sessionId != null && sessionId.matches(Regex("NE[A-Z0-9]{5}"))) {
                     // Handle collaborative session deep link
                     if (!GoogleSignInHelper.isSignedIn(this)) {
                         showHome()
@@ -3127,10 +3138,21 @@ open class MainActivity : AppCompatActivity() {
         // Handle deep link for collaborative session
         if (intent.action == Intent.ACTION_VIEW) {
             val uri = intent.data
-            if (uri != null && uri.host == "nbheditor.pages.dev" && uri.pathSegments.size >= 2) {
-                val path = uri.pathSegments[0]
-                val sessionId = uri.pathSegments[1]
-                if (path == "collaborative" && sessionId.matches(Regex("NE[A-Z0-9]{5}"))) {
+            if (uri != null) {
+                // Handle collaborative session deep links
+                val sessionId = when {
+                    // HTTPS: https://nbheditor.pages.dev/collaborative/NE5SDT2
+                    uri.scheme == "https" && uri.host == "nbheditor.pages.dev" && uri.pathSegments.size >= 2 -> {
+                        if (uri.pathSegments[0] == "collaborative") uri.pathSegments[1] else null
+                    }
+                    // Custom scheme: nbheditor://collaborative/NE5SDT2
+                    uri.scheme == "nbheditor" && uri.host == "collaborative" && uri.pathSegments.isNotEmpty() -> {
+                        uri.pathSegments[0]
+                    }
+                    else -> null
+                }
+                
+                if (sessionId != null && sessionId.matches(Regex("NE[A-Z0-9]{5}"))) {
                     // Check if user is signed in
                     if (!GoogleSignInHelper.isSignedIn(this)) {
                         androidx.appcompat.app.AlertDialog.Builder(this)
@@ -3138,7 +3160,6 @@ open class MainActivity : AppCompatActivity() {
                             .setMessage("You need to sign in with Google to join collaborative sessions.")
                             .setPositiveButton("Sign In") { _, _ -> 
                                 startGoogleSignIn()
-                                // Store session ID to join after sign-in
                                 prefs.edit().putString("pending_session_join", sessionId).apply()
                             }
                             .setNegativeButton("Cancel", null)

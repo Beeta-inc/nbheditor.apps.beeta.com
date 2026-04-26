@@ -109,7 +109,7 @@
                 <data android:mimeType="application/octet-stream" />
             </intent-filter>
 
-            <!-- Deep link for collaborative sessions -->
+            <!-- Deep link for collaborative sessions (HTTPS) -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -118,6 +118,16 @@
                     android:scheme="https"
                     android:host="nbheditor.pages.dev"
                     android:pathPrefix="/collaborative" />
+            </intent-filter>
+
+            <!-- Deep link for collaborative sessions (Custom Scheme) -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="nbheditor"
+                    android:host="collaborative" />
             </intent-filter>
 
         </activity>
