@@ -4320,8 +4320,20 @@ open class MainActivity : AppCompatActivity() {
     
     private fun showSessionInviteDialog(sessionId: String) {
         val creatorName = GoogleSignInHelper.getUserName(this) ?: "Someone"
-        val sessionLink = "https://nbheditor.pages.dev/collaborative/$sessionId"
-        val inviteText = "$creatorName is inviting you to join a collaborative session on NbhEditor!\n\nClick the link to join:\n$sessionLink\n\nOr use this code in the app:\n$sessionId\n\nOpen NbhEditor → Menu → Collaborative Session → Join Session"
+        val appLink = "nbheditor://collaborative/$sessionId"
+        val webLink = "https://nbheditor.pages.dev/collaborative/$sessionId"
+        val inviteText = """🎉 $creatorName is inviting you to join a collaborative session on NbhEditor!
+
+📱 Open in app (tap to join):
+$appLink
+
+🌐 Or open in browser:
+$webLink
+
+🔑 Session Code: $sessionId
+
+💡 You can also join manually:
+Open NbhEditor → Menu → Collaborative Session → Join Session"""
         
         val dialogView = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
@@ -4411,7 +4423,7 @@ open class MainActivity : AppCompatActivity() {
         }
         
         val linkText = TextView(this).apply {
-            text = sessionLink
+            text = appLink
             textSize = 12f
             typeface = Typeface.create(Typeface.MONOSPACE, Typeface.NORMAL)
             gravity = Gravity.CENTER
@@ -4838,8 +4850,20 @@ open class MainActivity : AppCompatActivity() {
             setPadding(16, 4, 16, 4)
             setOnClickListener {
                 val creatorName = GoogleSignInHelper.getUserName(this@MainActivity) ?: "Someone"
-                val sessionLink = "https://nbheditor.pages.dev/collaborative/$sessionId"
-                val inviteText = "$creatorName is inviting you to join a collaborative session on NbhEditor!\n\nClick the link to join:\n$sessionLink\n\nOr use this code in the app:\n$sessionId\n\nOpen NbhEditor → Menu → Collaborative Session → Join Session"
+                val appLink = "nbheditor://collaborative/$sessionId"
+                val webLink = "https://nbheditor.pages.dev/collaborative/$sessionId"
+                val inviteText = """🎉 $creatorName is inviting you to join a collaborative session on NbhEditor!
+
+📱 Open in app (tap to join):
+$appLink
+
+🌐 Or open in browser:
+$webLink
+
+🔑 Session Code: $sessionId
+
+💡 You can also join manually:
+Open NbhEditor → Menu → Collaborative Session → Join Session"""
                 val clipboard = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                 val clip = android.content.ClipData.newPlainText("Session Invite", inviteText)
                 clipboard.setPrimaryClip(clip)
