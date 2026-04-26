@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join NbhEditor Session</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .session-code {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+            letter-spacing: 2px;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            margin: 12px 0;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            color: white;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: #6c757d;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        .info {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 14px;
+        }
+        .spinner {
+            border: 3px solid rgba(102, 126, 234, 0.3);
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .status {
+            margin: 20px 0;
+            padding: 12px;
+            border-radius: 8px;
+            display: none;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎉 Join Collaborative Session</h1>
+        
+        <div class="session-code" id="sessionCode">Loading...</div>
+        
+        <div class="spinner" id="spinner"></div>
+        <div class="status" id="status"></div>
+        
+        <button class="btn btn-primary" id="openAppBtn" onclick="openInApp()">
+            📱 Open in NbhEditor App
+        </button>
+        
+        <a href="#" class="btn btn-secondary" id="downloadBtn" style="display:none;">
+            ⬇️ Download NbhEditor
+        </a>
+        
+        <div class="info">
+            <p><strong>Don't have the app?</strong></p>
+            <p>Download NbhEditor from our website to join this collaborative session.</p>
+            <p style="margin-top: 10px; font-size: 12px; opacity: 0.7;">
+                Session links expire after 24 hours of inactivity.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Extract session ID from URL
+        const pathParts = window.location.pathname.split('/');
+        const sessionId = pathParts[pathParts.length - 1] || pathParts[pathParts.length - 2];
+        
+        // Display session code
+        document.getElementById('sessionCode').textContent = sessionId || 'Invalid';
+        
+        // Track if app opened
+        let appOpened = false;
+        let attemptCount = 0;
+        
+        function openInApp() {
+            attemptCount++;
+            const spinner = document.getElementById('spinner');
+            const status = document.getElementById('status');
+            const openAppBtn = document.getElementById('openAppBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            
+            // Show loading
+            spinner.style.display = 'block';
+            status.style.display = 'none';
+            openAppBtn.disabled = true;
+            openAppBtn.textContent = '⏳ Opening app...';
+            
+            // Try to open app with custom scheme
+            const appUrl = `nbheditor://collaborative/${sessionId}`;
+            window.location.href = appUrl;
+            
+            // Check if app opened after 2 seconds
+            setTimeout(() => {
+                if (document.hidden) {
+                    // User left the page - app probably opened
+                    appOpened = true;
+                    spinner.style.display = 'none';
+                    status.className = 'status success';
+                    status.textContent = '✓ App opened successfully!';
+                    status.style.display = 'block';
+                } else {
+                    // Still on page - app didn't open
+                    spinner.style.display = 'none';
+                    status.className = 'status error';
+                    status.textContent = '⚠️ App not installed or couldn\'t open';
+                    status.style.display = 'block';
+                    openAppBtn.disabled = false;
+                    openAppBtn.textContent = '📱 Try Again';
+                    downloadBtn.style.display = 'block';
+                    downloadBtn.href = 'https://github.com/beetatechnologies/nbheditor/releases';
+                }
+            }, 2000);
+        }
+        
+        // Detect when user returns to page
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && attemptCount > 0 && !appOpened) {
+                const status = document.getElementById('status');
+                const downloadBtn = document.getElementById('downloadBtn');
+                status.className = 'status error';
+                status.textContent = '⚠️ Couldn\'t open the app. Please install NbhEditor first.';
+                status.style.display = 'block';
+                downloadBtn.style.display = 'block';
+                downloadBtn.href = 'https://github.com/beetatechnologies/nbheditor/releases';
+            }
+        });
+        
+        // Auto-open on page load (optional - can be removed if annoying)
+        // window.addEventListener('load', () => {
+        //     setTimeout(openInApp, 500);
+        // });
+    </script>
+</body>
+</html>
