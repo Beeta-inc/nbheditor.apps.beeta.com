@@ -1,0 +1,10 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.beeta.nbheditor",
+    "sha256_cert_fingerprints": [
+      "28:83:7A:DC:A0:68:02:16:00:17:DA:38:EF:BF:CA:88:63:5D:7C:8B:E8:07:DC:8A:D7:65:43:CD:E3:20:4D:D3"
+    ]
+  }
+}]
