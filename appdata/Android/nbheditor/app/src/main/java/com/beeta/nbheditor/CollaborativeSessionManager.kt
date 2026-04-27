@@ -525,12 +525,35 @@ object CollaborativeSessionManager {
     
     fun observeChatTyping(sessionId: String, currentUserId: String): Flow<List<String>> = callbackFlow {
         val ref = database.child(SESSIONS_PATH).child(sessionId).child("chatTyping")
+        val usersRef = database.child(SESSIONS_PATH).child(sessionId).child("users")
+        
         val listener = ref.addValueEventListener(object : com.google.firebase.database.ValueEventListener {
             override fun onDataChange(snapshot: com.google.firebase.database.DataSnapshot) {
-                val typingUsers = snapshot.children.mapNotNull { child ->
+                val typingUserIds = snapshot.children.mapNotNull { child ->
                     if (child.key != currentUserId) child.key else null
                 }
-                trySend(typingUsers)
+                
+                // Map user IDs to usernames
+                if (typingUserIds.isEmpty()) {
+                    trySend(emptyList())
+                } else {
+                    usersRef.get().addOnSuccessListener { usersSnapshot ->
+                        val userNames = typingUserIds.mapNotNull { userId ->
+                            val userSnapshot = usersSnapshot.child(userId)
+                            if (userSnapshot.exists()) {
+                                userSnapshot.child("userName").getValue(String::class.java)
+                                    ?: userId.substringBefore("@") // Fallback to email username
+                            } else {
+                                userId.substringBefore("@") // Fallback to email username
+                            }
+                        }
+                        trySend(userNames)
+                    }.addOnFailureListener {
+                        // Fallback: extract username from email
+                        val userNames = typingUserIds.map { it.substringBefore("@") }
+                        trySend(userNames)
+                    }
+                }
             }
             override fun onCancelled(error: com.google.firebase.database.DatabaseError) { trySend(emptyList()) }
         })
