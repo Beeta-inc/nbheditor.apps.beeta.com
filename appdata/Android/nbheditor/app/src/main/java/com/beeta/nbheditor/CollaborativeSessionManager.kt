@@ -515,11 +515,14 @@ object CollaborativeSessionManager {
         val sessionId = currentSessionId ?: return
         val userId = currentUserId ?: return
         try {
-            database.child(SESSIONS_PATH).child(sessionId)
-                .child("chatTyping").child(userId).setValue(
-                    if (isTyping) mapOf("typing" to true, "ts" to System.currentTimeMillis())
-                    else null
-                ).await()
+            if (isTyping) {
+                database.child(SESSIONS_PATH).child(sessionId)
+                    .child("chatTyping").child(userId).setValue(true).await()
+            } else {
+                // Remove the key entirely when not typing
+                database.child(SESSIONS_PATH).child(sessionId)
+                    .child("chatTyping").child(userId).removeValue().await()
+            }
         } catch (e: Exception) { Log.e(TAG, "setTypingInChat failed", e) }
     }
     
