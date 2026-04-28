@@ -1,6 +1,6 @@
 <div align="center">
   <img src="assets/logo-beeta.png" alt="NbhEditor Logo" width="150"/>
-  <h1>NbhEditor v4.4.0</h1>
+  <h1>NbhEditor v4.5.0</h1>
   <p><b>A fast, modern, and AI-powered open-source text editor for Linux and Android.</b></p>
 </div>
 
@@ -8,13 +8,14 @@
 
 **NbhEditor** is built with performance, simplicity, and intelligent assistance in mind. Whether you are a casual user taking notes or a developer writing code, it combines a lightweight editing experience with powerful, opt-in AI tools to boost your productivity.
 
-## ✨ What's New in v4.4.0
+## ✨ What's New in v4.5.0
 
-* 🔗 **Collaborative Session Auto-Save:** Sessions automatically save when you end or leave
-* 📂 **Organized Home Screen:** Separate sections for regular files and collaborative sessions
-* ☁️ **Drive Sync for Sessions:** Collaborative sessions sync across all your devices
-* 🎯 **Smart Session Management:** Tap to open, long-press to delete saved sessions
-* 🔄 **Cross-Device Sync:** Work on any device, your sessions follow you
+* 📝 **Rich Text Editor:** Full Markdown and HTML rendering support with live formatting
+* ✍️ **Smart Font Control:** Apply fonts and sizes to selected text or future typing
+* 📏 **Fixed Line Numbers:** Perfect alignment with editor text lines
+* ⚙️ **Rich Text Toggle:** Enable/disable formatting from Settings
+* 🎨 **Text Type Button:** Quick access to font style and size options
+* 🔧 **Auto-Formatting:** Smart formatting that applies when you stop typing
 
 See [CHANGELOG.md](CHANGELOG.md) for complete version history.
 
@@ -26,6 +27,7 @@ See [CHANGELOG.md](CHANGELOG.md) for complete version history.
 * ☁️ **Google Drive Sync:** Keep your files updated and accessible across all your devices.
 * 🔗 **Real-Time Collaboration:** Work together with others in real-time collaborative sessions.
 * 💾 **Session Management:** Auto-save and sync collaborative sessions across devices.
+* 📝 **Rich Text Editing:** WYSIWYG-like experience with Markdown/HTML rendering.
 * 🧩 **Plugin Ready (WIP):** Extensible architecture for future community plugins and add-ons.
 
 ## 🧠 AI-Powered Assistance

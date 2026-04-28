@@ -4198,13 +4198,16 @@ open class MainActivity : AppCompatActivity() {
     
     private fun showAboutDialog() {
         val message = """
-            📝 NBH Editor v4.4.0
+            📝 NBH Editor v4.5.0
             
-            A blazing-fast, modern text editor built for Linux users.
+            A blazing-fast, modern text editor with rich text support.
             
             ✨ Features:
+            • Rich Text Editing (Markdown/HTML)
             • AI-Assisted Editing (Beeta AI)
+            • Real-Time Collaboration
             • Auto-sync to Google Cloud
+            • Smart Font Control
             • Dark & Light Themes
             • Voice Input
             • Image Support

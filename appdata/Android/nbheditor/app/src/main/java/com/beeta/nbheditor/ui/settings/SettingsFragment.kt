@@ -37,7 +37,7 @@ class SettingsFragment : Fragment() {
                 .getPackageInfo(requireContext().packageName, 0).versionName
             binding.currentVersionText.text = "Current version: v$versionName"
         } catch (e: Exception) {
-            binding.currentVersionText.text = "Current version: v2.2.0"
+            binding.currentVersionText.text = "Current version: v4.5.0"
         }
 
         // Rich text mode switch
