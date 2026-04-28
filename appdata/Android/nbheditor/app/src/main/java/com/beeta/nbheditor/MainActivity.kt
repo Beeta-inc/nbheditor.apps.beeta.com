@@ -4320,19 +4320,17 @@ open class MainActivity : AppCompatActivity() {
     
     private fun showSessionInviteDialog(sessionId: String) {
         val creatorName = GoogleSignInHelper.getUserName(this) ?: "Someone"
-        val appLink = "nbheditor://collaborative/$sessionId"
         val webLink = "https://nbheditor.pages.dev/collaborative/$sessionId"
         val inviteText = """🎉 $creatorName is inviting you to join a collaborative session on NbhEditor!
 
-📱 Open in app (tap to join):
-$appLink
+Click to join the collaborative session:
 
-🌐 Or open in browser:
 $webLink
+
+💡 You can also join manually:
 
 🔑 Session Code: $sessionId
 
-💡 You can also join manually:
 Open NbhEditor → Menu → Collaborative Session → Join Session"""
         
         val dialogView = LinearLayout(this).apply {
@@ -4423,7 +4421,7 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
         }
         
         val linkText = TextView(this).apply {
-            text = appLink
+            text = webLink
             textSize = 12f
             typeface = Typeface.create(Typeface.MONOSPACE, Typeface.NORMAL)
             gravity = Gravity.CENTER
