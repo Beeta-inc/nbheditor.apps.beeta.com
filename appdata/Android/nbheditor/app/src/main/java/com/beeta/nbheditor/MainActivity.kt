@@ -84,8 +84,13 @@ open class MainActivity : AppCompatActivity() {
         if (textChanged) performAutoSave()
     }
     private val formattingRunnable = Runnable {
-        val richEdit = editorBinding.textArea as? RichEditText
-        richEdit?.applyRichTextFormatting()
+        // Only apply formatting if user has stopped typing
+        if (!isTyping) {
+            val richEdit = editorBinding.textArea as? RichEditText
+            if (richEdit?.isRichTextMode == true) {
+                richEdit.applyRichTextFormatting()
+            }
+        }
     }
 
     private var aiJob: Job? = null
@@ -1714,21 +1719,44 @@ open class MainActivity : AppCompatActivity() {
             updateRichTextToggleButton()
             
             if (richEdit?.isRichTextMode == true) {
-                richEdit.applyRichTextFormatting()
-                Toast.makeText(this, "Rich text mode ON", Toast.LENGTH_SHORT).show()
+                // Apply formatting when enabling rich text mode
+                handler.post {
+                    richEdit.applyRichTextFormatting()
+                }
+                Toast.makeText(this, "Rich text mode ON - Formatting applied", Toast.LENGTH_SHORT).show()
             } else {
-                // Clear all formatting spans
-                val text = richEdit?.text
-                if (text is Spannable) {
-                    val spans = text.getSpans(0, text.length, Any::class.java)
-                    for (span in spans) {
-                        if (span !is ImageSpan) {
-                            text.removeSpan(span)
+                // Clear all formatting spans when disabling
+                handler.post {
+                    val text = richEdit?.text
+                    if (text is Spannable) {
+                        val spans = text.getSpans(0, text.length, Any::class.java)
+                        for (span in spans) {
+                            if (span !is ImageSpan) {
+                                try {
+                                    text.removeSpan(span)
+                                } catch (e: Exception) {
+                                    // Ignore
+                                }
+                            }
                         }
                     }
                 }
-                Toast.makeText(this, "Rich text mode OFF (plain text)", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Rich text mode OFF - Plain text view", Toast.LENGTH_SHORT).show()
             }
+        }
+        
+        // Long press to manually refresh formatting
+        editorBinding.richTextToggle.setOnLongClickListener {
+            val richEdit = editorBinding.textArea as? RichEditText
+            if (richEdit?.isRichTextMode == true) {
+                handler.post {
+                    richEdit.applyRichTextFormatting()
+                }
+                Toast.makeText(this, "Formatting refreshed", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this, "Enable rich text mode first", Toast.LENGTH_SHORT).show()
+            }
+            true
         }
     }
     
@@ -2036,9 +2064,12 @@ open class MainActivity : AppCompatActivity() {
                 handler.postDelayed(typingDelayRunnable, 2000)
                 if (aiEnabled) triggerAISuggestions()
                 
-                // Apply rich text formatting after typing stops
-                handler.removeCallbacks(formattingRunnable)
-                handler.postDelayed(formattingRunnable, 500)
+                // Apply rich text formatting only after user stops typing
+                val richEdit = editorBinding.textArea as? RichEditText
+                if (richEdit?.isRichTextMode == true) {
+                    handler.removeCallbacks(formattingRunnable)
+                    handler.postDelayed(formattingRunnable, 1500)
+                }
             }
             override fun afterTextChanged(s: Editable?) {}
         })

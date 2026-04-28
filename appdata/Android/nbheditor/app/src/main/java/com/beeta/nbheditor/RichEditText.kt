@@ -8,6 +8,7 @@ import android.text.Spannable
 import android.text.SpannableStringBuilder
 import android.text.style.*
 import android.util.AttributeSet
+import android.util.Log
 import androidx.appcompat.widget.AppCompatEditText
 import androidx.core.text.HtmlCompat
 
@@ -30,91 +31,147 @@ class RichEditText @JvmOverloads constructor(
      */
     fun applyRichTextFormatting() {
         if (!isRichTextMode || isApplyingSpans) return
-        isApplyingSpans = true
         
-        val currentText = text?.toString() ?: ""
-        if (currentText.isEmpty()) {
-            isApplyingSpans = false
+        // Don't format if user is actively interacting with the text
+        if (hasSelection() && hasFocus()) {
             return
         }
         
-        val spannable = text as? Spannable ?: SpannableStringBuilder(currentText)
+        isApplyingSpans = true
         
-        // Clear existing formatting spans (but keep ImageSpans)
-        val existingSpans = spannable.getSpans(0, spannable.length, Any::class.java)
-        for (span in existingSpans) {
-            if (span !is ImageSpan) {
-                spannable.removeSpan(span)
+        post {
+            try {
+                val currentText = text?.toString() ?: ""
+                if (currentText.isEmpty()) {
+                    isApplyingSpans = false
+                    return@post
+                }
+                
+                // Save cursor position
+                val cursorStart = selectionStart
+                val cursorEnd = selectionEnd
+                
+                // Create new spannable from scratch
+                val newSpannable = SpannableStringBuilder(currentText)
+                
+                // Copy ImageSpans from original
+                val originalText = text
+                if (originalText is Spannable) {
+                    val imageSpans = originalText.getSpans(0, originalText.length, ImageSpan::class.java)
+                    for (span in imageSpans) {
+                        val start = originalText.getSpanStart(span)
+                        val end = originalText.getSpanEnd(span)
+                        if (start >= 0 && end <= newSpannable.length && start < end) {
+                            newSpannable.setSpan(span, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        }
+                    }
+                }
+                
+                // Apply formatting to new spannable
+                when {
+                    currentText.contains("<html>", ignoreCase = true) || 
+                    currentText.contains("<p>", ignoreCase = true) -> applyHtmlFormatting(newSpannable)
+                    else -> applyMarkdownFormatting(newSpannable)
+                }
+                
+                // Replace text with formatted version
+                setText(newSpannable)
+                
+                // Restore cursor position
+                postDelayed({
+                    try {
+                        val safeStart = cursorStart.coerceIn(0, text?.length ?: 0)
+                        val safeEnd = cursorEnd.coerceIn(0, text?.length ?: 0)
+                        setSelection(safeStart, safeEnd)
+                    } catch (e: Exception) {
+                        // Ignore cursor errors
+                    }
+                }, 50)
+            } catch (e: Exception) {
+                Log.e("RichEditText", "Error applying formatting", e)
+            } finally {
+                isApplyingSpans = false
             }
         }
-        
-        // Detect format and apply
-        when {
-            currentText.contains("<html>", ignoreCase = true) || 
-            currentText.contains("<p>", ignoreCase = true) -> applyHtmlFormatting(spannable)
-            else -> applyMarkdownFormatting(spannable)
-        }
-        
-        isApplyingSpans = false
     }
     
     private fun applyMarkdownFormatting(spannable: Spannable) {
-        val text = spannable.toString()
-        val lines = text.split("\n")
-        var currentPos = 0
-        
-        for (line in lines) {
-            val lineStart = currentPos
-            val lineEnd = currentPos + line.length
+        try {
+            val text = spannable.toString()
+            val lines = text.split("\n")
+            var currentPos = 0
             
-            // Headings: # H1, ## H2, ### H3, etc.
-            if (line.startsWith("# ")) {
-                spannable.setSpan(RelativeSizeSpan(2.0f), lineStart, lineEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-                spannable.setSpan(StyleSpan(Typeface.BOLD), lineStart, lineEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-            } else if (line.startsWith("## ")) {
-                spannable.setSpan(RelativeSizeSpan(1.7f), lineStart, lineEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-                spannable.setSpan(StyleSpan(Typeface.BOLD), lineStart, lineEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-            } else if (line.startsWith("### ")) {
-                spannable.setSpan(RelativeSizeSpan(1.5f), lineStart, lineEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-                spannable.setSpan(StyleSpan(Typeface.BOLD), lineStart, lineEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-            } else if (line.startsWith("#### ")) {
-                spannable.setSpan(RelativeSizeSpan(1.3f), lineStart, lineEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-                spannable.setSpan(StyleSpan(Typeface.BOLD), lineStart, lineEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            for (line in lines) {
+                val lineStart = currentPos
+                val lineEnd = currentPos + line.length
+                
+                // Safety check
+                if (lineStart < 0 || lineEnd > spannable.length) {
+                    currentPos = lineEnd + 1
+                    continue
+                }
+                
+                // Headings: # H1, ## H2, ### H3, etc.
+                if (line.startsWith("# ")) {
+                    safeSetSpan(spannable, RelativeSizeSpan(2.0f), lineStart, lineEnd)
+                    safeSetSpan(spannable, StyleSpan(Typeface.BOLD), lineStart, lineEnd)
+                } else if (line.startsWith("## ")) {
+                    safeSetSpan(spannable, RelativeSizeSpan(1.7f), lineStart, lineEnd)
+                    safeSetSpan(spannable, StyleSpan(Typeface.BOLD), lineStart, lineEnd)
+                } else if (line.startsWith("### ")) {
+                    safeSetSpan(spannable, RelativeSizeSpan(1.5f), lineStart, lineEnd)
+                    safeSetSpan(spannable, StyleSpan(Typeface.BOLD), lineStart, lineEnd)
+                } else if (line.startsWith("#### ")) {
+                    safeSetSpan(spannable, RelativeSizeSpan(1.3f), lineStart, lineEnd)
+                    safeSetSpan(spannable, StyleSpan(Typeface.BOLD), lineStart, lineEnd)
+                }
+                
+                // Bold: **text** or __text__
+                applyPattern(spannable, lineStart, lineEnd, "\\*\\*(.+?)\\*\\*") { start, end ->
+                    safeSetSpan(spannable, StyleSpan(Typeface.BOLD), start, end)
+                }
+                applyPattern(spannable, lineStart, lineEnd, "__(.+?)__") { start, end ->
+                    safeSetSpan(spannable, StyleSpan(Typeface.BOLD), start, end)
+                }
+                
+                // Italic: *text* or _text_
+                applyPattern(spannable, lineStart, lineEnd, "\\*(.+?)\\*") { start, end ->
+                    safeSetSpan(spannable, StyleSpan(Typeface.ITALIC), start, end)
+                }
+                applyPattern(spannable, lineStart, lineEnd, "_(.+?)_") { start, end ->
+                    safeSetSpan(spannable, StyleSpan(Typeface.ITALIC), start, end)
+                }
+                
+                // Code: `code`
+                applyPattern(spannable, lineStart, lineEnd, "`(.+?)`") { start, end ->
+                    safeSetSpan(spannable, TypefaceSpan("monospace"), start, end)
+                    safeSetSpan(spannable, BackgroundColorSpan(0x33888888), start, end)
+                }
+                
+                // Strikethrough: ~~text~~
+                applyPattern(spannable, lineStart, lineEnd, "~~(.+?)~~") { start, end ->
+                    safeSetSpan(spannable, StrikethroughSpan(), start, end)
+                }
+                
+                // Bullet lists: - item or * item
+                if (line.trimStart().startsWith("- ") || line.trimStart().startsWith("* ")) {
+                    safeSetSpan(spannable, BulletSpan(20), lineStart, lineEnd)
+                }
+                
+                currentPos = lineEnd + 1 // +1 for newline
             }
-            
-            // Bold: **text** or __text__
-            applyPattern(spannable, lineStart, lineEnd, "\\*\\*(.+?)\\*\\*") { start, end ->
-                spannable.setSpan(StyleSpan(Typeface.BOLD), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        } catch (e: Exception) {
+            Log.e("RichEditText", "Error in markdown formatting", e)
+        }
+    }
+    
+    private fun safeSetSpan(spannable: Spannable, span: Any, start: Int, end: Int) {
+        try {
+            if (start >= 0 && end <= spannable.length && start < end) {
+                spannable.setSpan(span, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
-            applyPattern(spannable, lineStart, lineEnd, "__(.+?)__") { start, end ->
-                spannable.setSpan(StyleSpan(Typeface.BOLD), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-            }
-            
-            // Italic: *text* or _text_
-            applyPattern(spannable, lineStart, lineEnd, "\\*(.+?)\\*") { start, end ->
-                spannable.setSpan(StyleSpan(Typeface.ITALIC), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-            }
-            applyPattern(spannable, lineStart, lineEnd, "_(.+?)_") { start, end ->
-                spannable.setSpan(StyleSpan(Typeface.ITALIC), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-            }
-            
-            // Code: `code`
-            applyPattern(spannable, lineStart, lineEnd, "`(.+?)`") { start, end ->
-                spannable.setSpan(TypefaceSpan("monospace"), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-                spannable.setSpan(BackgroundColorSpan(0x33888888), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-            }
-            
-            // Strikethrough: ~~text~~
-            applyPattern(spannable, lineStart, lineEnd, "~~(.+?)~~") { start, end ->
-                spannable.setSpan(StrikethroughSpan(), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-            }
-            
-            // Bullet lists: - item or * item
-            if (line.trimStart().startsWith("- ") || line.trimStart().startsWith("* ")) {
-                spannable.setSpan(BulletSpan(20), lineStart, lineEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-            }
-            
-            currentPos = lineEnd + 1 // +1 for newline
+        } catch (e: Exception) {
+            // Ignore span errors
         }
     }
     
@@ -144,6 +201,9 @@ class RichEditText @JvmOverloads constructor(
     
     private fun applyPattern(spannable: Spannable, lineStart: Int, lineEnd: Int, pattern: String, applySpan: (Int, Int) -> Unit) {
         try {
+            // Safety check
+            if (lineStart < 0 || lineEnd > spannable.length || lineStart >= lineEnd) return
+            
             val regex = Regex(pattern)
             val lineText = spannable.substring(lineStart, lineEnd.coerceAtMost(spannable.length))
             val matches = regex.findAll(lineText)
@@ -151,7 +211,7 @@ class RichEditText @JvmOverloads constructor(
             for (match in matches) {
                 val start = lineStart + match.range.first
                 val end = lineStart + match.range.last + 1
-                if (start >= 0 && end <= spannable.length) {
+                if (start >= 0 && end <= spannable.length && start < end) {
                     applySpan(start, end)
                 }
             }
