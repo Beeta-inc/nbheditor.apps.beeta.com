@@ -294,7 +294,6 @@ open class MainActivity : AppCompatActivity() {
         setupVoiceButtons()
         setupImageButton()
         setupTextTypeButton()
-        setupRichTextToggle()
         registerBackHandler()
 
         // Show first-time login dialog
@@ -1712,69 +1711,6 @@ open class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupRichTextToggle() {
-        val richEdit = editorBinding.textArea as? RichEditText
-        
-        // Update button color based on mode
-        updateRichTextToggleButton()
-        
-        editorBinding.richTextToggle.setOnClickListener {
-            richEdit?.isRichTextMode = !(richEdit?.isRichTextMode ?: true)
-            updateRichTextToggleButton()
-            
-            if (richEdit?.isRichTextMode == true) {
-                // Apply formatting when enabling rich text mode
-                handler.post {
-                    richEdit.applyRichTextFormatting()
-                }
-                Toast.makeText(this, "Rich text mode ON - Formatting applied", Toast.LENGTH_SHORT).show()
-            } else {
-                // Clear all formatting spans when disabling
-                handler.post {
-                    val text = richEdit?.text
-                    if (text is Spannable) {
-                        val spans = text.getSpans(0, text.length, Any::class.java)
-                        for (span in spans) {
-                            if (span !is ImageSpan) {
-                                try {
-                                    text.removeSpan(span)
-                                } catch (e: Exception) {
-                                    // Ignore
-                                }
-                            }
-                        }
-                    }
-                }
-                Toast.makeText(this, "Rich text mode OFF - Plain text view", Toast.LENGTH_SHORT).show()
-            }
-        }
-        
-        // Long press to manually refresh formatting
-        editorBinding.richTextToggle.setOnLongClickListener {
-            val richEdit = editorBinding.textArea as? RichEditText
-            if (richEdit?.isRichTextMode == true) {
-                handler.post {
-                    richEdit.applyRichTextFormatting()
-                }
-                Toast.makeText(this, "Formatting refreshed", Toast.LENGTH_SHORT).show()
-            } else {
-                Toast.makeText(this, "Enable rich text mode first", Toast.LENGTH_SHORT).show()
-            }
-            true
-        }
-    }
-    
-    private fun updateRichTextToggleButton() {
-        val richEdit = editorBinding.textArea as? RichEditText
-        val isRichMode = richEdit?.isRichTextMode ?: true
-        
-        if (isRichMode) {
-            editorBinding.richTextToggle.setColorFilter(resources.getColor(R.color.accent_primary, theme))
-        } else {
-            editorBinding.richTextToggle.setColorFilter(resources.getColor(R.color.editor_line_number_text, theme))
-        }
-    }
-
     private fun showTextTypeDialog() {
         val fonts = arrayOf("Monospace", "Sans Serif", "Serif", "Casual", "Cursive")
         val sizes = arrayOf("12sp", "14sp", "16sp", "18sp", "20sp", "24sp")
@@ -2078,10 +2014,18 @@ open class MainActivity : AppCompatActivity() {
         }
         
         editorBinding.textArea.addTextChangedListener(object : TextWatcher {
+            private var insertStart = -1
+            private var insertEnd = -1
+            
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
                 if (!isUndoing && s != null) {
                     undoStack.add(s.toString())
                     if (undoStack.size > 50) undoStack.removeAt(0)
+                }
+                // Track where new text will be inserted
+                if (after > count) {
+                    insertStart = start
+                    insertEnd = start + after
                 }
             }
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
@@ -2093,9 +2037,33 @@ open class MainActivity : AppCompatActivity() {
                 handler.postDelayed(typingDelayRunnable, 2000)
                 if (aiEnabled) triggerAISuggestions()
                 
+                // Apply current font/size to newly typed text
+                if (insertStart >= 0 && insertEnd > insertStart && s is Spannable) {
+                    val actualEnd = insertEnd.coerceAtMost(s.length)
+                    if (insertStart < actualEnd) {
+                        // Apply typeface
+                        s.setSpan(
+                            CustomTypefaceSpan(currentTypeface),
+                            insertStart, actualEnd,
+                            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                        )
+                        // Apply size
+                        val sizePx = currentTextSize * resources.displayMetrics.scaledDensity
+                        s.setSpan(
+                            android.text.style.AbsoluteSizeSpan(sizePx.toInt()),
+                            insertStart, actualEnd,
+                            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                        )
+                    }
+                }
+                insertStart = -1
+                insertEnd = -1
+                
                 // Apply rich text formatting only after user stops typing
-                val richEdit = editorBinding.textArea as? RichEditText
-                if (richEdit?.isRichTextMode == true) {
+                val richTextEnabled = prefs.getBoolean("rich_text_mode", true)
+                if (richTextEnabled) {
+                    val richEdit = editorBinding.textArea as? RichEditText
+                    richEdit?.isRichTextMode = true
                     handler.removeCallbacks(formattingRunnable)
                     handler.postDelayed(formattingRunnable, 1500)
                 }
@@ -2787,17 +2755,16 @@ open class MainActivity : AppCompatActivity() {
                 deserializeImagesInText()
                 
                 // Auto-enable rich text mode for supported formats
+                val richTextEnabled = prefs.getBoolean("rich_text_mode", true)
                 val richEdit = editorBinding.textArea as? RichEditText
                 val fileExtension = fileName.substringAfterLast('.', "").lowercase()
                 val richTextFormats = listOf("md", "markdown", "html", "htm", "txt", "rtf")
                 
-                if (fileExtension in richTextFormats) {
+                if (richTextEnabled && fileExtension in richTextFormats) {
                     richEdit?.isRichTextMode = true
                     richEdit?.applyRichTextFormatting()
-                    updateRichTextToggleButton()
                 } else {
                     richEdit?.isRichTextMode = false
-                    updateRichTextToggleButton()
                 }
                 
                 if (!isCloudUri) {

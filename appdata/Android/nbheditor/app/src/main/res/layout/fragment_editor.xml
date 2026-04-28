@@ -83,22 +83,6 @@
                 android:tint="@color/accent_primary"
                 android:contentDescription="Text type" />
 
-            <View
-                android:layout_width="1dp"
-                android:layout_height="24dp"
-                android:background="@color/divider"
-                android:layout_marginStart="4dp"
-                android:layout_marginEnd="4dp" />
-
-            <ImageButton
-                android:id="@+id/richTextToggle"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
-                android:src="@android:drawable/ic_menu_edit"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:tint="@color/accent_primary"
-                android:contentDescription="Toggle rich text" />
-
         </LinearLayout>
     </HorizontalScrollView>
 

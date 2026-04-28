@@ -40,6 +40,17 @@ class SettingsFragment : Fragment() {
             binding.currentVersionText.text = "Current version: v2.2.0"
         }
 
+        // Rich text mode switch
+        val prefs = requireContext().getSharedPreferences("nbh_prefs", android.content.Context.MODE_PRIVATE)
+        binding.richTextSwitch.isChecked = prefs.getBoolean("rich_text_mode", true)
+        
+        binding.richTextSwitch.setOnCheckedChangeListener { _, isChecked ->
+            prefs.edit().putBoolean("rich_text_mode", isChecked).apply()
+            Toast.makeText(requireContext(), 
+                if (isChecked) "Rich text mode enabled" else "Rich text mode disabled", 
+                Toast.LENGTH_SHORT).show()
+        }
+
         // Check for updates button
         binding.checkUpdateButton.setOnClickListener {
             if (!isChecking) {
