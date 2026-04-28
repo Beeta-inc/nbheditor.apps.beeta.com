@@ -21,6 +21,7 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.text.Editable
+import android.text.Spannable
 import android.text.SpannableString
 import android.text.TextWatcher
 import android.text.style.ImageSpan
@@ -81,6 +82,10 @@ open class MainActivity : AppCompatActivity() {
     private val typingDelayRunnable = Runnable {
         isTyping = false
         if (textChanged) performAutoSave()
+    }
+    private val formattingRunnable = Runnable {
+        val richEdit = editorBinding.textArea as? RichEditText
+        richEdit?.applyRichTextFormatting()
     }
 
     private var aiJob: Job? = null
@@ -279,6 +284,8 @@ open class MainActivity : AppCompatActivity() {
 
         setupVoiceButtons()
         setupImageButton()
+        setupTextTypeButton()
+        setupRichTextToggle()
         registerBackHandler()
 
         // Show first-time login dialog
@@ -1690,6 +1697,117 @@ open class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun setupTextTypeButton() {
+        editorBinding.textTypeButton.setOnClickListener {
+            showTextTypeDialog()
+        }
+    }
+
+    private fun setupRichTextToggle() {
+        val richEdit = editorBinding.textArea as? RichEditText
+        
+        // Update button color based on mode
+        updateRichTextToggleButton()
+        
+        editorBinding.richTextToggle.setOnClickListener {
+            richEdit?.isRichTextMode = !(richEdit?.isRichTextMode ?: true)
+            updateRichTextToggleButton()
+            
+            if (richEdit?.isRichTextMode == true) {
+                richEdit.applyRichTextFormatting()
+                Toast.makeText(this, "Rich text mode ON", Toast.LENGTH_SHORT).show()
+            } else {
+                // Clear all formatting spans
+                val text = richEdit?.text
+                if (text is Spannable) {
+                    val spans = text.getSpans(0, text.length, Any::class.java)
+                    for (span in spans) {
+                        if (span !is ImageSpan) {
+                            text.removeSpan(span)
+                        }
+                    }
+                }
+                Toast.makeText(this, "Rich text mode OFF (plain text)", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    
+    private fun updateRichTextToggleButton() {
+        val richEdit = editorBinding.textArea as? RichEditText
+        val isRichMode = richEdit?.isRichTextMode ?: true
+        
+        if (isRichMode) {
+            editorBinding.richTextToggle.setColorFilter(resources.getColor(R.color.accent_primary, theme))
+        } else {
+            editorBinding.richTextToggle.setColorFilter(resources.getColor(R.color.editor_line_number_text, theme))
+        }
+    }
+
+    private fun showTextTypeDialog() {
+        val fonts = arrayOf("Monospace", "Sans Serif", "Serif", "Casual", "Cursive")
+        val sizes = arrayOf("12sp", "14sp", "16sp", "18sp", "20sp", "24sp")
+        
+        val currentSize = editorBinding.textArea.textSize / resources.displayMetrics.scaledDensity
+        val currentSizeIndex = sizes.indexOfFirst { it.replace("sp", "").toFloat() == currentSize }.coerceAtLeast(0)
+        
+        val dialog = android.app.AlertDialog.Builder(this)
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(40, 20, 40, 20)
+        }
+        
+        val fontLabel = TextView(this).apply {
+            text = "Font Style"
+            textSize = 14f
+            setTextColor(resources.getColor(R.color.editor_text, theme))
+        }
+        layout.addView(fontLabel)
+        
+        val fontSpinner = android.widget.Spinner(this).apply {
+            adapter = android.widget.ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_item, fonts).apply {
+                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+        }
+        layout.addView(fontSpinner)
+        
+        val sizeLabel = TextView(this).apply {
+            text = "Font Size"
+            textSize = 14f
+            setTextColor(resources.getColor(R.color.editor_text, theme))
+            setPadding(0, 20, 0, 0)
+        }
+        layout.addView(sizeLabel)
+        
+        val sizeSpinner = android.widget.Spinner(this).apply {
+            adapter = android.widget.ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_item, sizes).apply {
+                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+            setSelection(currentSizeIndex)
+        }
+        layout.addView(sizeSpinner)
+        
+        dialog.setTitle("Text Type")
+            .setView(layout)
+            .setPositiveButton("Apply") { _, _ ->
+                val selectedFont = when (fontSpinner.selectedItem.toString()) {
+                    "Monospace" -> Typeface.MONOSPACE
+                    "Sans Serif" -> Typeface.SANS_SERIF
+                    "Serif" -> Typeface.SERIF
+                    "Casual" -> Typeface.create("casual", Typeface.NORMAL)
+                    "Cursive" -> Typeface.create("cursive", Typeface.NORMAL)
+                    else -> Typeface.MONOSPACE
+                }
+                val selectedSize = sizes[sizeSpinner.selectedItemPosition].replace("sp", "").toFloat()
+                
+                editorBinding.textArea.typeface = selectedFont
+                editorBinding.textArea.textSize = selectedSize
+                
+                Toast.makeText(this, "Text type updated", Toast.LENGTH_SHORT).show()
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
     private fun insertBase64ImageIntoEditor(base64: String) {
         lifecycleScope.launch {
             try {
@@ -1917,6 +2035,10 @@ open class MainActivity : AppCompatActivity() {
                 handler.removeCallbacks(typingDelayRunnable)
                 handler.postDelayed(typingDelayRunnable, 2000)
                 if (aiEnabled) triggerAISuggestions()
+                
+                // Apply rich text formatting after typing stops
+                handler.removeCallbacks(formattingRunnable)
+                handler.postDelayed(formattingRunnable, 500)
             }
             override fun afterTextChanged(s: Editable?) {}
         })
@@ -2335,40 +2457,51 @@ open class MainActivity : AppCompatActivity() {
         val et = editorBinding.textArea
         val lineCount = et.lineCount.coerceAtLeast(1)
         val current = editorBinding.lineNumbersVBox.childCount
-        if (current == lineCount) return
-        if (lineCount > current) {
-            for (i in (current + 1)..lineCount) {
-                val tv = TextView(this).apply {
-                    // Check if this line contains only an ImageSpan — hide number if so
-                    val layout = et.layout
-                    val lineIdx = i - 1
-                    val hasImageOnly = if (layout != null && lineIdx < layout.lineCount) {
-                        val ls = layout.getLineStart(lineIdx)
-                        val le = layout.getLineEnd(lineIdx)
-                        val spans = et.text?.getSpans(ls, le, android.text.style.ImageSpan::class.java) ?: emptyArray()
-                        spans.isNotEmpty() && (le - ls) <= 2
-                    } else false
-
-                    text = if (hasImageOnly) "" else i.toString()
-                    layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                    )
-                    gravity = Gravity.END
-                    setPadding(0, 0, 8, 0)
-                    typeface = Typeface.MONOSPACE
-                    val lineNumColor = if (isGlassMode)
-                        0x88AABBFF.toInt()
-                    else
-                        resources.getColor(R.color.editor_line_number_text, theme)
-                    setTextColor(lineNumColor)
-                    if (isGlassMode) paintFlags = paintFlags or android.graphics.Paint.FAKE_BOLD_TEXT_FLAG
-                    textSize = 12f
+        
+        // Always update all line numbers to ensure they match
+        if (lineCount != current) {
+            if (lineCount > current) {
+                // Add new line numbers
+                for (i in (current + 1)..lineCount) {
+                    val tv = TextView(this).apply {
+                        text = i.toString()
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                        )
+                        gravity = Gravity.END
+                        setPadding(0, 0, 8, 0)
+                        typeface = Typeface.MONOSPACE
+                        val lineNumColor = if (isGlassMode)
+                            0x88AABBFF.toInt()
+                        else
+                            resources.getColor(R.color.editor_line_number_text, theme)
+                        setTextColor(lineNumColor)
+                        if (isGlassMode) paintFlags = paintFlags or android.graphics.Paint.FAKE_BOLD_TEXT_FLAG
+                        textSize = 12f
+                    }
+                    editorBinding.lineNumbersVBox.addView(tv)
                 }
-                editorBinding.lineNumbersVBox.addView(tv)
+            } else {
+                // Remove extra line numbers
+                editorBinding.lineNumbersVBox.removeViews(lineCount, current - lineCount)
             }
-        } else {
-            editorBinding.lineNumbersVBox.removeViews(lineCount, current - lineCount)
+        }
+        
+        // Update visibility for image-only lines
+        val layout = et.layout
+        if (layout != null) {
+            for (i in 0 until lineCount.coerceAtMost(editorBinding.lineNumbersVBox.childCount)) {
+                val tv = editorBinding.lineNumbersVBox.getChildAt(i) as? TextView ?: continue
+                val lineIdx = i
+                if (lineIdx < layout.lineCount) {
+                    val ls = layout.getLineStart(lineIdx)
+                    val le = layout.getLineEnd(lineIdx)
+                    val spans = et.text?.getSpans(ls, le, android.text.style.ImageSpan::class.java) ?: emptyArray()
+                    val hasImageOnly = spans.isNotEmpty() && (le - ls) <= 2
+                    tv.text = if (hasImageOnly) "" else (i + 1).toString()
+                }
+            }
         }
     }
 
@@ -2577,7 +2710,7 @@ open class MainActivity : AppCompatActivity() {
                 }
                 
                 editorBinding.textArea.setText(content)
-                currentFileUri = if (isCloudUri) null else uri // Don't set URI for cloud-only files yet
+                currentFileUri = if (isCloudUri) null else uri
                 textChanged = false
                 prefs.edit()
                     .remove("recovery_text")
@@ -2588,6 +2721,21 @@ open class MainActivity : AppCompatActivity() {
                 updateLineNumbers()
                 updateToolbarTitle()
                 deserializeImagesInText()
+                
+                // Auto-enable rich text mode for supported formats
+                val richEdit = editorBinding.textArea as? RichEditText
+                val fileExtension = fileName.substringAfterLast('.', "").lowercase()
+                val richTextFormats = listOf("md", "markdown", "html", "htm", "txt", "rtf")
+                
+                if (fileExtension in richTextFormats) {
+                    richEdit?.isRichTextMode = true
+                    richEdit?.applyRichTextFormatting()
+                    updateRichTextToggleButton()
+                } else {
+                    richEdit?.isRichTextMode = false
+                    updateRichTextToggleButton()
+                }
+                
                 if (!isCloudUri) {
                     addToRecents(uri)
                 }
