@@ -74,6 +74,10 @@ open class MainActivity : AppCompatActivity() {
     private var aiEnabled = true
     private var hasSyncedOnce = false
     
+    // Text formatting for new text
+    private var currentTypeface: Typeface = Typeface.MONOSPACE
+    private var currentTextSize: Float = 16f
+    
     // Undo stack
     private val undoStack = mutableListOf<String>()
     private var isUndoing = false
@@ -1775,8 +1779,7 @@ open class MainActivity : AppCompatActivity() {
         val fonts = arrayOf("Monospace", "Sans Serif", "Serif", "Casual", "Cursive")
         val sizes = arrayOf("12sp", "14sp", "16sp", "18sp", "20sp", "24sp")
         
-        val currentSize = editorBinding.textArea.textSize / resources.displayMetrics.scaledDensity
-        val currentSizeIndex = sizes.indexOfFirst { it.replace("sp", "").toFloat() == currentSize }.coerceAtLeast(0)
+        val currentSizeIndex = sizes.indexOfFirst { it.replace("sp", "").toFloat() == currentTextSize }.coerceAtLeast(2)
         
         val dialog = android.app.AlertDialog.Builder(this)
         val layout = LinearLayout(this).apply {
@@ -1827,10 +1830,36 @@ open class MainActivity : AppCompatActivity() {
                 }
                 val selectedSize = sizes[sizeSpinner.selectedItemPosition].replace("sp", "").toFloat()
                 
-                editorBinding.textArea.typeface = selectedFont
-                editorBinding.textArea.textSize = selectedSize
+                val editText = editorBinding.textArea
+                val start = editText.selectionStart
+                val end = editText.selectionEnd
                 
-                Toast.makeText(this, "Text type updated", Toast.LENGTH_SHORT).show()
+                if (start != end && start >= 0 && end <= (editText.text?.length ?: 0)) {
+                    // Apply to selected text
+                    val spannable = editText.text as? Spannable ?: return@setPositiveButton
+                    
+                    // Apply typeface span
+                    spannable.setSpan(
+                        CustomTypefaceSpan(selectedFont),
+                        start, end,
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                    
+                    // Apply size span
+                    val sizePx = selectedSize * resources.displayMetrics.scaledDensity
+                    spannable.setSpan(
+                        android.text.style.AbsoluteSizeSpan(sizePx.toInt()),
+                        start, end,
+                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                    )
+                    
+                    Toast.makeText(this, "Applied to selected text", Toast.LENGTH_SHORT).show()
+                } else {
+                    // Set for future text
+                    currentTypeface = selectedFont
+                    currentTextSize = selectedSize
+                    Toast.makeText(this, "Will apply to new text", Toast.LENGTH_SHORT).show()
+                }
             }
             .setNegativeButton("Cancel", null)
             .show()
@@ -2489,6 +2518,9 @@ open class MainActivity : AppCompatActivity() {
         val lineCount = et.lineCount.coerceAtLeast(1)
         val current = editorBinding.lineNumbersVBox.childCount
         
+        // Get line height from editor
+        val lineHeight = et.lineHeight
+        
         // Always update all line numbers to ensure they match
         if (lineCount != current) {
             if (lineCount > current) {
@@ -2498,10 +2530,10 @@ open class MainActivity : AppCompatActivity() {
                         text = i.toString()
                         layoutParams = LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.MATCH_PARENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT
+                            lineHeight
                         )
-                        gravity = Gravity.END
-                        setPadding(0, 0, 8, 0)
+                        gravity = Gravity.END or Gravity.TOP
+                        setPadding(0, et.paddingTop, 8, 0)
                         typeface = Typeface.MONOSPACE
                         val lineNumColor = if (isGlassMode)
                             0x88AABBFF.toInt()
@@ -2510,6 +2542,7 @@ open class MainActivity : AppCompatActivity() {
                         setTextColor(lineNumColor)
                         if (isGlassMode) paintFlags = paintFlags or android.graphics.Paint.FAKE_BOLD_TEXT_FLAG
                         textSize = 12f
+                        setLineSpacing(et.lineSpacingExtra, et.lineSpacingMultiplier)
                     }
                     editorBinding.lineNumbersVBox.addView(tv)
                 }
@@ -6043,5 +6076,16 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
         }
         
         dialog.show()
+    }
+}
+
+// Custom TypefaceSpan that works with any Typeface
+class CustomTypefaceSpan(private val typeface: Typeface) : android.text.style.MetricAffectingSpan() {
+    override fun updateDrawState(ds: android.text.TextPaint) {
+        ds.typeface = typeface
+    }
+
+    override fun updateMeasureState(paint: android.text.TextPaint) {
+        paint.typeface = typeface
     }
 }
