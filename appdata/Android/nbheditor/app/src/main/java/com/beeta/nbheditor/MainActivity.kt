@@ -51,6 +51,7 @@ import com.google.gson.Gson
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.tasks.await
 import okhttp3.*
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -3344,6 +3345,15 @@ open class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         
+        // Handle notification click
+        if (intent.action == "OPEN_COLLABORATIVE_SESSION") {
+            val sessionId = intent.getStringExtra("SESSION_ID")
+            if (sessionId != null) {
+                openCollaborativeSession(sessionId)
+                return
+            }
+        }
+        
         // Handle deep link for collaborative session
         if (intent.action == Intent.ACTION_VIEW) {
             val uri = intent.data
@@ -3431,6 +3441,19 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun handleOpenIntent(intent: Intent?) {
+        // Handle collaborative session notification click
+        if (intent?.action == "OPEN_COLLABORATIVE_SESSION") {
+            val sessionId = intent.getStringExtra("SESSION_ID")
+            if (sessionId != null) {
+                // Rejoin the session
+                lifecycleScope.launch {
+                    delay(500) // Wait for UI to be ready
+                    openCollaborativeSession(sessionId)
+                }
+                return
+            }
+        }
+        
         if (intent?.action != Intent.ACTION_VIEW && intent?.action != Intent.ACTION_EDIT) return
         val uri = intent.data ?: return
         try {
@@ -3450,6 +3473,40 @@ open class MainActivity : AppCompatActivity() {
             aiChatBinding.root.visibility = View.GONE
         } catch (e: Exception) {
             Toast.makeText(this, "Cannot open file", Toast.LENGTH_SHORT).show()
+        }
+    }
+    
+    private fun openCollaborativeSession(sessionId: String) {
+        lifecycleScope.launch {
+            try {
+                val database = com.google.firebase.database.FirebaseDatabase.getInstance().reference
+                val snapshot = database.child("collaborative_sessions/$sessionId").get().await()
+                val session = snapshot.getValue(CollaborativeSession::class.java)
+                
+                if (session != null) {
+                    val userId = GoogleSignInHelper.getUserEmail(this@MainActivity) ?: ""
+                    val isCreator = session.creatorId == userId
+                    
+                    // Load session content
+                    editorBinding.textArea.setText(session.content)
+                    CollaborativeSessionManager.currentSessionId = sessionId
+                    CollaborativeSessionManager.currentUserId = userId
+                    
+                    // Show active session UI
+                    showActiveSessionUI(sessionId, isCreator)
+                    
+                    // Switch to editor
+                    binding.appBarMain.contentMain.bottomNavView.selectedItemId = R.id.nav_editor
+                    editorBinding.root.visibility = View.VISIBLE
+                    aiChatBinding.root.visibility = View.GONE
+                    
+                    Toast.makeText(this@MainActivity, "Reconnected to session: $sessionId", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this@MainActivity, "Session not found", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(this@MainActivity, "Failed to open session: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -4913,6 +4970,141 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
         val userName = GoogleSignInHelper.getUserName(this) ?: "Unknown"
         val email = GoogleSignInHelper.getUserEmail(this) ?: ""
         val userId = email // Use email as unique user ID
+        val photoUrl = GoogleSignInHelper.getUserPhotoUrl(this) ?: ""
+        
+        // Send join request instead of directly joining
+        lifecycleScope.launch {
+            try {
+                val result = CollaborativeSessionManager.requestToJoinSession(sessionId, userId, userName, email, photoUrl)
+                
+                result.onSuccess { status ->
+                    if (status == "pending") {
+                        showWaitingRoomDialog(sessionId, userId)
+                    }
+                }.onFailure { e ->
+                    showErrorDialog("Failed to request join", e.message ?: "Unknown error")
+                }
+            } catch (e: Exception) {
+                showErrorDialog("Error", e.message ?: "Unknown error")
+            }
+        }
+    }
+    
+    // Join request dialog for host
+    private var joinRequestDialog: androidx.appcompat.app.AlertDialog? = null
+    
+    private fun observeJoinRequests(sessionId: String) {
+        lifecycleScope.launch {
+            CollaborativeSessionManager.observeJoinRequests(sessionId).collect { requests ->
+                if (requests.isNotEmpty() && joinRequestDialog == null) {
+                    showJoinRequestDialog(sessionId, requests.first())
+                }
+            }
+        }
+    }
+    
+    private fun showJoinRequestDialog(sessionId: String, request: JoinRequest) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_join_request, null)
+        
+        joinRequestDialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+        
+        dialogView.findViewById<TextView>(R.id.userName).text = request.userName
+        dialogView.findViewById<TextView>(R.id.userEmail).text = request.email
+        
+        // Load user photo if available
+        val userPhoto = dialogView.findViewById<ImageView>(R.id.userPhoto)
+        if (request.photoUrl.isNotEmpty()) {
+            lifecycleScope.launch {
+                try {
+                    val bitmap = loadProfilePicture(request.photoUrl)
+                    if (bitmap != null) {
+                        userPhoto.setImageBitmap(getCircularBitmap(bitmap))
+                    }
+                } catch (e: Exception) {
+                    // Keep default icon
+                }
+            }
+        }
+        
+        dialogView.findViewById<Button>(R.id.approveButton).setOnClickListener {
+            lifecycleScope.launch {
+                CollaborativeSessionManager.approveJoinRequest(sessionId, request.userId)
+                joinRequestDialog?.dismiss()
+                joinRequestDialog = null
+                Toast.makeText(this@MainActivity, "${request.userName} joined the session", Toast.LENGTH_SHORT).show()
+            }
+        }
+        
+        dialogView.findViewById<Button>(R.id.rejectButton).setOnClickListener {
+            lifecycleScope.launch {
+                CollaborativeSessionManager.rejectJoinRequest(sessionId, request.userId)
+                joinRequestDialog?.dismiss()
+                joinRequestDialog = null
+                Toast.makeText(this@MainActivity, "Request rejected", Toast.LENGTH_SHORT).show()
+            }
+        }
+        
+        joinRequestDialog?.show()
+    }
+    
+    // Waiting room for users
+    private var waitingRoomDialog: androidx.appcompat.app.AlertDialog? = null
+    
+    private fun showWaitingRoomDialog(sessionId: String, userId: String) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_waiting_room, null)
+        
+        waitingRoomDialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+        
+        waitingRoomDialog?.show()
+        
+        val cancelButton = dialogView.findViewById<Button>(R.id.cancelWaitingButton)
+        cancelButton?.setOnClickListener {
+            lifecycleScope.launch {
+                // Cancel join request
+                val database = com.google.firebase.database.FirebaseDatabase.getInstance().reference
+                database.child("collaborative_sessions/$sessionId/joinRequests/$userId").removeValue()
+                waitingRoomDialog?.dismiss()
+                waitingRoomDialog = null
+            }
+        }
+        
+        // Observe request status
+        lifecycleScope.launch {
+            CollaborativeSessionManager.observeJoinRequestStatus(sessionId, userId).collect { status ->
+                when (status) {
+                    "approved" -> {
+                        waitingRoomDialog?.dismiss()
+                        waitingRoomDialog = null
+                        // Now actually join the session
+                        joinApprovedSession(sessionId)
+                    }
+                    "rejected" -> {
+                        waitingRoomDialog?.dismiss()
+                        waitingRoomDialog = null
+                        Toast.makeText(this@MainActivity, "Host rejected your request", Toast.LENGTH_LONG).show()
+                    }
+                    "not_found" -> {
+                        // Request was removed, check if user is in session
+                        checkIfUserInSession(sessionId, userId)
+                    }
+                }
+            }
+        }
+        
+        // Check if host is online
+        checkHostStatus(sessionId)
+    }
+    
+    private fun joinApprovedSession(sessionId: String) {
+        val userName = GoogleSignInHelper.getUserName(this) ?: "Unknown"
+        val email = GoogleSignInHelper.getUserEmail(this) ?: ""
+        val userId = email
         
         // Show loading dialog
         val loadingDialog = createLoadingDialog(
@@ -4926,8 +5118,10 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
         
         lifecycleScope.launch {
             try {
-                val photoUrl = GoogleSignInHelper.getUserPhotoUrl(this@MainActivity) ?: ""
-                val result = CollaborativeSessionManager.joinSession(sessionId, userId, userName, email, photoUrl)
+                // Fetch session data
+                val database = com.google.firebase.database.FirebaseDatabase.getInstance().reference
+                val snapshot = database.child("collaborative_sessions/$sessionId").get().await()
+                val session = snapshot.getValue(CollaborativeSession::class.java)
                 
                 // Add slight delay to show the loading animation
                 delay(800)
@@ -4935,18 +5129,48 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
                 loadingDialog.dismiss()
                 stopJoinSound()
                 
-                result.onSuccess { session ->
+                if (session != null) {
                     showSuccessToast("✓ Joined session: $sessionId")
                     editorBinding.textArea.setText(session.content)
+                    CollaborativeSessionManager.currentSessionId = sessionId
+                    CollaborativeSessionManager.currentUserId = userId
                     showActiveSessionUI(sessionId, isCreator = false)
-                    // startCollaborativeSync is called inside showActiveSessionUI
-                }.onFailure { e ->
-                    showErrorDialog("Failed to join session", e.message ?: "Unknown error")
+                } else {
+                    showErrorDialog("Failed to join session", "Session not found")
                 }
             } catch (e: Exception) {
                 loadingDialog.dismiss()
                 stopJoinSound()
                 showErrorDialog("Error", e.message ?: "Unknown error")
+            }
+        }
+    }
+    
+    private fun checkIfUserInSession(sessionId: String, userId: String) {
+        lifecycleScope.launch {
+            try {
+                val database = com.google.firebase.database.FirebaseDatabase.getInstance().reference
+                val snapshot = database.child("collaborative_sessions/$sessionId/users/$userId").get().await()
+                if (snapshot.exists()) {
+                    // User was approved and added to session
+                    waitingRoomDialog?.dismiss()
+                    waitingRoomDialog = null
+                    joinApprovedSession(sessionId)
+                }
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Error checking user in session", e)
+            }
+        }
+    }
+    
+    private fun checkHostStatus(sessionId: String) {
+        lifecycleScope.launch {
+            CollaborativeSessionManager.isHostOnline(sessionId).collect { isOnline ->
+                if (!isOnline && waitingRoomDialog != null) {
+                    val dialogView = waitingRoomDialog?.window?.decorView
+                    val message = dialogView?.findViewById<TextView>(R.id.waitingMessage)
+                    message?.text = "⚠️ Host is offline. Your request will be processed when they return."
+                }
             }
         }
     }
@@ -4960,6 +5184,12 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
         updateToolbarWithSession(sessionId)
         showSessionInfoBar(sessionId, isCreator)
         startCollaborativeSync(sessionId)
+        
+        // If creator, start observing join requests
+        if (isCreator) {
+            observeJoinRequests(sessionId)
+        }
+        
         // Start persistent notification
         CollabSessionService.start(this, sessionId)
         Toast.makeText(this, "✓ Connected to session: $sessionId", Toast.LENGTH_SHORT).show()

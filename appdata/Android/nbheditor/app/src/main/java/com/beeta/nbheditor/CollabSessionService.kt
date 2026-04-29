@@ -113,12 +113,13 @@ class CollabSessionService : Service() {
     }
 
     private fun buildNotification(timer: String): Notification {
-        // Tap notification → open app and rejoin
+        // Tap notification → open app and rejoin session
         val openIntent = PendingIntent.getActivity(
             this, 0,
             Intent(this, MainActivity::class.java).apply {
+                action = "OPEN_COLLABORATIVE_SESSION"
                 flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                putExtra(EXTRA_SESSION_ID, sessionId)
+                putExtra("SESSION_ID", sessionId)
             },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )

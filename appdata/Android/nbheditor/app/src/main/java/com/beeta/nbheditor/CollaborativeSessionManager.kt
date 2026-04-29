@@ -123,8 +123,8 @@ object CollaborativeSessionManager {
             FirebaseDatabase.getInstance("https://nbheditior-default-rtdb.firebaseio.com").reference
         }
     }
-    private var currentSessionId: String? = null
-    private var currentUserId: String? = null
+    internal var currentSessionId: String? = null
+    internal var currentUserId: String? = null
     private var currentCreatorId: String? = null  // stored locally at join/create time
     
     // Sanitize user ID for Firebase (replace invalid characters)
@@ -408,6 +408,32 @@ object CollaborativeSessionManager {
         
         requestRef.addValueEventListener(listener)
         awaitClose { requestRef.removeEventListener(listener) }
+    }
+    
+    // Check if host is online
+    fun isHostOnline(sessionId: String): kotlinx.coroutines.flow.Flow<Boolean> = kotlinx.coroutines.flow.callbackFlow {
+        val sessionRef = database.child(SESSIONS_PATH).child(sessionId)
+        
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val session = snapshot.getValue(CollaborativeSession::class.java)
+                if (session != null) {
+                    val hostUser = session.users[session.creatorId]
+                    val isOnline = hostUser != null && 
+                        (System.currentTimeMillis() - hostUser.lastActive) < 30000 // 30 seconds
+                    trySend(isOnline)
+                } else {
+                    trySend(false)
+                }
+            }
+            
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+        
+        sessionRef.addValueEventListener(listener)
+        awaitClose { sessionRef.removeEventListener(listener) }
     }
     
     // Leave current session
