@@ -54,15 +54,29 @@ class RichEditText @JvmOverloads constructor(
                 // Create new spannable from scratch
                 val newSpannable = SpannableStringBuilder(currentText)
                 
-                // Copy ImageSpans from original
+                // Copy ImageSpans and CustomTypefaceSpans from original
                 val originalText = text
                 if (originalText is Spannable) {
+                    // Preserve ImageSpans
                     val imageSpans = originalText.getSpans(0, originalText.length, ImageSpan::class.java)
                     for (span in imageSpans) {
                         val start = originalText.getSpanStart(span)
                         val end = originalText.getSpanEnd(span)
                         if (start >= 0 && end <= newSpannable.length && start < end) {
                             newSpannable.setSpan(span, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        }
+                    }
+                    
+                    // Preserve CustomTypefaceSpans (user's font choices)
+                    val typefaceSpans = originalText.getSpans(0, originalText.length, android.text.style.MetricAffectingSpan::class.java)
+                    for (span in typefaceSpans) {
+                        if (span.javaClass.simpleName.contains("CustomTypeface") || span is android.text.style.AbsoluteSizeSpan) {
+                            val start = originalText.getSpanStart(span)
+                            val end = originalText.getSpanEnd(span)
+                            val flags = originalText.getSpanFlags(span)
+                            if (start >= 0 && end <= newSpannable.length && start < end) {
+                                newSpannable.setSpan(span, start, end, flags)
+                            }
                         }
                     }
                 }

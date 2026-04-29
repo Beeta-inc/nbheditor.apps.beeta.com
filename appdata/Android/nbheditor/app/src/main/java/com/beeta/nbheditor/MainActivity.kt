@@ -1772,22 +1772,26 @@ open class MainActivity : AppCompatActivity() {
                 
                 if (start != end && start >= 0 && end <= (editText.text?.length ?: 0)) {
                     // Apply to selected text
-                    val spannable = editText.text as? Spannable ?: return@setPositiveButton
+                    val spannable = editText.text as? android.text.Spannable ?: return@setPositiveButton
                     
-                    // Apply typeface span
+                    // Apply typeface span with higher priority
                     spannable.setSpan(
                         CustomTypefaceSpan(selectedFont),
                         start, end,
-                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                        android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE or android.text.Spannable.SPAN_PRIORITY
                     )
                     
-                    // Apply size span
+                    // Apply size span with higher priority
                     val sizePx = selectedSize * resources.displayMetrics.scaledDensity
                     spannable.setSpan(
                         android.text.style.AbsoluteSizeSpan(sizePx.toInt()),
                         start, end,
-                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                        android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE or android.text.Spannable.SPAN_PRIORITY
                     )
+                    
+                    // Force refresh
+                    editText.setText(spannable)
+                    editText.setSelection(start, end)
                     
                     Toast.makeText(this, "Applied to selected text", Toast.LENGTH_SHORT).show()
                 } else {
@@ -2038,21 +2042,21 @@ open class MainActivity : AppCompatActivity() {
                 if (aiEnabled) triggerAISuggestions()
                 
                 // Apply current font/size to newly typed text
-                if (insertStart >= 0 && insertEnd > insertStart && s is Spannable) {
+                if (insertStart >= 0 && insertEnd > insertStart && s is android.text.Spannable) {
                     val actualEnd = insertEnd.coerceAtMost(s.length)
                     if (insertStart < actualEnd) {
-                        // Apply typeface
+                        // Apply typeface with higher priority
                         s.setSpan(
                             CustomTypefaceSpan(currentTypeface),
                             insertStart, actualEnd,
-                            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                            android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE or android.text.Spannable.SPAN_PRIORITY
                         )
-                        // Apply size
+                        // Apply size with higher priority
                         val sizePx = currentTextSize * resources.displayMetrics.scaledDensity
                         s.setSpan(
                             android.text.style.AbsoluteSizeSpan(sizePx.toInt()),
                             insertStart, actualEnd,
-                            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                            android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE or android.text.Spannable.SPAN_PRIORITY
                         )
                     }
                 }
@@ -6050,12 +6054,43 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
 }
 
 // Custom TypefaceSpan that works with any Typeface
-class CustomTypefaceSpan(private val typeface: Typeface) : android.text.style.MetricAffectingSpan() {
+class CustomTypefaceSpan(private val typeface: Typeface) : android.text.style.MetricAffectingSpan(), android.os.Parcelable {
     override fun updateDrawState(ds: android.text.TextPaint) {
-        ds.typeface = typeface
+        applyCustomTypeface(ds, typeface)
     }
 
     override fun updateMeasureState(paint: android.text.TextPaint) {
-        paint.typeface = typeface
+        applyCustomTypeface(paint, typeface)
+    }
+    
+    private fun applyCustomTypeface(paint: android.text.TextPaint, tf: Typeface) {
+        val oldStyle = paint.typeface?.style ?: 0
+        val fake = oldStyle and tf.style.inv()
+        
+        if (fake and Typeface.BOLD != 0) {
+            paint.isFakeBoldText = true
+        }
+        
+        if (fake and Typeface.ITALIC != 0) {
+            paint.textSkewX = -0.25f
+        }
+        
+        paint.typeface = tf
+    }
+    
+    override fun describeContents(): Int = 0
+    
+    override fun writeToParcel(dest: android.os.Parcel, flags: Int) {
+        // Parcelable implementation (empty for now)
+    }
+    
+    companion object CREATOR : android.os.Parcelable.Creator<CustomTypefaceSpan> {
+        override fun createFromParcel(parcel: android.os.Parcel): CustomTypefaceSpan {
+            return CustomTypefaceSpan(Typeface.DEFAULT)
+        }
+
+        override fun newArray(size: Int): Array<CustomTypefaceSpan?> {
+            return arrayOfNulls(size)
+        }
     }
 }
