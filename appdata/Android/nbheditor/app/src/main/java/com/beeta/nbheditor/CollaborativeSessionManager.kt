@@ -18,7 +18,8 @@ data class SessionUser(
     val creator: Boolean = false,
     val cursorPosition: Int = 0,
     val typing: Boolean = false,
-    val lastActive: Long = System.currentTimeMillis()
+    val lastActive: Long = System.currentTimeMillis(),
+    val status: String = "active" // active, waiting, rejected
 ) {
     // Compatibility properties for code that uses isCreator/isTyping
     @get:Exclude
@@ -27,6 +28,15 @@ data class SessionUser(
     @get:Exclude
     val isTyping: Boolean get() = typing
 }
+
+data class JoinRequest(
+    val userId: String = "",
+    val userName: String = "",
+    val email: String = "",
+    val photoUrl: String = "",
+    val requestTime: Long = System.currentTimeMillis(),
+    val status: String = "pending" // pending, approved, rejected
+)
 
 data class ChatMessage(
     val messageId: String = "",
@@ -253,6 +263,151 @@ object CollaborativeSessionManager {
             Log.e(TAG, "Failed to join session", e)
             Result.failure(e)
         }
+    }
+    
+    // Request to join session (for host approval)
+    suspend fun requestToJoinSession(
+        sessionId: String,
+        userId: String,
+        userName: String,
+        email: String,
+        photoUrl: String = ""
+    ): Result<String> {
+        return try {
+            val sanitizedUserId = sanitizeUserId(userId)
+            val sessionRef = database.child(SESSIONS_PATH).child(sessionId)
+            val snapshot = sessionRef.get().await()
+            
+            if (!snapshot.exists()) {
+                return Result.failure(Exception("Session not found"))
+            }
+            
+            val joinRequest = JoinRequest(
+                userId = sanitizedUserId,
+                userName = userName,
+                email = email,
+                photoUrl = photoUrl,
+                requestTime = System.currentTimeMillis(),
+                status = "pending"
+            )
+            
+            sessionRef.child("joinRequests").child(sanitizedUserId).setValue(joinRequest).await()
+            
+            Log.d(TAG, "Join request sent for session: $sessionId")
+            Result.success("pending")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to send join request", e)
+            Result.failure(e)
+        }
+    }
+    
+    // Approve join request (host only)
+    suspend fun approveJoinRequest(sessionId: String, userId: String): Result<Unit> {
+        return try {
+            val sessionRef = database.child(SESSIONS_PATH).child(sessionId)
+            val requestRef = sessionRef.child("joinRequests").child(userId)
+            
+            val requestSnapshot = requestRef.get().await()
+            if (!requestSnapshot.exists()) {
+                return Result.failure(Exception("Join request not found"))
+            }
+            
+            val request = requestSnapshot.getValue(JoinRequest::class.java)
+                ?: return Result.failure(Exception("Invalid request data"))
+            
+            // Add user to session
+            val newUser = SessionUser(
+                userId = request.userId,
+                userName = request.userName,
+                email = request.email,
+                photoUrl = request.photoUrl,
+                creator = false,
+                lastActive = System.currentTimeMillis(),
+                status = "active"
+            )
+            
+            sessionRef.child("users").child(userId).setValue(newUser).await()
+            
+            // Update request status
+            requestRef.child("status").setValue("approved").await()
+            
+            // Remove request after 5 seconds
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                requestRef.removeValue()
+            }, 5000)
+            
+            Log.d(TAG, "Approved join request for user: $userId")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to approve join request", e)
+            Result.failure(e)
+        }
+    }
+    
+    // Reject join request (host only)
+    suspend fun rejectJoinRequest(sessionId: String, userId: String): Result<Unit> {
+        return try {
+            val sessionRef = database.child(SESSIONS_PATH).child(sessionId)
+            val requestRef = sessionRef.child("joinRequests").child(userId)
+            
+            requestRef.child("status").setValue("rejected").await()
+            
+            // Remove request after 2 seconds
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                requestRef.removeValue()
+            }, 2000)
+            
+            Log.d(TAG, "Rejected join request for user: $userId")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to reject join request", e)
+            Result.failure(e)
+        }
+    }
+    
+    // Observe join requests (for host)
+    fun observeJoinRequests(sessionId: String): kotlinx.coroutines.flow.Flow<List<JoinRequest>> = kotlinx.coroutines.flow.callbackFlow {
+        val requestsRef = database.child(SESSIONS_PATH).child(sessionId).child("joinRequests")
+        
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val requests = mutableListOf<JoinRequest>()
+                for (child in snapshot.children) {
+                    child.getValue(JoinRequest::class.java)?.let { requests.add(it) }
+                }
+                trySend(requests.filter { it.status == "pending" })
+            }
+            
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+        
+        requestsRef.addValueEventListener(listener)
+        awaitClose { requestsRef.removeEventListener(listener) }
+    }
+    
+    // Check join request status (for requester)
+    fun observeJoinRequestStatus(sessionId: String, userId: String): kotlinx.coroutines.flow.Flow<String> = kotlinx.coroutines.flow.callbackFlow {
+        val requestRef = database.child(SESSIONS_PATH).child(sessionId).child("joinRequests").child(userId)
+        
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (!snapshot.exists()) {
+                    trySend("not_found")
+                    return
+                }
+                val request = snapshot.getValue(JoinRequest::class.java)
+                trySend(request?.status ?: "unknown")
+            }
+            
+            override fun onCancelled(error: DatabaseError) {
+                close(error.toException())
+            }
+        }
+        
+        requestRef.addValueEventListener(listener)
+        awaitClose { requestRef.removeEventListener(listener) }
     }
     
     // Leave current session

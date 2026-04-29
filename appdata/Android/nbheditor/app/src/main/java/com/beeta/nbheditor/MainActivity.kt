@@ -1712,8 +1712,11 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun showTextTypeDialog() {
-        val fonts = arrayOf("Monospace", "Sans Serif", "Serif", "Casual", "Cursive")
-        val sizes = arrayOf("12sp", "14sp", "16sp", "18sp", "20sp", "24sp")
+        // Initialize font manager
+        FontManager.initialize()
+        val allFonts = FontManager.getAllFonts()
+        val fontNames = allFonts.map { it.name }.toTypedArray()
+        val sizes = arrayOf("10sp", "12sp", "14sp", "16sp", "18sp", "20sp", "22sp", "24sp", "28sp", "32sp", "36sp", "48sp")
         
         val currentSizeIndex = sizes.indexOfFirst { it.replace("sp", "").toFloat() == currentTextSize }.coerceAtLeast(2)
         
@@ -1723,16 +1726,40 @@ open class MainActivity : AppCompatActivity() {
             setPadding(40, 20, 40, 20)
         }
         
+        // Font preview
+        val previewLabel = TextView(this).apply {
+            text = "Preview"
+            textSize = 12f
+            setTextColor(resources.getColor(R.color.editor_text, theme))
+        }
+        layout.addView(previewLabel)
+        
+        val previewText = TextView(this).apply {
+            text = "The quick brown fox jumps over the lazy dog"
+            textSize = 18f
+            setTextColor(resources.getColor(R.color.editor_text, theme))
+            setPadding(16, 16, 16, 16)
+            background = resources.getDrawable(R.drawable.bg_glass_card, theme)
+        }
+        layout.addView(previewText)
+        
         val fontLabel = TextView(this).apply {
-            text = "Font Style"
+            text = "Font Style (${fontNames.size} fonts)"
             textSize = 14f
             setTextColor(resources.getColor(R.color.editor_text, theme))
+            setPadding(0, 20, 0, 0)
         }
         layout.addView(fontLabel)
         
         val fontSpinner = android.widget.Spinner(this).apply {
-            adapter = android.widget.ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_item, fonts).apply {
+            adapter = android.widget.ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_item, fontNames).apply {
                 setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            }
+            onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+                    previewText.typeface = allFonts[position].typeface
+                }
+                override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
             }
         }
         layout.addView(fontSpinner)
@@ -1750,20 +1777,19 @@ open class MainActivity : AppCompatActivity() {
                 setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             }
             setSelection(currentSizeIndex)
+            onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+                    previewText.textSize = sizes[position].replace("sp", "").toFloat()
+                }
+                override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+            }
         }
         layout.addView(sizeSpinner)
         
         dialog.setTitle("Text Type")
             .setView(layout)
             .setPositiveButton("Apply") { _, _ ->
-                val selectedFont = when (fontSpinner.selectedItem.toString()) {
-                    "Monospace" -> Typeface.MONOSPACE
-                    "Sans Serif" -> Typeface.SANS_SERIF
-                    "Serif" -> Typeface.SERIF
-                    "Casual" -> Typeface.create("casual", Typeface.NORMAL)
-                    "Cursive" -> Typeface.create("cursive", Typeface.NORMAL)
-                    else -> Typeface.MONOSPACE
-                }
+                val selectedFont = allFonts[fontSpinner.selectedItemPosition].typeface
                 val selectedSize = sizes[sizeSpinner.selectedItemPosition].replace("sp", "").toFloat()
                 
                 val editText = editorBinding.textArea
