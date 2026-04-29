@@ -2,6 +2,16 @@
 
 All notable changes to NbhEditor will be documented in this file.
 
+## [4.5.1] - 2026-04-29
+
+### Fixed
+- 🎤 **Voice Input**: Fixed voice-to-text not typing into editor
+  - Corrected position calculation for text insertion
+  - Added comprehensive logging for debugging
+  - Improved error handling and user feedback
+  - Enhanced focus management for EditText
+  - Voice input now properly inserts recognized speech at cursor position
+
 ## [4.5.0] - 2026-04-28
 
 ### Added

@@ -1,6 +1,6 @@
 <div align="center">
   <img src="assets/logo-beeta.png" alt="NbhEditor Logo" width="150"/>
-  <h1>NbhEditor v4.5.0</h1>
+  <h1>NbhEditor v4.5.1</h1>
   <p><b>A fast, modern, and AI-powered open-source text editor for Linux and Android.</b></p>
 </div>
 
@@ -8,7 +8,13 @@
 
 **NbhEditor** is built with performance, simplicity, and intelligent assistance in mind. Whether you are a casual user taking notes or a developer writing code, it combines a lightweight editing experience with powerful, opt-in AI tools to boost your productivity.
 
-## ✨ What's New in v4.5.0
+## ✨ What's New in v4.5.1
+
+* 🎤 **Voice Input Fix:** Voice-to-text now properly types recognized speech into the editor
+* 🐛 **Bug Fixes:** Improved position calculation and error handling for voice input
+* 📝 **Enhanced Logging:** Better debugging support for voice recognition
+
+## Previous Updates (v4.5.0)
 
 * 📝 **Rich Text Editor:** Full Markdown and HTML rendering support with live formatting
 * ✍️ **Smart Font Control:** Apply fonts and sizes to selected text or future typing

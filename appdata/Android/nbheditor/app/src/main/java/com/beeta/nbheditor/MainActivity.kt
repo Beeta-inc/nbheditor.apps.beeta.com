@@ -4331,7 +4331,7 @@ open class MainActivity : AppCompatActivity() {
     
     private fun showAboutDialog() {
         val message = """
-            📝 NBH Editor v4.5.0
+            📝 NBH Editor v4.5.1
             
             A blazing-fast, modern text editor with rich text support.
             
