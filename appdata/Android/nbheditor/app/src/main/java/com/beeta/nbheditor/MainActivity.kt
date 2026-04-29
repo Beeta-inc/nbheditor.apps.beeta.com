@@ -1484,6 +1484,8 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun startVoiceInput(target: EditText) {
+        Log.d("VoiceInput", "startVoiceInput called for ${if (target == editorBinding.textArea) "editor" else "chat"}")
+        
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
             != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), 101)
@@ -1518,6 +1520,8 @@ open class MainActivity : AppCompatActivity() {
             }
             
             speechTarget = target
+            Log.d("VoiceInput", "speechTarget set, text length: ${target.text?.length ?: 0}, isEnabled: ${target.isEnabled}, isFocusable: ${target.isFocusable}")
+            
             destroySpeechRecognizer()
             
             voiceHandler.postDelayed({
@@ -1595,41 +1599,83 @@ open class MainActivity : AppCompatActivity() {
 
     private fun buildRecognitionListener() = object : RecognitionListener {
         override fun onReadyForSpeech(params: android.os.Bundle?) {
-            runOnUiThread { isListening = true; setMicActive(true); updateVoiceButtonIcon(true); showVoiceStatusNoSpeech(); updateVoiceActivity() }
+            runOnUiThread { 
+                Log.d("VoiceInput", "onReadyForSpeech")
+                isListening = true
+                setMicActive(true)
+                updateVoiceButtonIcon(true)
+                showVoiceStatusNoSpeech()
+                updateVoiceActivity()
+            }
         }
-        override fun onBeginningOfSpeech() { runOnUiThread { showVoiceStatusSpeaking(); updateVoiceActivity() } }
+        override fun onBeginningOfSpeech() { 
+            runOnUiThread { 
+                Log.d("VoiceInput", "onBeginningOfSpeech")
+                showVoiceStatusSpeaking()
+                updateVoiceActivity()
+            } 
+        }
         override fun onRmsChanged(rmsdB: Float) {
             runOnUiThread {
                 if (!isListening) return@runOnUiThread
-                if (rmsdB > 3.0f) { showVoiceStatusSpeaking(); updateVoiceActivity() } else showVoiceStatusNoSpeech()
+                if (rmsdB > 3.0f) { 
+                    showVoiceStatusSpeaking()
+                    updateVoiceActivity()
+                } else showVoiceStatusNoSpeech()
             }
         }
         override fun onBufferReceived(buffer: ByteArray?) {}
-        override fun onEndOfSpeech() { runOnUiThread { if (isListening) showVoiceStatusNoSpeech() } }
+        override fun onEndOfSpeech() { 
+            runOnUiThread { 
+                Log.d("VoiceInput", "onEndOfSpeech")
+                if (isListening) showVoiceStatusNoSpeech()
+            } 
+        }
         override fun onResults(results: android.os.Bundle) {
             runOnUiThread {
                 val text = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)?.firstOrNull()?.trim()
                 if (!text.isNullOrBlank()) {
+                    Log.d("VoiceInput", "Recognized text: $text")
                     updateVoiceActivity()
                     val et = speechTarget
                     if (et != null) {
-                        // Ensure the target has focus so selectionStart is valid
-                        if (!et.hasFocus()) {
-                            et.requestFocus()
-                        }
-                        val pos = et.selectionStart.coerceAtLeast(et.text?.length ?: 0)
-                        val toInsert = if (pos > 0 && et.text?.getOrNull(pos - 1)?.isWhitespace() == false) " $text " else "$text "
                         try {
+                            // Ensure the target has focus and is editable
+                            if (!et.hasFocus()) {
+                                et.requestFocus()
+                            }
+                            
+                            // Get current position, default to end if invalid
+                            val currentPos = et.selectionStart
+                            val textLength = et.text?.length ?: 0
+                            val pos = if (currentPos >= 0) currentPos.coerceAtMost(textLength) else textLength
+                            
+                            Log.d("VoiceInput", "Inserting at position $pos (text length: $textLength)")
+                            
+                            // Add spacing if needed
+                            val toInsert = if (pos > 0 && et.text?.getOrNull(pos - 1)?.isWhitespace() == false) " $text " else "$text "
+                            
+                            // Insert text
                             et.text?.insert(pos, toInsert)
-                            et.setSelection((pos + toInsert.length).coerceAtMost(et.text?.length ?: 0))
+                            
+                            // Move cursor to end of inserted text
+                            val newPos = (pos + toInsert.length).coerceAtMost(et.text?.length ?: 0)
+                            et.setSelection(newPos)
+                            
+                            Log.d("VoiceInput", "Text inserted successfully, new position: $newPos")
+                            
+                            // Trigger auto-save for editor
                             if (et == editorBinding.textArea) {
                                 textChanged = true
                                 handler.removeCallbacks(typingDelayRunnable)
                                 handler.postDelayed(typingDelayRunnable, 2000)
                             }
                         } catch (e: Exception) {
-                            Log.e("VoiceInput", "Failed to insert text", e)
+                            Log.e("VoiceInput", "Failed to insert text: ${e.message}", e)
+                            Toast.makeText(this@MainActivity, "Failed to insert voice text", Toast.LENGTH_SHORT).show()
                         }
+                    } else {
+                        Log.e("VoiceInput", "speechTarget is null")
                     }
                     speechTarget?.hint = ""
                 }
