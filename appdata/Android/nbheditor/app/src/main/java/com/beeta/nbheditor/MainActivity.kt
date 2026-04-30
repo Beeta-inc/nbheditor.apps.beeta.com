@@ -1759,8 +1759,8 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun showTextTypeDialog() {
-        // Initialize font manager
-        FontManager.initialize()
+        // Initialize font manager with context
+        FontManager.initialize(this)
         val allFonts = FontManager.getAllFonts()
         val fontNames = allFonts.map { it.name }.toTypedArray()
         val sizes = arrayOf("10sp", "12sp", "14sp", "16sp", "18sp", "20sp", "22sp", "24sp", "28sp", "32sp", "36sp", "48sp")
