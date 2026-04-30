@@ -25,7 +25,7 @@ class TabUI(
         val tabs = TabManager.getAllTabs()
         val activeIndex = TabManager.getActiveTabIndex()
         
-        // Show/hide tab bar
+        // Show/hide tab bar based on number of tabs
         if (TabManager.hasMultipleTabs()) {
             tabsScrollView.visibility = View.VISIBLE
             tabsDivider.visibility = View.VISIBLE
@@ -74,12 +74,13 @@ class TabUI(
         if (TabManager.hasMultipleTabs()) {
             val closeButton = ImageButton(context).apply {
                 setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
-                background = ContextCompat.getDrawable(context, android.R.drawable.btn_default)
+                background = null
                 layoutParams = LinearLayout.LayoutParams(32, 32)
-                scaleType = ImageView.ScaleType.CENTER_INSIDE
-                setColorFilter(ContextCompat.getColor(context, R.color.editor_hint))
-                setOnClickListener { 
-                    it.stopPropagation()
+                scaleType = ImageView.ScaleType.FIT_CENTER
+                setColorFilter(ContextCompat.getColor(context, R.color.editor_text))
+                setPadding(2, 2, 2, 2)
+                setOnClickListener { event ->
+                    event.stopPropagation()
                     onTabClose(index) 
                 }
             }
