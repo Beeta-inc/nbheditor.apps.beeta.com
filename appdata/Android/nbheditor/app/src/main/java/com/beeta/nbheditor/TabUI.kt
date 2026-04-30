@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.HorizontalScrollView
 import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
@@ -75,7 +76,7 @@ class TabUI(
                 setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
                 background = ContextCompat.getDrawable(context, android.R.drawable.btn_default)
                 layoutParams = LinearLayout.LayoutParams(32, 32)
-                scaleType = ImageButton.ScaleType.CENTER_INSIDE
+                scaleType = ImageView.ScaleType.CENTER_INSIDE
                 setColorFilter(ContextCompat.getColor(context, R.color.editor_hint))
                 setOnClickListener { 
                     it.stopPropagation()
