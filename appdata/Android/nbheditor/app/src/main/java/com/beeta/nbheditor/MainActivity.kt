@@ -4370,23 +4370,14 @@ open class MainActivity : AppCompatActivity() {
             // Stop any existing player
             stopJoinSound()
             
-            // Get audio manager and check volume
+            // Get audio manager
             val audioManager = getSystemService(Context.AUDIO_SERVICE) as android.media.AudioManager
             val currentVolume = audioManager.getStreamVolume(android.media.AudioManager.STREAM_MUSIC)
             val maxVolume = audioManager.getStreamMaxVolume(android.media.AudioManager.STREAM_MUSIC)
             Log.d("JoinSound", "Current volume: $currentVolume/$maxVolume")
             
-            // If volume is too low, temporarily increase it
-            val originalVolume = currentVolume
-            if (currentVolume < maxVolume / 3) {
-                val targetVolume = (maxVolume * 0.5f).toInt()
-                audioManager.setStreamVolume(
-                    android.media.AudioManager.STREAM_MUSIC,
-                    targetVolume,
-                    0 // No UI flags
-                )
-                Log.d("JoinSound", "Temporarily increased volume to $targetVolume")
-            }
+            // DO NOT adjust user's volume - respect user's volume settings
+            // User has full control over their device volume
             
             // Request audio focus
             val focusResult = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -4418,7 +4409,7 @@ open class MainActivity : AppCompatActivity() {
                 afd.close()
                 prepare()
                 isLooping = false
-                setVolume(1.0f, 1.0f) // Max volume
+                setVolume(1.0f, 1.0f) // Max volume for MediaPlayer (not system volume)
                 setOnCompletionListener {
                     Log.d("JoinSound", "Playback completed")
                     stopJoinSound()
@@ -5195,8 +5186,14 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
     private fun checkIfUserInSession(sessionId: String, userId: String) {
         lifecycleScope.launch {
             try {
+                val sanitizedUserId = userId.replace(".", "_")
+                    .replace("#", "_")
+                    .replace("$", "_")
+                    .replace("[", "_")
+                    .replace("]", "_")
+                    .replace("/", "_")
                 val database = com.google.firebase.database.FirebaseDatabase.getInstance().reference
-                val snapshot = database.child("collaborative_sessions/$sessionId/users/$userId").get().await()
+                val snapshot = database.child("collaborative_sessions/$sessionId/users/$sanitizedUserId").get().await()
                 if (snapshot.exists()) {
                     // User was approved and added to session
                     waitingRoomDialog?.dismiss()

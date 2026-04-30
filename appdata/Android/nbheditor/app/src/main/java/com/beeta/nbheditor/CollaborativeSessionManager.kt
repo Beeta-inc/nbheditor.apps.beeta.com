@@ -304,8 +304,9 @@ object CollaborativeSessionManager {
     // Approve join request (host only)
     suspend fun approveJoinRequest(sessionId: String, userId: String): Result<Unit> {
         return try {
+            val sanitizedUserId = sanitizeUserId(userId)
             val sessionRef = database.child(SESSIONS_PATH).child(sessionId)
-            val requestRef = sessionRef.child("joinRequests").child(userId)
+            val requestRef = sessionRef.child("joinRequests").child(sanitizedUserId)
             
             val requestSnapshot = requestRef.get().await()
             if (!requestSnapshot.exists()) {
@@ -326,7 +327,7 @@ object CollaborativeSessionManager {
                 status = "active"
             )
             
-            sessionRef.child("users").child(userId).setValue(newUser).await()
+            sessionRef.child("users").child(sanitizedUserId).setValue(newUser).await()
             
             // Update request status
             requestRef.child("status").setValue("approved").await()
@@ -336,7 +337,7 @@ object CollaborativeSessionManager {
                 requestRef.removeValue()
             }, 5000)
             
-            Log.d(TAG, "Approved join request for user: $userId")
+            Log.d(TAG, "Approved join request for user: $sanitizedUserId")
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to approve join request", e)
@@ -347,8 +348,9 @@ object CollaborativeSessionManager {
     // Reject join request (host only)
     suspend fun rejectJoinRequest(sessionId: String, userId: String): Result<Unit> {
         return try {
+            val sanitizedUserId = sanitizeUserId(userId)
             val sessionRef = database.child(SESSIONS_PATH).child(sessionId)
-            val requestRef = sessionRef.child("joinRequests").child(userId)
+            val requestRef = sessionRef.child("joinRequests").child(sanitizedUserId)
             
             requestRef.child("status").setValue("rejected").await()
             
@@ -357,7 +359,7 @@ object CollaborativeSessionManager {
                 requestRef.removeValue()
             }, 2000)
             
-            Log.d(TAG, "Rejected join request for user: $userId")
+            Log.d(TAG, "Rejected join request for user: $sanitizedUserId")
             Result.success(Unit)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to reject join request", e)
@@ -389,7 +391,8 @@ object CollaborativeSessionManager {
     
     // Check join request status (for requester)
     fun observeJoinRequestStatus(sessionId: String, userId: String): kotlinx.coroutines.flow.Flow<String> = kotlinx.coroutines.flow.callbackFlow {
-        val requestRef = database.child(SESSIONS_PATH).child(sessionId).child("joinRequests").child(userId)
+        val sanitizedUserId = sanitizeUserId(userId)
+        val requestRef = database.child(SESSIONS_PATH).child(sessionId).child("joinRequests").child(sanitizedUserId)
         
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
@@ -442,10 +445,11 @@ object CollaborativeSessionManager {
             val sessionId = currentSessionId ?: return
             val userId = currentUserId ?: return
             
+            val sanitizedUserId = sanitizeUserId(userId)
             val sessionRef = database.child(SESSIONS_PATH).child(sessionId)
             
             // Remove user from session
-            sessionRef.child("users").child(userId).removeValue().await()
+            sessionRef.child("users").child(sanitizedUserId).removeValue().await()
             
             // Check if session is empty and delete if so
             val snapshot = sessionRef.child("users").get().await()
@@ -484,13 +488,14 @@ object CollaborativeSessionManager {
         try {
             val sessionId = currentSessionId ?: return
             val userId = currentUserId ?: return
+            val sanitizedUserId = sanitizeUserId(userId)
             val updates = mapOf(
                 "cursorPosition" to position,
                 "typing" to isTyping,
                 "lastActive" to ServerValue.TIMESTAMP
             )
             database.child(SESSIONS_PATH).child(sessionId)
-                .child("users").child(userId).updateChildren(updates).await()
+                .child("users").child(sanitizedUserId).updateChildren(updates).await()
         } catch (e: Exception) {
             if (e is kotlinx.coroutines.CancellationException) return  // debounce cancel — ignore
             Log.e(TAG, "Failed to update cursor", e)
@@ -652,7 +657,8 @@ object CollaborativeSessionManager {
     
     // Start presence tracking
     private fun startPresenceTracking(sessionId: String, userId: String) {
-        val userRef = database.child(SESSIONS_PATH).child(sessionId).child("users").child(userId)
+        val sanitizedUserId = sanitizeUserId(userId)
+        val userRef = database.child(SESSIONS_PATH).child(sessionId).child("users").child(sanitizedUserId)
         
         // Update last active timestamp every 10 seconds
         val presenceRef = database.child(".info/connected")
