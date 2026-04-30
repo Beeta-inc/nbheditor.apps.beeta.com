@@ -5142,6 +5142,12 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
         val userName = GoogleSignInHelper.getUserName(this) ?: "Unknown"
         val email = GoogleSignInHelper.getUserEmail(this) ?: ""
         val userId = email
+        val sanitizedUserId = userId.replace(".", "_")
+            .replace("#", "_")
+            .replace("$", "_")
+            .replace("[", "_")
+            .replace("]", "_")
+            .replace("/", "_")
         
         // Show loading dialog
         val loadingDialog = createLoadingDialog(
@@ -5170,7 +5176,7 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
                     showSuccessToast("✓ Joined session: $sessionId")
                     editorBinding.textArea.setText(session.content)
                     CollaborativeSessionManager.currentSessionId = sessionId
-                    CollaborativeSessionManager.currentUserId = userId
+                    CollaborativeSessionManager.currentUserId = sanitizedUserId
                     showActiveSessionUI(sessionId, isCreator = false)
                 } else {
                     showErrorDialog("Failed to join session", "Session not found")

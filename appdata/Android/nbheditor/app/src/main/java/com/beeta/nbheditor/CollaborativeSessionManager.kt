@@ -316,6 +316,9 @@ object CollaborativeSessionManager {
             val request = requestSnapshot.getValue(JoinRequest::class.java)
                 ?: return Result.failure(Exception("Invalid request data"))
             
+            // Clear any existing kicked flag first
+            sessionRef.child("kicked").child(sanitizedUserId).removeValue().await()
+            
             // Add user to session
             val newUser = SessionUser(
                 userId = request.userId,
