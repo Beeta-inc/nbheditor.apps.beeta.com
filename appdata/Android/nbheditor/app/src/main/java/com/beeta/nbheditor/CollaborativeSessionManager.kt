@@ -425,8 +425,10 @@ object CollaborativeSessionManager {
                 val session = snapshot.getValue(CollaborativeSession::class.java)
                 if (session != null) {
                     val hostUser = session.users[session.creatorId]
+                    // Consider host online if they were active in the last 10 seconds (more responsive)
                     val isOnline = hostUser != null && 
-                        (System.currentTimeMillis() - hostUser.lastActive) < 30000 // 30 seconds
+                        (System.currentTimeMillis() - hostUser.lastActive) < 10000 // 10 seconds
+                    Log.d(TAG, "Host online status: $isOnline (lastActive: ${if (hostUser != null) System.currentTimeMillis() - hostUser.lastActive else "N/A"}ms ago)")
                     trySend(isOnline)
                 } else {
                     trySend(false)

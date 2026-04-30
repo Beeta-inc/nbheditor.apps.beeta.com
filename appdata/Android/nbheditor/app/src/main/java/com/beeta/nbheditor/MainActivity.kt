@@ -5215,10 +5215,14 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
     private fun checkHostStatus(sessionId: String) {
         lifecycleScope.launch {
             CollaborativeSessionManager.isHostOnline(sessionId).collect { isOnline ->
-                if (!isOnline && waitingRoomDialog != null) {
+                if (waitingRoomDialog != null) {
                     val dialogView = waitingRoomDialog?.window?.decorView
                     val message = dialogView?.findViewById<TextView>(R.id.waitingMessage)
-                    message?.text = "⚠️ Host is offline. Your request will be processed when they return."
+                    if (isOnline) {
+                        message?.text = "Waiting for host to approve your request..."
+                    } else {
+                        message?.text = "⚠️ Host is offline. Your request will be processed when they return."
+                    }
                 }
             }
         }
