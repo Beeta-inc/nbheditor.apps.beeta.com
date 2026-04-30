@@ -1,0 +1,130 @@
+
+> Configure project :app
+WARNING: The option setting 'android.enableJetifier=true' is deprecated.
+The current default is 'false'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preReleaseBuild UP-TO-DATE
+> Task :app:mergeReleaseJniLibFolders
+> Task :app:mergeReleaseNativeLibs
+> Task :app:dataBindingMergeDependencyArtifactsRelease
+> Task :app:generateReleaseResources
+> Task :app:processReleaseGoogleServices
+> Task :app:checkReleaseDuplicateClasses
+> Task :app:stripReleaseDebugSymbols
+> Task :app:extractReleaseNativeSymbolTables
+> Task :app:packageReleaseResources
+> Task :app:mergeReleaseNativeDebugMetadata NO-SOURCE
+> Task :app:processReleaseNavigationResources
+> Task :app:javaPreCompileRelease
+> Task :app:mapReleaseSourceSetPaths
+> Task :app:parseReleaseLocalResources
+> Task :app:compileReleaseNavigationResources
+> Task :app:createReleaseCompatibleScreenManifests
+> Task :app:extractDeepLinksRelease
+> Task :app:generateReleaseRFile
+> Task :app:checkReleaseAarMetadata
+> Task :app:processReleaseMainManifest
+> Task :app:processReleaseManifest
+> Task :app:desugarReleaseFileDependencies
+> Task :app:mergeReleaseStartupProfile UP-TO-DATE
+> Task :app:generateReleaseAssets UP-TO-DATE
+> Task :app:mergeReleaseAssets
+> Task :app:processReleaseManifestForPackage
+> Task :app:compressReleaseAssets
+> Task :app:mergeReleaseArtProfile
+> Task :app:extractReleaseVersionControlInfo
+> Task :app:extractProguardFiles
+> Task :app:collectReleaseDependencies
+> Task :app:sdkReleaseDependencyData
+> Task :app:validateSigningRelease
+> Task :app:writeReleaseAppMetadata
+> Task :app:writeReleaseSigningConfigVersions
+> Task :app:mergeReleaseResources
+> Task :app:dataBindingGenBaseClassesRelease
+> Task :app:mergeExtDexRelease
+> Task :app:processReleaseResources
+> Task :app:optimizeReleaseResources
+
+> Task :app:compileReleaseKotlin
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:169:77 'static field VIBRATOR_SERVICE: String' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:248:77 'static field VIBRATOR_SERVICE: String' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:407:46 'constructor(p0: Context!): ProgressDialog' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:408:17 'fun setMessage(p0: CharSequence!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:409:17 'fun setProgressStyle(p0: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:409:46 'class ProgressDialog : AlertDialog' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:409:61 'static field STYLE_HORIZONTAL: Int' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:410:17 'var max: Int' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:411:17 'var progress: Int' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:425:68 'var progress: Int' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:435:68 'var progress: Int' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:453:76 'var progress: Int' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:462:68 'var progress: Int' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:470:68 'var progress: Int' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:475:68 'var progress: Int' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:485:40 'var progress: Int' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:537:46 'constructor(p0: Context!): ProgressDialog' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:538:17 'fun setMessage(p0: CharSequence!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:539:17 'fun setProgressStyle(p0: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:539:46 'class ProgressDialog : AlertDialog' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:539:61 'static field STYLE_HORIZONTAL: Int' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:540:17 'var max: Int' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:541:17 'var progress: Int' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:554:68 'var progress: Int' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:564:68 'var progress: Int' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatAdapter.kt:580:76 'var progress: Int' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatFragment.kt:188:43 'val adapterPosition: Int' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatFragment.kt:407:13 'fun requestPermissions(p0: Array<(out) String!>, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/GlassBlurHelper.kt:9:8 'class Allocation : BaseObj' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/GlassBlurHelper.kt:10:8 'class Element : BaseObj' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/GlassBlurHelper.kt:11:8 'class RenderScript : Any' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/GlassBlurHelper.kt:12:8 'class ScriptIntrinsicBlur : ScriptIntrinsic' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/GlassBlurHelper.kt:83:18 'class RenderScript : Any' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/GlassBlurHelper.kt:83:31 'static fun create(p0: Context!): RenderScript!' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/GlassBlurHelper.kt:84:21 'class Allocation : BaseObj' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/GlassBlurHelper.kt:84:32 'static fun createFromBitmap(p0: RenderScript!, p1: Bitmap!): Allocation!' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/GlassBlurHelper.kt:85:19 'class Allocation : BaseObj' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/GlassBlurHelper.kt:85:30 'static fun createFromBitmap(p0: RenderScript!, p1: Bitmap!): Allocation!' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/GlassBlurHelper.kt:86:22 'class ScriptIntrinsicBlur : ScriptIntrinsic' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/GlassBlurHelper.kt:86:42 'static fun create(p0: RenderScript!, p1: Element!): ScriptIntrinsicBlur!' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/GlassBlurHelper.kt:86:53 'class Element : BaseObj' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/GlassBlurHelper.kt:86:61 'static fun U8_4(p0: RenderScript!): Element!' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/GlassBlurHelper.kt:87:16 'fun setRadius(p0: Float): Unit' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/GlassBlurHelper.kt:88:16 'fun setInput(p0: Allocation!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/GlassBlurHelper.kt:89:16 'fun forEach(p0: Allocation!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/GlassBlurHelper.kt:90:13 'fun copyTo(p0: Bitmap!): Unit' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/GlassBlurHelper.kt:91:12 'fun destroy(): Unit' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt:246:20 'var statusBarColor: Int' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt:247:20 'var navigationBarColor: Int' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt:1858:74 'field scaledDensity: Float' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt:2128:81 'field scaledDensity: Float' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt:2642:37 'fun startActivityForResult(p0: Intent, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt:2869:30 'fun resume(value: Boolean, onCancellation: ((@ParameterName(...) Throwable) -> Unit)?): Unit' is deprecated. Use the overload that also accepts the `value` and the coroutine context in lambda.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt:2872:30 'fun resume(value: Boolean, onCancellation: ((@ParameterName(...) Throwable) -> Unit)?): Unit' is deprecated. Use the overload that also accepts the `value` and the coroutine context in lambda.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt:2884:30 'fun resume(value: Boolean, onCancellation: ((@ParameterName(...) Throwable) -> Unit)?): Unit' is deprecated. Use the overload that also accepts the `value` and the coroutine context in lambda.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt:2887:30 'fun resume(value: Boolean, onCancellation: ((@ParameterName(...) Throwable) -> Unit)?): Unit' is deprecated. Use the overload that also accepts the `value` and the coroutine context in lambda.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt:3249:37 'fun startActivityForResult(p0: Intent, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt:4150:9 'fun startActivityForResult(p0: Intent, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt:4178:29 'fun startActivityForResult(p0: Intent, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt:4415:17 'fun setAudioStreamType(p0: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt:4620:69 'static field VIBRATOR_SERVICE: String' is deprecated. Deprecated in Java.
+
+> Task :app:compileReleaseJavaWithJavac
+> Task :app:dexBuilderRelease
+> Task :app:mergeReleaseGlobalSynthetics
+> Task :app:generateReleaseLintVitalReportModel
+> Task :app:processReleaseJavaRes
+> Task :app:mergeReleaseJavaResource
+> Task :app:mergeDexRelease
+> Task :app:compileReleaseArtProfile
+> Task :app:lintVitalAnalyzeRelease
+> Task :app:lintVitalReportRelease
+> Task :app:lintVitalRelease
+> Task :app:packageRelease
+> Task :app:createReleaseApkListingFileRedirect
+> Task :app:assembleRelease
+
+BUILD SUCCESSFUL in 1m 58s
+52 actionable tasks: 51 executed, 1 up-to-date
+Consider enabling configuration cache to speed up this build: https://docs.gradle.org/9.4.1/userguide/configuration_cache_enabling.html
