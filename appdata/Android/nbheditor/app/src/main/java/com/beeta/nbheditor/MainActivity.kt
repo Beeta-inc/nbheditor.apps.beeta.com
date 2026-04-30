@@ -67,6 +67,7 @@ open class MainActivity : AppCompatActivity() {
     private lateinit var editorBinding: FragmentEditorBinding
     private lateinit var aiChatBinding: FragmentAiChatBinding
     private lateinit var prefs: SharedPreferences
+    private lateinit var tabUI: TabUI
 
     private var currentFileUri: Uri? = null
     private var textChanged = false
@@ -279,6 +280,7 @@ open class MainActivity : AppCompatActivity() {
         aiChatBinding.root.visibility = View.GONE
 
         setupEditor()
+        setupTabs()
         setupAiChat()
         setupBottomNav()
         checkForRecovery()
@@ -2107,6 +2109,8 @@ open class MainActivity : AppCompatActivity() {
             }
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 textChanged = true
+                TabManager.getActiveTab().isModified = true
+                tabUI.updateTabs()
                 isTyping = true
                 updateLineNumbers()
                 updateToolbarTitle()
@@ -2214,6 +2218,51 @@ open class MainActivity : AppCompatActivity() {
     private var lastTapTime = 0L
     private var lastTapX = 0f
     private var lastTapY = 0f
+
+    private fun setupTabs() {
+        tabUI = TabUI(
+            context = this,
+            tabsScrollView = editorBinding.tabsScrollView,
+            tabsContainer = editorBinding.tabsContainer,
+            tabsDivider = editorBinding.tabsDivider,
+            onTabClick = { index -> switchToTab(index) },
+            onTabClose = { index -> closeTab(index) }
+        )
+        loadActiveTab()
+        tabUI.updateTabs()
+    }
+
+    private fun switchToTab(index: Int) {
+        saveCurrentTabState()
+        TabManager.setActiveTab(index)
+        loadActiveTab()
+        tabUI.updateTabs()
+    }
+
+    private fun closeTab(index: Int) {
+        if (TabManager.closeTab(index)) {
+            loadActiveTab()
+            tabUI.updateTabs()
+        } else {
+            Toast.makeText(this, "Cannot close the last tab", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun saveCurrentTabState() {
+        val content = editorBinding.textArea.text.toString()
+        val cursor = editorBinding.textArea.selectionStart
+        TabManager.updateActiveTab(content, cursor)
+    }
+
+    private fun loadActiveTab() {
+        val tab = TabManager.getActiveTab()
+        editorBinding.textArea.setText(tab.content)
+        editorBinding.textArea.setSelection(tab.cursorPosition.coerceIn(0, tab.content.length))
+        currentFileUri = tab.uri
+        textChanged = tab.isModified
+        updateLineNumbers()
+        updateToolbarTitle()
+    }
 
     private fun startImageDrag(et: android.widget.EditText, span: android.text.style.ImageSpan) {
         val drawable = span.drawable as? android.graphics.drawable.BitmapDrawable ?: return
@@ -2818,8 +2867,12 @@ open class MainActivity : AppCompatActivity() {
                     return@launch
                 }
                 
-                editorBinding.textArea.setText(content)
-                currentFileUri = if (isCloudUri) null else uri
+                // Create new tab for the opened file
+                saveCurrentTabState()
+                TabManager.addNewTab(title = fileName, content = content, uri = if (isCloudUri) null else uri)
+                loadActiveTab()
+                tabUI.updateTabs()
+                
                 textChanged = false
                 prefs.edit()
                     .remove("recovery_text")
@@ -3232,6 +3285,11 @@ open class MainActivity : AppCompatActivity() {
             contentResolver.openOutputStream(uri, "wt")?.use {
                 OutputStreamWriter(it).use { w -> w.write(text) }
                 textChanged = false
+                currentFileUri = uri
+                TabManager.markActiveTabSaved(uri)
+                val fileName = getFileName(uri)
+                TabManager.getActiveTab().title = fileName
+                tabUI.updateTabs()
                 updateToolbarTitle()
             }
             addToRecents(uri)
@@ -3328,16 +3386,15 @@ open class MainActivity : AppCompatActivity() {
                 binding.appBarMain.toolbarTitle?.text = "Settings"
             }
             R.id.nav_new_file -> {
-                editorBinding.textArea.setText("")
-                currentFileUri = null
-                textChanged = false
-                // Clear recovery and last file URI so new file doesn't restore old content
+                saveCurrentTabState()
+                TabManager.addNewTab()
+                loadActiveTab()
+                tabUI.updateTabs()
+                // Clear recovery for new tab
                 prefs.edit()
                     .remove("recovery_text")
                     .remove("last_file_uri")
                     .apply()
-                updateLineNumbers()
-                updateToolbarTitle()
             }
             R.id.nav_open_file -> {
                 val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
