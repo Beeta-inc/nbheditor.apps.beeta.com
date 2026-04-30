@@ -66,21 +66,16 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0de2c8aa-c6b7-419c-b7cd-e9cbf2927e27" name="Changes" comment="version update">
-      <change beforePath="$PROJECT_DIR$/.gradle/9.4.1/checksums/checksums.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.4.1/checksums/checksums.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/9.4.1/checksums/md5-checksums.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.4.1/checksums/md5-checksums.bin" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/9.4.1/checksums/sha1-checksums.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.4.1/checksums/sha1-checksums.bin" afterDir="false" />
+    <list default="true" id="0de2c8aa-c6b7-419c-b7cd-e9cbf2927e27" name="Changes" comment="adding more fonts">
       <change beforePath="$PROJECT_DIR$/.gradle/9.4.1/executionHistory/executionHistory.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.4.1/executionHistory/executionHistory.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/9.4.1/executionHistory/executionHistory.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.4.1/executionHistory/executionHistory.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/9.4.1/fileHashes/fileHashes.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.4.1/fileHashes/fileHashes.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/9.4.1/fileHashes/fileHashes.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.4.1/fileHashes/fileHashes.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/9.4.1/fileHashes/resourceHashesCache.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.4.1/fileHashes/resourceHashesCache.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/outputFiles.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/outputFiles.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/file-system.probe" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/file-system.probe" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/layout/nav_header_main.xml" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/layout/nav_header_main.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/FontManager.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/FontManager.kt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -380,190 +375,6 @@
       <option name="presentableId" value="Default" />
       <updated>1774176942839</updated>
     </task>
-    <task id="LOCAL-00094" summary=" collaborative session id not creating fixed">
-      <option name="closed" value="true" />
-      <created>1775555129505</created>
-      <option name="number" value="00094" />
-      <option name="presentableId" value="LOCAL-00094" />
-      <option name="project" value="LOCAL" />
-      <updated>1775555129505</updated>
-    </task>
-    <task id="LOCAL-00095" summary=" collaborative session not joining fixed and improved ui">
-      <option name="closed" value="true" />
-      <created>1775555993761</created>
-      <option name="number" value="00095" />
-      <option name="presentableId" value="LOCAL-00095" />
-      <option name="project" value="LOCAL" />
-      <updated>1775555993761</updated>
-    </task>
-    <task id="LOCAL-00096" summary=" collaborative session user filed not working fixed">
-      <option name="closed" value="true" />
-      <created>1775636006744</created>
-      <option name="number" value="00096" />
-      <option name="presentableId" value="LOCAL-00096" />
-      <option name="project" value="LOCAL" />
-      <updated>1775636006744</updated>
-    </task>
-    <task id="LOCAL-00097" summary=" collaborative session ui fixed">
-      <option name="closed" value="true" />
-      <created>1775637105574</created>
-      <option name="number" value="00097" />
-      <option name="presentableId" value="LOCAL-00097" />
-      <option name="project" value="LOCAL" />
-      <updated>1775637105574</updated>
-    </task>
-    <task id="LOCAL-00098" summary=" collaborative session ui fixed and new features added">
-      <option name="closed" value="true" />
-      <created>1775638122310</created>
-      <option name="number" value="00098" />
-      <option name="presentableId" value="LOCAL-00098" />
-      <option name="project" value="LOCAL" />
-      <updated>1775638122310</updated>
-    </task>
-    <task id="LOCAL-00099" summary=" collaborative session ui fixed and new features added">
-      <option name="closed" value="true" />
-      <created>1775638746274</created>
-      <option name="number" value="00099" />
-      <option name="presentableId" value="LOCAL-00099" />
-      <option name="project" value="LOCAL" />
-      <updated>1775638746274</updated>
-    </task>
-    <task id="LOCAL-00100" summary=" collaborative session ui fixed and new features added">
-      <option name="closed" value="true" />
-      <created>1775640821466</created>
-      <option name="number" value="00100" />
-      <option name="presentableId" value="LOCAL-00100" />
-      <option name="project" value="LOCAL" />
-      <updated>1775640821466</updated>
-    </task>
-    <task id="LOCAL-00101" summary=" collaborative session ui fixes">
-      <option name="closed" value="true" />
-      <created>1775642233727</created>
-      <option name="number" value="00101" />
-      <option name="presentableId" value="LOCAL-00101" />
-      <option name="project" value="LOCAL" />
-      <updated>1775642233727</updated>
-    </task>
-    <task id="LOCAL-00102" summary=" collaborative session ui improvement">
-      <option name="closed" value="true" />
-      <created>1775726226523</created>
-      <option name="number" value="00102" />
-      <option name="presentableId" value="LOCAL-00102" />
-      <option name="project" value="LOCAL" />
-      <updated>1775726226524</updated>
-    </task>
-    <task id="LOCAL-00103" summary=" collaborative session ui improvement and added features">
-      <option name="closed" value="true" />
-      <created>1775726806766</created>
-      <option name="number" value="00103" />
-      <option name="presentableId" value="LOCAL-00103" />
-      <option name="project" value="LOCAL" />
-      <updated>1775726806766</updated>
-    </task>
-    <task id="LOCAL-00104" summary=" collaborative session ui bug fix">
-      <option name="closed" value="true" />
-      <created>1775727212849</created>
-      <option name="number" value="00104" />
-      <option name="presentableId" value="LOCAL-00104" />
-      <option name="project" value="LOCAL" />
-      <updated>1775727212849</updated>
-    </task>
-    <task id="LOCAL-00105" summary="versioning update">
-      <option name="closed" value="true" />
-      <created>1775727491059</created>
-      <option name="number" value="00105" />
-      <option name="presentableId" value="LOCAL-00105" />
-      <option name="project" value="LOCAL" />
-      <updated>1775727491059</updated>
-    </task>
-    <task id="LOCAL-00106" summary="versioning update">
-      <option name="closed" value="true" />
-      <created>1775727587809</created>
-      <option name="number" value="00106" />
-      <option name="presentableId" value="LOCAL-00106" />
-      <option name="project" value="LOCAL" />
-      <updated>1775727587809</updated>
-    </task>
-    <task id="LOCAL-00107" summary="bug fixes">
-      <option name="closed" value="true" />
-      <created>1775811115657</created>
-      <option name="number" value="00107" />
-      <option name="presentableId" value="LOCAL-00107" />
-      <option name="project" value="LOCAL" />
-      <updated>1775811115661</updated>
-    </task>
-    <task id="LOCAL-00108" summary="bug fixes ui update">
-      <option name="closed" value="true" />
-      <created>1775812930310</created>
-      <option name="number" value="00108" />
-      <option name="presentableId" value="LOCAL-00108" />
-      <option name="project" value="LOCAL" />
-      <updated>1775812930310</updated>
-    </task>
-    <task id="LOCAL-00109" summary="bug fixes ui update">
-      <option name="closed" value="true" />
-      <created>1775814159296</created>
-      <option name="number" value="00109" />
-      <option name="presentableId" value="LOCAL-00109" />
-      <option name="project" value="LOCAL" />
-      <updated>1775814159296</updated>
-    </task>
-    <task id="LOCAL-00110" summary="bug fixes ui update">
-      <option name="closed" value="true" />
-      <created>1775814789952</created>
-      <option name="number" value="00110" />
-      <option name="presentableId" value="LOCAL-00110" />
-      <option name="project" value="LOCAL" />
-      <updated>1775814789952</updated>
-    </task>
-    <task id="LOCAL-00111" summary="bug fixes ui update">
-      <option name="closed" value="true" />
-      <created>1775815201452</created>
-      <option name="number" value="00111" />
-      <option name="presentableId" value="LOCAL-00111" />
-      <option name="project" value="LOCAL" />
-      <updated>1775815201452</updated>
-    </task>
-    <task id="LOCAL-00112" summary="bug fixes ui update">
-      <option name="closed" value="true" />
-      <created>1775896328217</created>
-      <option name="number" value="00112" />
-      <option name="presentableId" value="LOCAL-00112" />
-      <option name="project" value="LOCAL" />
-      <updated>1775896328217</updated>
-    </task>
-    <task id="LOCAL-00113" summary="bug fixes ui update">
-      <option name="closed" value="true" />
-      <created>1775896369723</created>
-      <option name="number" value="00113" />
-      <option name="presentableId" value="LOCAL-00113" />
-      <option name="project" value="LOCAL" />
-      <updated>1775896369723</updated>
-    </task>
-    <task id="LOCAL-00114" summary="bug fixes and media playwer fixes">
-      <option name="closed" value="true" />
-      <created>1775900216802</created>
-      <option name="number" value="00114" />
-      <option name="presentableId" value="LOCAL-00114" />
-      <option name="project" value="LOCAL" />
-      <updated>1775900216803</updated>
-    </task>
-    <task id="LOCAL-00115" summary="bug fixes and auto gdrive sync">
-      <option name="closed" value="true" />
-      <created>1776070893303</created>
-      <option name="number" value="00115" />
-      <option name="presentableId" value="LOCAL-00115" />
-      <option name="project" value="LOCAL" />
-      <updated>1776070893304</updated>
-    </task>
-    <task id="LOCAL-00116" summary="bug fixes and auto gdrive sync">
-      <option name="closed" value="true" />
-      <created>1776071428594</created>
-      <option name="number" value="00116" />
-      <option name="presentableId" value="LOCAL-00116" />
-      <option name="project" value="LOCAL" />
-      <updated>1776071428594</updated>
-    </task>
     <task id="LOCAL-00117" summary="bug fixes">
       <option name="closed" value="true" />
       <created>1776071626820</created>
@@ -772,7 +583,191 @@
       <option name="project" value="LOCAL" />
       <updated>1777455092543</updated>
     </task>
-    <option name="localTasksCounter" value="143" />
+    <task id="LOCAL-00143" summary="version update">
+      <option name="closed" value="true" />
+      <created>1777536020758</created>
+      <option name="number" value="00143" />
+      <option name="presentableId" value="LOCAL-00143" />
+      <option name="project" value="LOCAL" />
+      <updated>1777536020758</updated>
+    </task>
+    <task id="LOCAL-00144" summary="bug fixes">
+      <option name="closed" value="true" />
+      <created>1777537544268</created>
+      <option name="number" value="00144" />
+      <option name="presentableId" value="LOCAL-00144" />
+      <option name="project" value="LOCAL" />
+      <updated>1777537544269</updated>
+    </task>
+    <task id="LOCAL-00145" summary="bug fixes">
+      <option name="closed" value="true" />
+      <created>1777537907510</created>
+      <option name="number" value="00145" />
+      <option name="presentableId" value="LOCAL-00145" />
+      <option name="project" value="LOCAL" />
+      <updated>1777537907510</updated>
+    </task>
+    <task id="LOCAL-00146" summary="bug fixes">
+      <option name="closed" value="true" />
+      <created>1777538698301</created>
+      <option name="number" value="00146" />
+      <option name="presentableId" value="LOCAL-00146" />
+      <option name="project" value="LOCAL" />
+      <updated>1777538698301</updated>
+    </task>
+    <task id="LOCAL-00147" summary="bug fixes">
+      <option name="closed" value="true" />
+      <created>1777538911090</created>
+      <option name="number" value="00147" />
+      <option name="presentableId" value="LOCAL-00147" />
+      <option name="project" value="LOCAL" />
+      <updated>1777538911090</updated>
+    </task>
+    <task id="LOCAL-00148" summary="add fonts">
+      <option name="closed" value="true" />
+      <created>1777539116584</created>
+      <option name="number" value="00148" />
+      <option name="presentableId" value="LOCAL-00148" />
+      <option name="project" value="LOCAL" />
+      <updated>1777539116584</updated>
+    </task>
+    <task id="LOCAL-00149" summary="linking the fonts">
+      <option name="closed" value="true" />
+      <created>1777539172728</created>
+      <option name="number" value="00149" />
+      <option name="presentableId" value="LOCAL-00149" />
+      <option name="project" value="LOCAL" />
+      <updated>1777539172728</updated>
+    </task>
+    <task id="LOCAL-00150" summary="adding multiple tab support for editor part">
+      <option name="closed" value="true" />
+      <created>1777539520040</created>
+      <option name="number" value="00150" />
+      <option name="presentableId" value="LOCAL-00150" />
+      <option name="project" value="LOCAL" />
+      <updated>1777539520040</updated>
+    </task>
+    <task id="LOCAL-00151" summary="adding more fonts">
+      <option name="closed" value="true" />
+      <created>1777539685394</created>
+      <option name="number" value="00151" />
+      <option name="presentableId" value="LOCAL-00151" />
+      <option name="project" value="LOCAL" />
+      <updated>1777539685394</updated>
+    </task>
+    <task id="LOCAL-00152" summary="adding more fonts">
+      <option name="closed" value="true" />
+      <created>1777539687136</created>
+      <option name="number" value="00152" />
+      <option name="presentableId" value="LOCAL-00152" />
+      <option name="project" value="LOCAL" />
+      <updated>1777539687136</updated>
+    </task>
+    <task id="LOCAL-00153" summary="adding more fonts">
+      <option name="closed" value="true" />
+      <created>1777539696689</created>
+      <option name="number" value="00153" />
+      <option name="presentableId" value="LOCAL-00153" />
+      <option name="project" value="LOCAL" />
+      <updated>1777539696689</updated>
+    </task>
+    <task id="LOCAL-00154" summary="adding more fonts">
+      <option name="closed" value="true" />
+      <created>1777539698077</created>
+      <option name="number" value="00154" />
+      <option name="presentableId" value="LOCAL-00154" />
+      <option name="project" value="LOCAL" />
+      <updated>1777539698077</updated>
+    </task>
+    <task id="LOCAL-00155" summary="adding more fonts">
+      <option name="closed" value="true" />
+      <created>1777539698893</created>
+      <option name="number" value="00155" />
+      <option name="presentableId" value="LOCAL-00155" />
+      <option name="project" value="LOCAL" />
+      <updated>1777539698893</updated>
+    </task>
+    <task id="LOCAL-00156" summary="adding more fonts">
+      <option name="closed" value="true" />
+      <created>1777539699245</created>
+      <option name="number" value="00156" />
+      <option name="presentableId" value="LOCAL-00156" />
+      <option name="project" value="LOCAL" />
+      <updated>1777539699245</updated>
+    </task>
+    <task id="LOCAL-00157" summary="adding more fonts">
+      <option name="closed" value="true" />
+      <created>1777539699402</created>
+      <option name="number" value="00157" />
+      <option name="presentableId" value="LOCAL-00157" />
+      <option name="project" value="LOCAL" />
+      <updated>1777539699402</updated>
+    </task>
+    <task id="LOCAL-00158" summary="adding more fonts">
+      <option name="closed" value="true" />
+      <created>1777539699567</created>
+      <option name="number" value="00158" />
+      <option name="presentableId" value="LOCAL-00158" />
+      <option name="project" value="LOCAL" />
+      <updated>1777539699567</updated>
+    </task>
+    <task id="LOCAL-00159" summary="adding more fonts">
+      <option name="closed" value="true" />
+      <created>1777539712643</created>
+      <option name="number" value="00159" />
+      <option name="presentableId" value="LOCAL-00159" />
+      <option name="project" value="LOCAL" />
+      <updated>1777539712643</updated>
+    </task>
+    <task id="LOCAL-00160" summary="adding more fonts">
+      <option name="closed" value="true" />
+      <created>1777539713436</created>
+      <option name="number" value="00160" />
+      <option name="presentableId" value="LOCAL-00160" />
+      <option name="project" value="LOCAL" />
+      <updated>1777539713436</updated>
+    </task>
+    <task id="LOCAL-00161" summary="adding more fonts">
+      <option name="closed" value="true" />
+      <created>1777539725690</created>
+      <option name="number" value="00161" />
+      <option name="presentableId" value="LOCAL-00161" />
+      <option name="project" value="LOCAL" />
+      <updated>1777539725690</updated>
+    </task>
+    <task id="LOCAL-00162" summary="adding more fonts">
+      <option name="closed" value="true" />
+      <created>1777539726286</created>
+      <option name="number" value="00162" />
+      <option name="presentableId" value="LOCAL-00162" />
+      <option name="project" value="LOCAL" />
+      <updated>1777539726286</updated>
+    </task>
+    <task id="LOCAL-00163" summary="adding more fonts">
+      <option name="closed" value="true" />
+      <created>1777539726947</created>
+      <option name="number" value="00163" />
+      <option name="presentableId" value="LOCAL-00163" />
+      <option name="project" value="LOCAL" />
+      <updated>1777539726947</updated>
+    </task>
+    <task id="LOCAL-00164" summary="adding more fonts">
+      <option name="closed" value="true" />
+      <created>1777539728915</created>
+      <option name="number" value="00164" />
+      <option name="presentableId" value="LOCAL-00164" />
+      <option name="project" value="LOCAL" />
+      <updated>1777539728915</updated>
+    </task>
+    <task id="LOCAL-00165" summary="adding more fonts">
+      <option name="closed" value="true" />
+      <created>1777539740045</created>
+      <option name="number" value="00165" />
+      <option name="presentableId" value="LOCAL-00165" />
+      <option name="project" value="LOCAL" />
+      <updated>1777539740045</updated>
+    </task>
+    <option name="localTasksCounter" value="166" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -787,10 +782,6 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value=" collaborative session id not creating fixed" />
-    <MESSAGE value=" collaborative session not joining fixed and improved ui" />
-    <MESSAGE value=" collaborative session user filed not working fixed" />
-    <MESSAGE value=" collaborative session ui fixed" />
     <MESSAGE value=" collaborative session ui fixed and new features added" />
     <MESSAGE value=" collaborative session ui fixes" />
     <MESSAGE value=" collaborative session ui improvement" />
@@ -807,24 +798,28 @@
     <MESSAGE value="large file support to editor" />
     <MESSAGE value="app updates" />
     <MESSAGE value="font sixe flexibility and imporve formatting" />
-    <MESSAGE value="bug fixes" />
     <MESSAGE value="bug fixes and font additons" />
     <MESSAGE value="collabortive session joining logic update" />
     <MESSAGE value="voice mode bug fixes" />
     <MESSAGE value="version update" />
-    <option name="LAST_COMMIT_MESSAGE" value="version update" />
+    <MESSAGE value="bug fixes" />
+    <MESSAGE value="add fonts" />
+    <MESSAGE value="linking the fonts" />
+    <MESSAGE value="adding multiple tab support for editor part" />
+    <MESSAGE value="adding more fonts" />
+    <option name="LAST_COMMIT_MESSAGE" value="adding more fonts" />
   </component>
   <component name="play_dynamic_filters_status">
     <option name="appIdToCheckInfo">
       <map>
         <entry key="com.beeta.nbheditor">
           <value>
-            <CheckInfo lastCheckTimestamp="1777452483331" />
+            <CheckInfo lastCheckTimestamp="1777539516664" />
           </value>
         </entry>
         <entry key="com.beeta.nbheditor.test">
           <value>
-            <CheckInfo lastCheckTimestamp="1777452483320" />
+            <CheckInfo lastCheckTimestamp="1777539516666" />
           </value>
         </entry>
         <entry key="com.example.nbheditor">

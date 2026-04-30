@@ -56,8 +56,14 @@ object FontManager {
             loadCustomFont(ctx, "Oswald", "oswald.ttf", "Sans Serif")
             loadCustomFont(ctx, "Raleway", "raleway.ttf", "Sans Serif")
             loadCustomFont(ctx, "Quicksand", "quicksand.ttf", "Sans Serif")
+            loadCustomFont(ctx, "Archivo", "archivo.ttf", "Sans Serif")
             
             loadCustomFont(ctx, "Playfair Display", "playfair_display.ttf", "Serif")
+            loadCustomFont(ctx, "Roboto Slab", "roboto_slab.ttf", "Serif")
+            loadCustomFont(ctx, "Crimson Text", "crimson_text.ttf", "Serif")
+            
+            loadCustomFont(ctx, "JetBrains Mono", "jetbrains_mono.ttf", "Monospace")
+            loadCustomFont(ctx, "Source Code Pro", "source_code_pro.ttf", "Monospace")
             
             loadCustomFont(ctx, "Dancing Script", "dancing_script.ttf", "Handwriting")
             loadCustomFont(ctx, "Pacifico", "pacifico.ttf", "Handwriting")
@@ -65,6 +71,7 @@ object FontManager {
             loadCustomFont(ctx, "Caveat", "caveat.ttf", "Handwriting")
             
             loadCustomFont(ctx, "Comfortaa", "comfortaa.ttf", "Display")
+            loadCustomFont(ctx, "Bebas Neue", "bebas_neue.ttf", "Display")
         }
         
         Log.d("FontManager", "Loaded ${fontList.size} fonts")
