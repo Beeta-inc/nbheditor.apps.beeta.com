@@ -58,10 +58,13 @@ object FontManager {
             loadCustomFont(ctx, "Raleway", "raleway.ttf", "Sans Serif")
             loadCustomFont(ctx, "Quicksand", "quicksand.ttf", "Sans Serif")
             loadCustomFont(ctx, "Archivo", "archivo.ttf", "Sans Serif")
+            loadCustomFont(ctx, "Karla", "karla.ttf", "Sans Serif")
+            loadCustomFont(ctx, "PT Sans", "pt_sans.ttf", "Sans Serif")
             
             loadCustomFont(ctx, "Playfair Display", "playfair_display.ttf", "Serif")
             loadCustomFont(ctx, "Roboto Slab", "roboto_slab.ttf", "Serif")
             loadCustomFont(ctx, "Crimson Text", "crimson_text.ttf", "Serif")
+            loadCustomFont(ctx, "Merriweather", "merriweather.ttf", "Serif")
             
             loadCustomFont(ctx, "JetBrains Mono", "jetbrains_mono.ttf", "Monospace")
             loadCustomFont(ctx, "Source Code Pro", "source_code_pro.ttf", "Monospace")
