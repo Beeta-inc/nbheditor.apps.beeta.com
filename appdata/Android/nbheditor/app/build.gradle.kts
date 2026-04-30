@@ -12,8 +12,8 @@ android {
         applicationId = "com.beeta.nbheditor"
         minSdk = 24
         targetSdk = 37
-        versionCode = 14
-        versionName = "4.5.1"
+        versionCode = 15
+        versionName = "5.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

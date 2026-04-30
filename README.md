@@ -1,6 +1,6 @@
 <div align="center">
   <img src="assets/logo-beeta.png" alt="NbhEditor Logo" width="150"/>
-  <h1>NbhEditor v4.5.1</h1>
+  <h1>NbhEditor v5.0.0</h1>
   <p><b>A fast, modern, and AI-powered open-source text editor for Linux and Android.</b></p>
 </div>
 
@@ -8,7 +8,15 @@
 
 **NbhEditor** is built with performance, simplicity, and intelligent assistance in mind. Whether you are a casual user taking notes or a developer writing code, it combines a lightweight editing experience with powerful, opt-in AI tools to boost your productivity.
 
-## ✨ What's New in v4.5.1
+## ✨ What's New in v5.0.0
+
+* 📑 **Multi-Tab Interface:** Open multiple files in separate tabs with smart tab management
+* 🎨 **41 Premium Fonts:** Expanded font library with JetBrains Mono, Source Code Pro, Merriweather, and more
+* 🗂️ **Tab Bar Auto-Hide:** Tab bar only appears when multiple files are open
+* ✏️ **Smart Tab Indicators:** Modified files show a dot indicator on their tab
+* 🔄 **Tab State Management:** Each tab remembers its content, cursor position, and file URI
+
+## Previous Updates (v4.5.1)
 
 * 🎤 **Voice Input Fix:** Voice-to-text now properly types recognized speech into the editor
 * 🐛 **Bug Fixes:** Improved position calculation and error handling for voice input
