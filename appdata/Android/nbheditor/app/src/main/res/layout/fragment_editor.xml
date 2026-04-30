@@ -93,13 +93,40 @@
         android:background="@color/divider"
         app:layout_constraintTop_toBottomOf="@id/editorToolbar" />
 
+    <!-- Document Tabs -->
+    <HorizontalScrollView
+        android:id="@+id/tabsScrollView"
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:background="@color/editor_surface"
+        android:scrollbars="none"
+        app:layout_constraintTop_toBottomOf="@id/editorToolbarDivider"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:id="@+id/tabsContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="horizontal"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp" />
+    </HorizontalScrollView>
+
+    <View
+        android:id="@+id/tabsDivider"
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:background="@color/divider"
+        app:layout_constraintTop_toBottomOf="@id/tabsScrollView" />
+
     <LinearLayout
         android:id="@+id/editor_container"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:orientation="horizontal"
-        app:layout_constraintTop_toBottomOf="@id/editorToolbarDivider"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tabsDivider"
+        app:layout_constraintBottom_toTopOf="@id/statusBarDivider"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -143,6 +170,75 @@
             android:scrollbars="vertical" />
     </LinearLayout>
 
+    <!-- Status Bar at Bottom -->
+    <View
+        android:id="@+id/statusBarDivider"
+        android:layout_width="match_parent"
+        android:layout_height="0.5dp"
+        android:background="@color/divider"
+        app:layout_constraintBottom_toTopOf="@id/statusBar" />
+
+    <LinearLayout
+        android:id="@+id/statusBar"
+        android:layout_width="match_parent"
+        android:layout_height="28dp"
+        android:orientation="horizontal"
+        android:background="@color/editor_surface"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:gravity="center_vertical"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:id="@+id/statusWordCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Words: 0"
+            android:textSize="11sp"
+            android:textColor="@color/editor_line_number_text"
+            android:paddingEnd="12dp" />
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="16dp"
+            android:background="@color/divider"
+            android:layout_marginEnd="12dp" />
+
+        <TextView
+            android:id="@+id/statusLineInfo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Ln 1, Col 1"
+            android:textSize="11sp"
+            android:textColor="@color/editor_line_number_text"
+            android:paddingEnd="12dp" />
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="16dp"
+            android:background="@color/divider"
+            android:layout_marginEnd="12dp" />
+
+        <TextView
+            android:id="@+id/statusFileType"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Plain Text"
+            android:textSize="11sp"
+            android:textColor="@color/editor_line_number_text" />
+
+        <TextView
+            android:id="@+id/statusEncoding"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="UTF-8"
+            android:textSize="11sp"
+            android:textColor="@color/editor_line_number_text" />
+    </LinearLayout>
+
     <!-- Voice Status Indicator for Editor - Overlay at bottom -->
     <LinearLayout
         android:id="@+id/editorVoiceStatusIndicator"
@@ -158,7 +254,7 @@
         android:background="@drawable/bg_glass_card"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
-        android:layout_marginBottom="8dp"
+        android:layout_marginBottom="36dp"
         android:elevation="4dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
