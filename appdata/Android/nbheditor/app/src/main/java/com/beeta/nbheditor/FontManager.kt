@@ -45,6 +45,7 @@ object FontManager {
         
         // Load custom fonts from assets if context is available
         context?.let { ctx ->
+            loadCustomFont(ctx, "Roboto (Custom)", "roboto.ttf", "Sans Serif")
             loadCustomFont(ctx, "Lato", "lato.ttf", "Sans Serif")
             loadCustomFont(ctx, "Montserrat", "montserrat.ttf", "Sans Serif")
             loadCustomFont(ctx, "Poppins", "poppins.ttf", "Sans Serif")
