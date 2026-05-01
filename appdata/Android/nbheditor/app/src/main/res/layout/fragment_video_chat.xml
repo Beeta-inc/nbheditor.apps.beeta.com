@@ -7,7 +7,7 @@
     android:background="#000000">
 
     <!-- Remote video (full screen) -->
-    <org.webrtc.SurfaceViewRenderer
+    <io.livekit.android.renderer.TextureViewRenderer
         android:id="@+id/remoteVideoView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -25,7 +25,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <org.webrtc.SurfaceViewRenderer
+        <io.livekit.android.renderer.TextureViewRenderer
             android:id="@+id/localVideoView"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />

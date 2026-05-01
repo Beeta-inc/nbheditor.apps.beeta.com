@@ -13,23 +13,21 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.beeta.nbheditor.databinding.FragmentVideoChatBinding
+import io.livekit.android.LiveKit
+import io.livekit.android.room.Room
+import io.livekit.android.room.track.CameraPosition
+import io.livekit.android.room.track.LocalVideoTrack
+import io.livekit.android.room.track.Track
 import kotlinx.coroutines.launch
-import org.webrtc.*
 
 class VideoChatFragment : Fragment() {
 
     private var _binding: FragmentVideoChatBinding? = null
     private val binding get() = _binding!!
 
-    private var peerConnectionFactory: PeerConnectionFactory? = null
-    private var peerConnection: PeerConnection? = null
-    private var localVideoTrack: VideoTrack? = null
-    private var localAudioTrack: AudioTrack? = null
-    private var videoCapturer: VideoCapturer? = null
-    private var videoSource: VideoSource? = null
-    private var audioSource: AudioSource? = null
-    private var rootEglBase: EglBase? = null
-
+    private var room: Room? = null
+    private var localVideoTrack: LocalVideoTrack? = null
+    
     private var isMicEnabled = true
     private var isVideoEnabled = true
     private var isFrontCamera = true
@@ -54,13 +52,11 @@ class VideoChatFragment : Fragment() {
 
         isHost = arguments?.getBoolean("isHost", false) ?: false
         
-        // Show/hide leave button based on host status
         binding.btnLeaveCall.visibility = if (isHost) View.GONE else View.VISIBLE
 
         checkPermissionsAndStart()
         setupControls()
         startCallDurationTimer()
-        updateParticipantCount()
     }
 
     private fun checkPermissionsAndStart() {
@@ -74,7 +70,7 @@ class VideoChatFragment : Fragment() {
         }
 
         if (notGranted.isEmpty()) {
-            initializeWebRTC()
+            initializeLiveKit()
         } else {
             requestPermissions(notGranted.toTypedArray(), 301)
         }
@@ -84,7 +80,7 @@ class VideoChatFragment : Fragment() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 301) {
             if (grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-                initializeWebRTC()
+                initializeLiveKit()
             } else {
                 Toast.makeText(requireContext(), "Camera and microphone permissions required", Toast.LENGTH_LONG).show()
                 parentFragmentManager.popBackStack()
@@ -92,47 +88,57 @@ class VideoChatFragment : Fragment() {
         }
     }
 
-    private fun initializeWebRTC() {
+    private fun initializeLiveKit() {
         lifecycleScope.launch {
             try {
-                // Initialize EglBase
-                rootEglBase = EglBase.create()
-
-                // Initialize PeerConnectionFactory
-                val options = PeerConnectionFactory.InitializationOptions.builder(requireContext())
-                    .setEnableInternalTracer(true)
-                    .createInitializationOptions()
-                PeerConnectionFactory.initialize(options)
-
-                val encoderFactory = DefaultVideoEncoderFactory(
-                    rootEglBase?.eglBaseContext,
-                    true,
-                    true
+                // Create LiveKit room
+                room = LiveKit.create(
+                    appContext = requireContext().applicationContext,
+                    overrides = null
                 )
-                val decoderFactory = DefaultVideoDecoderFactory(rootEglBase?.eglBaseContext)
 
-                peerConnectionFactory = PeerConnectionFactory.builder()
-                    .setVideoEncoderFactory(encoderFactory)
-                    .setVideoDecoderFactory(decoderFactory)
-                    .createPeerConnectionFactory()
+                // Enable camera and microphone
+                room?.localParticipant?.setCameraEnabled(true)
+                room?.localParticipant?.setMicrophoneEnabled(true)
 
-                // Initialize video views
-                binding.localVideoView.init(rootEglBase?.eglBaseContext, null)
-                binding.remoteVideoView.init(rootEglBase?.eglBaseContext, null)
+                // Get local video track
+                localVideoTrack = room?.localParticipant?.getTrackPublication(Track.Source.CAMERA)
+                    ?.track as? LocalVideoTrack
 
-                binding.localVideoView.setMirror(true)
-                binding.localVideoView.setEnableHardwareScaler(true)
-                binding.remoteVideoView.setEnableHardwareScaler(true)
-                binding.localVideoView.setZOrderMediaOverlay(true)
+                // Attach local video to view
+                localVideoTrack?.addRenderer(binding.localVideoView)
 
-                // Create local media tracks
-                createLocalMediaTracks()
+                // Listen for remote participants
+                room?.events?.collect { event ->
+                    when (event) {
+                        is io.livekit.android.events.RoomEvent.TrackSubscribed -> {
+                            val track = event.track
+                            if (track is io.livekit.android.room.track.VideoTrack) {
+                                track.addRenderer(binding.remoteVideoView)
+                            }
+                        }
+                        is io.livekit.android.events.RoomEvent.Connected -> {
+                            binding.tvConnectionStatus.text = "● Connected"
+                            binding.tvConnectionStatus.setTextColor(0xFF4CAF50.toInt())
+                            updateParticipantCount()
+                        }
+                        is io.livekit.android.events.RoomEvent.Disconnected -> {
+                            binding.tvConnectionStatus.text = "● Disconnected"
+                            binding.tvConnectionStatus.setTextColor(0xFFFFC107.toInt())
+                        }
+                        is io.livekit.android.events.RoomEvent.ParticipantConnected,
+                        is io.livekit.android.events.RoomEvent.ParticipantDisconnected -> {
+                            updateParticipantCount()
+                        }
+                        else -> {}
+                    }
+                }
 
-                // Create peer connection
-                createPeerConnection()
-
-                binding.tvConnectionStatus.text = "● Connected"
+                // Connect to room (you'll need to get token from your server)
+                // For now, show placeholder message
+                binding.tvConnectionStatus.text = "● Ready (Demo Mode)"
                 binding.tvConnectionStatus.setTextColor(0xFF4CAF50.toInt())
+                binding.tvParticipants.text = "1 participant"
 
             } catch (e: Exception) {
                 android.util.Log.e("VideoChat", "Init error", e)
@@ -143,175 +149,47 @@ class VideoChatFragment : Fragment() {
         }
     }
 
-    private fun createLocalMediaTracks() {
-        try {
-            // Create video capturer
-            val videoCapturer = createCameraCapturer()
-            this.videoCapturer = videoCapturer
-
-            if (videoCapturer != null) {
-                // Create video source
-                videoSource = peerConnectionFactory?.createVideoSource(false)
-                
-                // Initialize capturer
-                val surfaceTextureHelper = SurfaceTextureHelper.create("CaptureThread", rootEglBase?.eglBaseContext)
-                videoCapturer.initialize(surfaceTextureHelper, requireContext(), videoSource?.capturerObserver)
-                videoCapturer.startCapture(1280, 720, 30)
-
-                // Create video track
-                localVideoTrack = peerConnectionFactory?.createVideoTrack("local_video", videoSource)
-                localVideoTrack?.addSink(binding.localVideoView)
-            }
-
-            // Create audio track
-            val audioConstraints = MediaConstraints().apply {
-                mandatory.add(MediaConstraints.KeyValuePair("googEchoCancellation", "true"))
-                mandatory.add(MediaConstraints.KeyValuePair("googNoiseSuppression", "true"))
-                mandatory.add(MediaConstraints.KeyValuePair("googAutoGainControl", "true"))
-            }
-            audioSource = peerConnectionFactory?.createAudioSource(audioConstraints)
-            localAudioTrack = peerConnectionFactory?.createAudioTrack("local_audio", audioSource)
-        } catch (e: Exception) {
-            android.util.Log.e("VideoChat", "Error creating media tracks", e)
-        }
-    }
-
-    private fun createCameraCapturer(): VideoCapturer? {
-        val enumerator = if (Camera2Enumerator.isSupported(requireContext())) {
-            Camera2Enumerator(requireContext())
-        } else {
-            Camera1Enumerator(true)
-        }
-
-        val deviceNames = enumerator.deviceNames
-
-        // Try front camera first
-        for (deviceName in deviceNames) {
-            if (enumerator.isFrontFacing(deviceName)) {
-                val capturer = enumerator.createCapturer(deviceName, null)
-                if (capturer != null) {
-                    isFrontCamera = true
-                    return capturer
-                }
-            }
-        }
-
-        // Fallback to back camera
-        for (deviceName in deviceNames) {
-            if (enumerator.isBackFacing(deviceName)) {
-                val capturer = enumerator.createCapturer(deviceName, null)
-                if (capturer != null) {
-                    isFrontCamera = false
-                    return capturer
-                }
-            }
-        }
-
-        return null
-    }
-
-    private fun createPeerConnection() {
-        val iceServers = listOf(
-            PeerConnection.IceServer.builder("stun:stun.l.google.com:19302").createIceServer(),
-            PeerConnection.IceServer.builder("stun:stun1.l.google.com:19302").createIceServer()
-        )
-
-        val rtcConfig = PeerConnection.RTCConfiguration(iceServers).apply {
-            bundlePolicy = PeerConnection.BundlePolicy.MAXBUNDLE
-            rtcpMuxPolicy = PeerConnection.RtcpMuxPolicy.REQUIRE
-            tcpCandidatePolicy = PeerConnection.TcpCandidatePolicy.DISABLED
-        }
-
-        peerConnection = peerConnectionFactory?.createPeerConnection(
-            rtcConfig,
-            object : PeerConnection.Observer {
-                override fun onIceCandidate(candidate: IceCandidate?) {
-                    candidate?.let { sendIceCandidate(it) }
-                }
-                
-                override fun onIceCandidatesRemoved(candidates: Array<out IceCandidate>?) {
-                    // Handle removed ICE candidates
-                }
-
-                override fun onAddStream(stream: MediaStream?) {
-                    lifecycleScope.launch {
-                        stream?.videoTracks?.firstOrNull()?.addSink(binding.remoteVideoView)
-                    }
-                }
-
-                override fun onIceConnectionChange(state: PeerConnection.IceConnectionState?) {
-                    lifecycleScope.launch {
-                        when (state) {
-                            PeerConnection.IceConnectionState.CONNECTED -> {
-                                binding.tvConnectionStatus.text = "● Connected"
-                                binding.tvConnectionStatus.setTextColor(0xFF4CAF50.toInt())
-                            }
-                            PeerConnection.IceConnectionState.DISCONNECTED -> {
-                                binding.tvConnectionStatus.text = "● Disconnected"
-                                binding.tvConnectionStatus.setTextColor(0xFFFFC107.toInt())
-                            }
-                            PeerConnection.IceConnectionState.FAILED -> {
-                                binding.tvConnectionStatus.text = "● Connection failed"
-                                binding.tvConnectionStatus.setTextColor(0xFFF44336.toInt())
-                            }
-                            else -> {}
-                        }
-                    }
-                }
-
-                override fun onSignalingChange(state: PeerConnection.SignalingState?) {}
-                override fun onIceConnectionReceivingChange(receiving: Boolean) {}
-                override fun onIceGatheringChange(state: PeerConnection.IceGatheringState?) {}
-                override fun onRemoveStream(stream: MediaStream?) {}
-                override fun onDataChannel(channel: DataChannel?) {}
-                override fun onRenegotiationNeeded() {}
-                override fun onAddTrack(receiver: RtpReceiver?, streams: Array<out MediaStream>?) {}
-            }
-        )
-
-        // Add local tracks to peer connection
-        val streamId = "stream"
-        localVideoTrack?.let { peerConnection?.addTrack(it, listOf(streamId)) }
-        localAudioTrack?.let { peerConnection?.addTrack(it, listOf(streamId)) }
-    }
-
     private fun setupControls() {
         // Toggle microphone
         binding.btnToggleMic.setOnClickListener {
-            isMicEnabled = !isMicEnabled
-            localAudioTrack?.setEnabled(isMicEnabled)
-            
-            if (isMicEnabled) {
-                binding.imgMic.setImageResource(android.R.drawable.ic_btn_speak_now)
-                (binding.btnToggleMic as com.google.android.material.card.MaterialCardView)
-                    .setCardBackgroundColor(0x4DFFFFFF)
-            } else {
-                binding.imgMic.setImageResource(android.R.drawable.ic_lock_silent_mode)
-                (binding.btnToggleMic as com.google.android.material.card.MaterialCardView)
-                    .setCardBackgroundColor(0xFFF44336.toInt())
+            lifecycleScope.launch {
+                isMicEnabled = !isMicEnabled
+                room?.localParticipant?.setMicrophoneEnabled(isMicEnabled)
+                
+                if (isMicEnabled) {
+                    binding.imgMic.setImageResource(android.R.drawable.ic_btn_speak_now)
+                    (binding.btnToggleMic as com.google.android.material.card.MaterialCardView)
+                        .setCardBackgroundColor(0x4DFFFFFF)
+                } else {
+                    binding.imgMic.setImageResource(android.R.drawable.ic_lock_silent_mode)
+                    (binding.btnToggleMic as com.google.android.material.card.MaterialCardView)
+                        .setCardBackgroundColor(0xFFF44336.toInt())
+                }
+                
+                Toast.makeText(requireContext(), if (isMicEnabled) "Mic on" else "Mic off", Toast.LENGTH_SHORT).show()
             }
-            
-            Toast.makeText(requireContext(), if (isMicEnabled) "Mic on" else "Mic off", Toast.LENGTH_SHORT).show()
         }
 
         // Toggle video
         binding.btnToggleVideo.setOnClickListener {
-            isVideoEnabled = !isVideoEnabled
-            localVideoTrack?.setEnabled(isVideoEnabled)
-            
-            if (isVideoEnabled) {
-                binding.imgVideo.setImageResource(android.R.drawable.presence_video_online)
-                (binding.btnToggleVideo as com.google.android.material.card.MaterialCardView)
-                    .setCardBackgroundColor(0x4DFFFFFF)
-                binding.localVideoView.visibility = View.VISIBLE
-            } else {
-                binding.imgVideo.setImageResource(android.R.drawable.presence_video_busy)
-                (binding.btnToggleVideo as com.google.android.material.card.MaterialCardView)
-                    .setCardBackgroundColor(0xFFF44336.toInt())
-                binding.localVideoView.visibility = View.INVISIBLE
+            lifecycleScope.launch {
+                isVideoEnabled = !isVideoEnabled
+                room?.localParticipant?.setCameraEnabled(isVideoEnabled)
+                
+                if (isVideoEnabled) {
+                    binding.imgVideo.setImageResource(android.R.drawable.presence_video_online)
+                    (binding.btnToggleVideo as com.google.android.material.card.MaterialCardView)
+                        .setCardBackgroundColor(0x4DFFFFFF)
+                    binding.localVideoView.visibility = View.VISIBLE
+                } else {
+                    binding.imgVideo.setImageResource(android.R.drawable.presence_video_busy)
+                    (binding.btnToggleVideo as com.google.android.material.card.MaterialCardView)
+                        .setCardBackgroundColor(0xFFF44336.toInt())
+                    binding.localVideoView.visibility = View.INVISIBLE
+                }
+                
+                Toast.makeText(requireContext(), if (isVideoEnabled) "Video on" else "Video off", Toast.LENGTH_SHORT).show()
             }
-            
-            Toast.makeText(requireContext(), if (isVideoEnabled) "Video on" else "Video off", Toast.LENGTH_SHORT).show()
         }
 
         // Rotate camera
@@ -319,7 +197,7 @@ class VideoChatFragment : Fragment() {
             switchCamera()
         }
 
-        // End call (host)
+        // End call
         binding.btnEndCall.setOnClickListener {
             if (isHost) {
                 endCallForEveryone()
@@ -328,44 +206,26 @@ class VideoChatFragment : Fragment() {
             }
         }
 
-        // Leave call (non-host)
+        // Leave call
         binding.btnLeaveCall.setOnClickListener {
             leaveCall()
         }
     }
 
     private fun switchCamera() {
-        try {
-            val cameraVideoCapturer = videoCapturer as? CameraVideoCapturer
-            cameraVideoCapturer?.switchCamera(object : CameraVideoCapturer.CameraSwitchHandler {
-                override fun onCameraSwitchDone(isFrontCamera: Boolean) {
-                    this@VideoChatFragment.isFrontCamera = isFrontCamera
-                    binding.localVideoView.setMirror(isFrontCamera)
-                    Toast.makeText(
-                        requireContext(),
-                        if (isFrontCamera) "Front camera" else "Back camera",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-
-                override fun onCameraSwitchError(errorDescription: String?) {
-                    Toast.makeText(requireContext(), "Failed to switch camera", Toast.LENGTH_SHORT).show()
-                }
-            })
-        } catch (e: Exception) {
-            Toast.makeText(requireContext(), "Camera switch not supported", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun sendIceCandidate(candidate: IceCandidate) {
-        // TODO: Send ICE candidate to Firebase for signaling
         lifecycleScope.launch {
             try {
-                val sessionId = CollaborativeSessionManager.getCurrentSessionId() ?: return@launch
-                // Store ICE candidate in Firebase for other peers to receive
-                android.util.Log.d("VideoChat", "ICE candidate: ${candidate.sdp}")
+                val newPosition = if (isFrontCamera) CameraPosition.BACK else CameraPosition.FRONT
+                localVideoTrack?.switchCamera(newPosition)
+                isFrontCamera = !isFrontCamera
+                
+                Toast.makeText(
+                    requireContext(),
+                    if (isFrontCamera) "Front camera" else "Back camera",
+                    Toast.LENGTH_SHORT
+                ).show()
             } catch (e: Exception) {
-                android.util.Log.e("VideoChat", "Failed to send ICE candidate", e)
+                Toast.makeText(requireContext(), "Failed to switch camera", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -376,8 +236,6 @@ class VideoChatFragment : Fragment() {
             .setMessage("End the video call for all participants?")
             .setPositiveButton("End") { _, _ ->
                 lifecycleScope.launch {
-                    val sessionId = CollaborativeSessionManager.getCurrentSessionId()
-                    // TODO: Send end call signal to Firebase
                     cleanup()
                     parentFragmentManager.popBackStack()
                     Toast.makeText(requireContext(), "Call ended", Toast.LENGTH_SHORT).show()
@@ -416,11 +274,8 @@ class VideoChatFragment : Fragment() {
     private fun updateParticipantCount() {
         lifecycleScope.launch {
             try {
-                val sessionId = CollaborativeSessionManager.getCurrentSessionId() ?: return@launch
-                CollaborativeSessionManager.observeUsers(sessionId).collect { users ->
-                    val count = users.size
-                    binding.tvParticipants.text = "$count participant${if (count != 1) "s" else ""}"
-                }
+                val count = (room?.remoteParticipants?.size ?: 0) + 1 // +1 for local participant
+                binding.tvParticipants.text = "$count participant${if (count != 1) "s" else ""}"
             } catch (e: Exception) {
                 android.util.Log.e("VideoChat", "Failed to update participant count", e)
             }
@@ -431,22 +286,10 @@ class VideoChatFragment : Fragment() {
         try {
             durationHandler.removeCallbacks(durationRunnable)
             
-            videoCapturer?.stopCapture()
-            videoCapturer?.dispose()
+            localVideoTrack?.removeRenderer(binding.localVideoView)
             
-            localVideoTrack?.dispose()
-            localAudioTrack?.dispose()
-            videoSource?.dispose()
-            audioSource?.dispose()
-            
-            peerConnection?.close()
-            peerConnection?.dispose()
-            
-            binding.localVideoView.release()
-            binding.remoteVideoView.release()
-            
-            peerConnectionFactory?.dispose()
-            rootEglBase?.release()
+            room?.disconnect()
+            room?.release()
         } catch (e: Exception) {
             android.util.Log.e("VideoChat", "Cleanup error", e)
         }
