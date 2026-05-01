@@ -1761,7 +1761,10 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun showMathFormulaPopup() {
-        val popup = android.widget.PopupMenu(this, editorBinding.textArea, android.view.Gravity.TOP)
+        // Safety check
+        if (isFinishing || isDestroyed) return
+        
+        val popup = android.widget.PopupMenu(this, editorBinding.textArea, android.view.Gravity.NO_GRAVITY)
         popup.menu.add("MathEQ - Write Math Formula")
         popup.setOnMenuItemClickListener {
             MathFormulaHelper.showMathFormulaDialog(this) { formula ->
@@ -1776,17 +1779,6 @@ open class MainActivity : AppCompatActivity() {
                 android.widget.Toast.makeText(this, "Formula inserted", android.widget.Toast.LENGTH_SHORT).show()
             }
             true
-        }
-        
-        // Show popup above cursor
-        try {
-            val popupField = popup.javaClass.getDeclaredField("mPopup")
-            popupField.isAccessible = true
-            val menuPopupHelper = popupField.get(popup)
-            val setForceShowIconMethod = menuPopupHelper.javaClass.getDeclaredMethod("setForceShowIcon", Boolean::class.java)
-            setForceShowIconMethod.invoke(menuPopupHelper, true)
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
         
         popup.show()
@@ -2184,8 +2176,13 @@ open class MainActivity : AppCompatActivity() {
                 // Check for @ trigger for Math Formula
                 if (count > 0 && start < s?.length ?: 0) {
                     val charAdded = s?.get(start)
-                    if (charAdded == '@') {
-                        showMathFormulaPopup()
+                    if (charAdded == '@' && !isFinishing && !isDestroyed) {
+                        // Post to handler to ensure window is ready
+                        handler.post {
+                            if (!isFinishing && !isDestroyed) {
+                                showMathFormulaPopup()
+                            }
+                        }
                     }
                 }
             }
