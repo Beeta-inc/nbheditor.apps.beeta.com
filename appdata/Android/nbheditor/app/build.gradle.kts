@@ -110,8 +110,8 @@ dependencies {
     implementation("com.google.firebase:firebase-storage")
     implementation("com.google.firebase:firebase-database") // Realtime Database for collaborative editing
     
-    // WebRTC for video chat - LiveKit (modern, 16KB-aligned, actively maintained)
-    implementation("io.livekit:livekit-android:2.0.0")
+    // WebRTC for video chat - LiveKit with 16KB page alignment support (fixed in 2.x+)
+    implementation("io.livekit:livekit-android:2.10.1")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
