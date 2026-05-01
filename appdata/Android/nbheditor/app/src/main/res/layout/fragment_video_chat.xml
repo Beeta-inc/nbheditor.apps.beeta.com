@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/videoChatRoot"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <!-- Remote video (full screen) -->
+    <org.webrtc.SurfaceViewRenderer
+        android:id="@+id/remoteVideoView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+    <!-- Local video (picture-in-picture) -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/localVideoCard"
+        android:layout_width="120dp"
+        android:layout_height="160dp"
+        android:layout_margin="16dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="8dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <org.webrtc.SurfaceViewRenderer
+            android:id="@+id/localVideoView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </androidx.cardview.widget.CardView>
+
+    <!-- Header with session info -->
+    <LinearLayout
+        android:id="@+id/videoHeader"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/gradient_top_overlay"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="24dp"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:id="@+id/tvSessionTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Video Call"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            android:drawablePadding="8dp"
+            app:drawableStartCompat="@android:drawable/presence_video_online" />
+
+        <TextView
+            android:id="@+id/tvParticipants"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="2 participants"
+            android:textSize="14sp"
+            android:textColor="#CCFFFFFF"
+            android:layout_marginTop="4dp" />
+
+        <TextView
+            android:id="@+id/tvCallDuration"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="00:00"
+            android:textSize="14sp"
+            android:textColor="#CCFFFFFF"
+            android:layout_marginTop="2dp" />
+    </LinearLayout>
+
+    <!-- Control buttons at bottom -->
+    <LinearLayout
+        android:id="@+id/controlsBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/gradient_bottom_overlay"
+        android:paddingTop="24dp"
+        android:paddingBottom="32dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        app:layout_constraintBottom_toBottomOf="parent">
+
+        <!-- Main controls row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="16dp">
+
+            <!-- Microphone toggle -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/btnToggleMic"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:layout_margin="8dp"
+                app:cardCornerRadius="32dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#4DFFFFFF">
+
+                <ImageView
+                    android:id="@+id/imgMic"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="center"
+                    android:src="@android:drawable/ic_btn_speak_now"
+                    android:tint="@color/white" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Video toggle -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/btnToggleVideo"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:layout_margin="8dp"
+                app:cardCornerRadius="32dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#4DFFFFFF">
+
+                <ImageView
+                    android:id="@+id/imgVideo"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="center"
+                    android:src="@android:drawable/presence_video_online"
+                    android:tint="@color/white" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- End call -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/btnEndCall"
+                android:layout_width="72dp"
+                android:layout_height="72dp"
+                android:layout_margin="8dp"
+                app:cardCornerRadius="36dp"
+                app:cardElevation="6dp"
+                app:cardBackgroundColor="#F44336">
+
+                <ImageView
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_gravity="center"
+                    android:src="@android:drawable/ic_menu_call"
+                    android:rotation="135"
+                    android:tint="@color/white" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Rotate camera -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/btnRotateCamera"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:layout_margin="8dp"
+                app:cardCornerRadius="32dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#4DFFFFFF">
+
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="center"
+                    android:src="@android:drawable/ic_menu_rotate"
+                    android:tint="@color/white" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Leave (for non-host) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/btnLeaveCall"
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                android:layout_margin="8dp"
+                app:cardCornerRadius="32dp"
+                app:cardElevation="4dp"
+                app:cardBackgroundColor="#4DFFFFFF">
+
+                <ImageView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="center"
+                    android:src="@android:drawable/ic_menu_revert"
+                    android:tint="@color/white" />
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+        <!-- Status text -->
+        <TextView
+            android:id="@+id/tvConnectionStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:text="● Connected"
+            android:textSize="12sp"
+            android:textColor="#4CAF50"
+            android:drawablePadding="4dp" />
+    </LinearLayout>
+
+    <!-- Participants grid (when more than 2 people) -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvParticipants"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toTopOf="@id/controlsBar" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

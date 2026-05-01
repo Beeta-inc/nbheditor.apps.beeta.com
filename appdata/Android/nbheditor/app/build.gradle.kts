@@ -94,6 +94,9 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-storage")
     implementation("com.google.firebase:firebase-database") // Realtime Database for collaborative editing
+    
+    // WebRTC for video chat
+    implementation("org.webrtc:google-webrtc:1.0.32006")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -102,6 +102,7 @@ class CollabChatFragment : Fragment() {
 
         binding.btnCloseChat.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.btnCancelReply.setOnClickListener { hideReplyPreview() }
+        binding.btnStartVideoCall.setOnClickListener { startVideoCall() }
 
         view.translationX = view.width.toFloat()
         view.animate().translationX(0f).setDuration(280)
@@ -1012,6 +1013,33 @@ class CollabChatFragment : Fragment() {
         requireContext().contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)
             ?.use { c -> if (c.moveToFirst()) c.getString(0) else null } ?: uri.lastPathSegment ?: "file"
     } catch (_: Exception) { uri.lastPathSegment ?: "file" }
+    
+    private fun startVideoCall() {
+        lifecycleScope.launch {
+            try {
+                val session = CollaborativeSessionManager.getCurrentSession()
+                val currentUserId = CollaborativeSessionManager.getCurrentUserId()
+                val isHost = session?.creatorId == currentUserId
+                
+                // Navigate to video chat fragment
+                val videoFragment = VideoChatFragment.newInstance(isHost)
+                parentFragmentManager.beginTransaction()
+                    .setCustomAnimations(
+                        android.R.anim.slide_in_left,
+                        android.R.anim.slide_out_right,
+                        android.R.anim.slide_in_left,
+                        android.R.anim.slide_out_right
+                    )
+                    .replace((requireActivity() as MainActivity).binding.appBarMain.contentMain.fragmentContainer.id, videoFragment)
+                    .addToBackStack(null)
+                    .commit()
+                    
+                Toast.makeText(requireContext(), "Starting video call...", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Failed to start video call: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     override fun onDestroyView() {
         super.onDestroyView()
