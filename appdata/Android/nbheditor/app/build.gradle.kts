@@ -20,6 +20,13 @@ android {
         ndk {
             abiFilters += listOf("arm64-v8a", "armeabi-v7a")
         }
+        
+        // Workaround for 16KB page size devices
+        packaging {
+            jniLibs {
+                useLegacyPackaging = true
+            }
+        }
     }
 
     signingConfigs {
@@ -57,7 +64,7 @@ android {
             excludes += "/META-INF/DEPENDENCIES"
         }
         jniLibs {
-            useLegacyPackaging = false
+            useLegacyPackaging = true
             pickFirsts += "lib/*/libjingle_peerconnection_so.so"
         }
     }
@@ -103,8 +110,8 @@ dependencies {
     implementation("com.google.firebase:firebase-storage")
     implementation("com.google.firebase:firebase-database") // Realtime Database for collaborative editing
     
-    // WebRTC for video chat - Stream WebRTC (well-maintained, 16KB aligned)
-    implementation("io.getstream:stream-webrtc-android:1.1.3")
+    // WebRTC for video chat - Updated 2026 version with 16KB page alignment
+    implementation("io.getstream:stream-webrtc-android:1.2.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
