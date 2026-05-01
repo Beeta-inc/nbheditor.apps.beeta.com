@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     // Add the Google services Gradle plugin
     id("com.google.gms.google-services")
+    kotlin("android")
 }
 
 android {
@@ -96,7 +97,7 @@ dependencies {
     implementation("com.google.firebase:firebase-database") // Realtime Database for collaborative editing
     
     // WebRTC for video chat
-    implementation("org.webrtc:google-webrtc:1.0.32006")
+    implementation("io.getstream:stream-webrtc-android:1.1.3")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

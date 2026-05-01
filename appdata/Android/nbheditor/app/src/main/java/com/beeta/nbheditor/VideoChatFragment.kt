@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.beeta.nbheditor.databinding.FragmentVideoChatBinding
 import kotlinx.coroutines.launch
+import io.getstream.webrtc.android.ktx.*
 import org.webrtc.*
 
 class VideoChatFragment : Fragment() {
