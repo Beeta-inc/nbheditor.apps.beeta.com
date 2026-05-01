@@ -1761,7 +1761,7 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun showMathFormulaPopup() {
-        val popup = android.widget.PopupMenu(this, editorBinding.textArea)
+        val popup = android.widget.PopupMenu(this, editorBinding.textArea, android.view.Gravity.TOP)
         popup.menu.add("MathEQ - Write Math Formula")
         popup.setOnMenuItemClickListener {
             MathFormulaHelper.showMathFormulaDialog(this) { formula ->
@@ -1777,6 +1777,18 @@ open class MainActivity : AppCompatActivity() {
             }
             true
         }
+        
+        // Show popup above cursor
+        try {
+            val popupField = popup.javaClass.getDeclaredField("mPopup")
+            popupField.isAccessible = true
+            val menuPopupHelper = popupField.get(popup)
+            val setForceShowIconMethod = menuPopupHelper.javaClass.getDeclaredMethod("setForceShowIcon", Boolean::class.java)
+            setForceShowIconMethod.invoke(menuPopupHelper, true)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        
         popup.show()
     }
 
@@ -2640,6 +2652,9 @@ open class MainActivity : AppCompatActivity() {
         val lineCount = et.lineCount.coerceAtLeast(1)
         val current = editorBinding.lineNumbersVBox.childCount
         
+        // Update word count and status
+        updateStatusBar()
+        
         // Get line height from editor
         val lineHeight = et.lineHeight
         
@@ -2689,6 +2704,26 @@ open class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun updateStatusBar() {
+        val text = editorBinding.textArea.text?.toString() ?: ""
+        
+        // Word count
+        val words = if (text.isBlank()) 0 else text.trim().split("\\s+".toRegex()).size
+        editorBinding.statusWordCount.text = "Words: $words"
+        
+        // Line and column info
+        val cursor = editorBinding.textArea.selectionStart
+        val lineNumber = editorBinding.textArea.layout?.getLineForOffset(cursor)?.plus(1) ?: 1
+        val lineStart = editorBinding.textArea.layout?.getLineStart(lineNumber - 1) ?: 0
+        val column = cursor - lineStart + 1
+        editorBinding.statusLineInfo.text = "Ln $lineNumber, Col $column"
+        
+        // File type
+        val fileName = if (currentFileUri != null) getFileName(currentFileUri!!) else "untitled.txt"
+        val extension = fileName.substringAfterLast('.', "txt").uppercase()
+        editorBinding.statusFileType.text = extension
     }
 
     private fun performAutoSave() {

@@ -138,6 +138,7 @@ object MathFormulaHelper {
         val mathInput = dialogView.findViewById<EditText>(R.id.mathInput)
         val mathPreview = dialogView.findViewById<TextView>(R.id.mathPreview)
         val symbolsContainer = dialogView.findViewById<LinearLayout>(R.id.symbolsContainer)
+        val categorySpinner = dialogView.findViewById<android.widget.Spinner>(R.id.categorySpinner)
         val cancelButton = dialogView.findViewById<Button>(R.id.cancelButton)
         val insertButton = dialogView.findViewById<Button>(R.id.insertButton)
         
@@ -146,8 +147,22 @@ object MathFormulaHelper {
             mathPreview.typeface = mathFonts[0]
         }
         
-        // Add symbol buttons
-        addSymbolButtons(context, symbolsContainer, mathInput)
+        // Setup category spinner
+        val categories = mathSymbols.keys.toList()
+        val adapter = android.widget.ArrayAdapter(context, android.R.layout.simple_spinner_item, categories)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        categorySpinner.adapter = adapter
+        
+        // Load initial category symbols
+        updateSymbolButtons(context, symbolsContainer, mathInput, categories[0])
+        
+        // Category selection listener
+        categorySpinner.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+                updateSymbolButtons(context, symbolsContainer, mathInput, categories[position])
+            }
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+        }
         
         // Live preview
         mathInput.addTextChangedListener(object : TextWatcher {
@@ -177,11 +192,11 @@ object MathFormulaHelper {
         dialog.show()
     }
     
-    private fun addSymbolButtons(context: Context, container: LinearLayout, input: EditText) {
-        // Get all symbols from all categories
-        val allSymbols = mathSymbols.values.flatten()
+    private fun updateSymbolButtons(context: Context, container: LinearLayout, input: EditText, category: String) {
+        container.removeAllViews()
+        val symbols = mathSymbols[category] ?: emptyList()
         
-        allSymbols.forEach { symbol ->
+        symbols.forEach { symbol ->
             val button = Button(context).apply {
                 text = symbol
                 textSize = 18f
