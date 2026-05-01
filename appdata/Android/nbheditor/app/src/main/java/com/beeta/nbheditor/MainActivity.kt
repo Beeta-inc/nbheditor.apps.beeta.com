@@ -71,6 +71,7 @@ open class MainActivity : AppCompatActivity() {
 
     private var currentFileUri: Uri? = null
     private var textChanged = false
+    private var isInitializing = true
     private var lastSyncSuccess = false
     private var isTyping = false
     private var aiEnabled = true
@@ -285,6 +286,11 @@ open class MainActivity : AppCompatActivity() {
         setupBottomNav()
         checkForRecovery()
         handleOpenIntent(intent)
+        
+        // Mark initialization complete after a delay
+        handler.postDelayed({
+            isInitializing = false
+        }, 500)
 
         if (isGlassMode) {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
@@ -2174,15 +2180,15 @@ open class MainActivity : AppCompatActivity() {
                 }
                 
                 // Check for @ trigger for Math Formula
-                if (count > 0 && start < s?.length ?: 0) {
+                if (count > 0 && start < s?.length ?: 0 && !isInitializing) {
                     val charAdded = s?.get(start)
                     if (charAdded == '@' && !isFinishing && !isDestroyed) {
                         // Post to handler to ensure window is ready
-                        handler.post {
+                        handler.postDelayed({
                             if (!isFinishing && !isDestroyed) {
                                 showMathFormulaPopup()
                             }
-                        }
+                        }, 100)
                     }
                 }
             }
