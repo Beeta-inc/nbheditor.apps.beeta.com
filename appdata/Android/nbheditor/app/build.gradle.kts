@@ -16,6 +16,10 @@ android {
         versionName = "5.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        }
     }
 
     signingConfigs {
@@ -51,6 +55,10 @@ android {
         resources {
             excludes += "/META-INF/INDEX.LIST"
             excludes += "/META-INF/DEPENDENCIES"
+        }
+        jniLibs {
+            useLegacyPackaging = false
+            pickFirsts += "lib/*/libjingle_peerconnection_so.so"
         }
     }
 }
@@ -95,8 +103,8 @@ dependencies {
     implementation("com.google.firebase:firebase-storage")
     implementation("com.google.firebase:firebase-database") // Realtime Database for collaborative editing
     
-    // WebRTC for video chat
-    implementation("com.mesibo.api:webrtc:1.0.5")
+    // WebRTC for video chat - Stream WebRTC (well-maintained, 16KB aligned)
+    implementation("io.getstream:stream-webrtc-android:1.1.3")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
