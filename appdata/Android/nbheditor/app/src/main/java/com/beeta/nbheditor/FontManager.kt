@@ -20,32 +20,11 @@ object FontManager {
         
         ctx?.let { context = it.applicationContext }
         
-        // Core System Fonts (always available)
-        fontList.add(FontInfo("Default", Typeface.DEFAULT, "System"))
-        fontList.add(FontInfo("Default Bold", Typeface.DEFAULT_BOLD, "System"))
-        fontList.add(FontInfo("Sans Serif", Typeface.SANS_SERIF, "System"))
-        fontList.add(FontInfo("Serif", Typeface.SERIF, "System"))
-        fontList.add(FontInfo("Monospace", Typeface.MONOSPACE, "System"))
-        
-        // Android System Font Variants
-        fontList.add(FontInfo("Roboto", Typeface.create("sans-serif", Typeface.NORMAL), "Sans Serif"))
-        fontList.add(FontInfo("Roboto Bold", Typeface.create("sans-serif", Typeface.BOLD), "Sans Serif"))
-        fontList.add(FontInfo("Roboto Light", Typeface.create("sans-serif-light", Typeface.NORMAL), "Sans Serif"))
-        fontList.add(FontInfo("Roboto Thin", Typeface.create("sans-serif-thin", Typeface.NORMAL), "Sans Serif"))
-        fontList.add(FontInfo("Roboto Medium", Typeface.create("sans-serif-medium", Typeface.NORMAL), "Sans Serif"))
-        fontList.add(FontInfo("Roboto Condensed", Typeface.create("sans-serif-condensed", Typeface.NORMAL), "Sans Serif"))
-        
-        fontList.add(FontInfo("Serif Bold", Typeface.create("serif", Typeface.BOLD), "Serif"))
-        fontList.add(FontInfo("Serif Italic", Typeface.create("serif", Typeface.ITALIC), "Serif"))
-        
-        fontList.add(FontInfo("Monospace Bold", Typeface.create("monospace", Typeface.BOLD), "Monospace"))
-        
-        fontList.add(FontInfo("Casual", Typeface.create("casual", Typeface.NORMAL), "Casual"))
-        fontList.add(FontInfo("Cursive", Typeface.create("cursive", Typeface.NORMAL), "Casual"))
-        
-        // Load custom fonts from assets if context is available
+        // Load all fonts from assets
         context?.let { ctx ->
-            loadCustomFont(ctx, "Roboto (Custom)", "roboto.ttf", "Sans Serif")
+            // Sans Serif Fonts
+            loadCustomFont(ctx, "Roboto", "roboto.ttf", "Sans Serif")
+            loadCustomFont(ctx, "Open Sans", "open_sans.ttf", "Sans Serif")
             loadCustomFont(ctx, "Lato", "lato.ttf", "Sans Serif")
             loadCustomFont(ctx, "Montserrat", "montserrat.ttf", "Sans Serif")
             loadCustomFont(ctx, "Poppins", "poppins.ttf", "Sans Serif")
@@ -60,22 +39,33 @@ object FontManager {
             loadCustomFont(ctx, "Archivo", "archivo.ttf", "Sans Serif")
             loadCustomFont(ctx, "Karla", "karla.ttf", "Sans Serif")
             loadCustomFont(ctx, "PT Sans", "pt_sans.ttf", "Sans Serif")
+            loadCustomFont(ctx, "Barlow", "barlow.ttf", "Sans Serif")
+            loadCustomFont(ctx, "Exo 2", "exo_2.ttf", "Sans Serif")
+            loadCustomFont(ctx, "Cabin", "cabin.ttf", "Sans Serif")
             
+            // Serif Fonts
             loadCustomFont(ctx, "Playfair Display", "playfair_display.ttf", "Serif")
             loadCustomFont(ctx, "Roboto Slab", "roboto_slab.ttf", "Serif")
             loadCustomFont(ctx, "Crimson Text", "crimson_text.ttf", "Serif")
             loadCustomFont(ctx, "Merriweather", "merriweather.ttf", "Serif")
             
+            // Monospace Fonts
             loadCustomFont(ctx, "JetBrains Mono", "jetbrains_mono.ttf", "Monospace")
             loadCustomFont(ctx, "Source Code Pro", "source_code_pro.ttf", "Monospace")
+            loadCustomFont(ctx, "Space Mono", "space_mono.ttf", "Monospace")
+            loadCustomFont(ctx, "Inconsolata", "inconsolata.ttf", "Monospace")
             
+            // Handwriting Fonts
             loadCustomFont(ctx, "Dancing Script", "dancing_script.ttf", "Handwriting")
             loadCustomFont(ctx, "Pacifico", "pacifico.ttf", "Handwriting")
             loadCustomFont(ctx, "Indie Flower", "indie_flower.ttf", "Handwriting")
             loadCustomFont(ctx, "Caveat", "caveat.ttf", "Handwriting")
+            loadCustomFont(ctx, "Permanent Marker", "permanent_marker.ttf", "Handwriting")
             
+            // Display Fonts
             loadCustomFont(ctx, "Comfortaa", "comfortaa.ttf", "Display")
             loadCustomFont(ctx, "Bebas Neue", "bebas_neue.ttf", "Display")
+            loadCustomFont(ctx, "Righteous", "righteous.ttf", "Display")
         }
         
         Log.d("FontManager", "Loaded ${fontList.size} fonts")
