@@ -1760,6 +1760,26 @@ open class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun showMathFormulaPopup() {
+        val popup = android.widget.PopupMenu(this, editorBinding.textArea)
+        popup.menu.add("MathEQ - Write Math Formula")
+        popup.setOnMenuItemClickListener {
+            MathFormulaHelper.showMathFormulaDialog(this) { formula ->
+                val cursor = editorBinding.textArea.selectionStart
+                val text = editorBinding.textArea.text
+                // Remove the @ symbol that triggered this
+                if (cursor > 0 && text?.get(cursor - 1) == '@') {
+                    text?.delete(cursor - 1, cursor)
+                }
+                // Insert the formula
+                text?.insert(editorBinding.textArea.selectionStart, formula)
+                android.widget.Toast.makeText(this, "Formula inserted", android.widget.Toast.LENGTH_SHORT).show()
+            }
+            true
+        }
+        popup.show()
+    }
+
     private fun showTextTypeDialog() {
         // Initialize font manager with context
         FontManager.initialize(this)
@@ -2147,6 +2167,14 @@ open class MainActivity : AppCompatActivity() {
                     richEdit?.isRichTextMode = true
                     handler.removeCallbacks(formattingRunnable)
                     handler.postDelayed(formattingRunnable, 1500)
+                }
+                
+                // Check for @ trigger for Math Formula
+                if (count > 0 && start < s?.length ?: 0) {
+                    val charAdded = s?.get(start)
+                    if (charAdded == '@') {
+                        showMathFormulaPopup()
+                    }
                 }
             }
             override fun afterTextChanged(s: Editable?) {}
