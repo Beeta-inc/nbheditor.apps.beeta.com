@@ -1023,6 +1023,9 @@ class CollabChatFragment : Fragment() {
                 
                 // Navigate to video chat fragment
                 val videoFragment = VideoChatFragment.newInstance(isHost)
+                val mainActivity = requireActivity() as MainActivity
+                val containerId = mainActivity.getFragmentContainerId()
+                
                 parentFragmentManager.beginTransaction()
                     .setCustomAnimations(
                         android.R.anim.slide_in_left,
@@ -1030,7 +1033,7 @@ class CollabChatFragment : Fragment() {
                         android.R.anim.slide_in_left,
                         android.R.anim.slide_out_right
                     )
-                    .replace((requireActivity() as MainActivity).binding.appBarMain.contentMain.fragmentContainer.id, videoFragment)
+                    .replace(containerId, videoFragment)
                     .addToBackStack(null)
                     .commit()
                     

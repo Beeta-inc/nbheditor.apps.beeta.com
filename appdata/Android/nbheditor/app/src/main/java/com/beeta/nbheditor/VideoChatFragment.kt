@@ -14,7 +14,6 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import com.beeta.nbheditor.databinding.FragmentVideoChatBinding
 import kotlinx.coroutines.launch
-import io.getstream.webrtc.android.ktx.*
 import org.webrtc.*
 
 class VideoChatFragment : Fragment() {
@@ -26,9 +25,10 @@ class VideoChatFragment : Fragment() {
     private var peerConnection: PeerConnection? = null
     private var localVideoTrack: VideoTrack? = null
     private var localAudioTrack: AudioTrack? = null
-    private var videoCapturer: CameraVideoCapturer? = null
+    private var videoCapturer: VideoCapturer? = null
     private var videoSource: VideoSource? = null
     private var audioSource: AudioSource? = null
+    private var rootEglBase: EglBase? = null
 
     private var isMicEnabled = true
     private var isVideoEnabled = true
@@ -95,6 +95,9 @@ class VideoChatFragment : Fragment() {
     private fun initializeWebRTC() {
         lifecycleScope.launch {
             try {
+                // Initialize EglBase
+                rootEglBase = EglBase.create()
+
                 // Initialize PeerConnectionFactory
                 val options = PeerConnectionFactory.InitializationOptions.builder(requireContext())
                     .setEnableInternalTracer(true)
@@ -102,11 +105,11 @@ class VideoChatFragment : Fragment() {
                 PeerConnectionFactory.initialize(options)
 
                 val encoderFactory = DefaultVideoEncoderFactory(
-                    EglBase.create().eglBaseContext,
+                    rootEglBase?.eglBaseContext,
                     true,
                     true
                 )
-                val decoderFactory = DefaultVideoDecoderFactory(EglBase.create().eglBaseContext)
+                val decoderFactory = DefaultVideoDecoderFactory(rootEglBase?.eglBaseContext)
 
                 peerConnectionFactory = PeerConnectionFactory.builder()
                     .setVideoEncoderFactory(encoderFactory)
@@ -114,12 +117,13 @@ class VideoChatFragment : Fragment() {
                     .createPeerConnectionFactory()
 
                 // Initialize video views
-                binding.localVideoView.init(EglBase.create().eglBaseContext, null)
-                binding.remoteVideoView.init(EglBase.create().eglBaseContext, null)
+                binding.localVideoView.init(rootEglBase?.eglBaseContext, null)
+                binding.remoteVideoView.init(rootEglBase?.eglBaseContext, null)
 
                 binding.localVideoView.setMirror(true)
                 binding.localVideoView.setEnableHardwareScaler(true)
                 binding.remoteVideoView.setEnableHardwareScaler(true)
+                binding.localVideoView.setZOrderMediaOverlay(true)
 
                 // Create local media tracks
                 createLocalMediaTracks()
@@ -131,6 +135,7 @@ class VideoChatFragment : Fragment() {
                 binding.tvConnectionStatus.setTextColor(0xFF4CAF50.toInt())
 
             } catch (e: Exception) {
+                android.util.Log.e("VideoChat", "Init error", e)
                 Toast.makeText(requireContext(), "Failed to initialize video: ${e.message}", Toast.LENGTH_SHORT).show()
                 binding.tvConnectionStatus.text = "● Connection failed"
                 binding.tvConnectionStatus.setTextColor(0xFFF44336.toInt())
@@ -139,33 +144,45 @@ class VideoChatFragment : Fragment() {
     }
 
     private fun createLocalMediaTracks() {
-        // Create video track
-        val videoCapturer = createCameraCapturer()
-        this.videoCapturer = videoCapturer
+        try {
+            // Create video capturer
+            val videoCapturer = createCameraCapturer()
+            this.videoCapturer = videoCapturer
 
-        videoSource = peerConnectionFactory?.createVideoSource(videoCapturer?.isScreencast ?: false)
-        videoCapturer?.initialize(
-            SurfaceTextureHelper.create("CaptureThread", EglBase.create().eglBaseContext),
-            requireContext(),
-            videoSource?.capturerObserver
-        )
-        videoCapturer?.startCapture(1280, 720, 30)
+            if (videoCapturer != null) {
+                // Create video source
+                videoSource = peerConnectionFactory?.createVideoSource(false)
+                
+                // Initialize capturer
+                val surfaceTextureHelper = SurfaceTextureHelper.create("CaptureThread", rootEglBase?.eglBaseContext)
+                videoCapturer.initialize(surfaceTextureHelper, requireContext(), videoSource?.capturerObserver)
+                videoCapturer.startCapture(1280, 720, 30)
 
-        localVideoTrack = peerConnectionFactory?.createVideoTrack("local_video", videoSource)
-        localVideoTrack?.addSink(binding.localVideoView)
+                // Create video track
+                localVideoTrack = peerConnectionFactory?.createVideoTrack("local_video", videoSource)
+                localVideoTrack?.addSink(binding.localVideoView)
+            }
 
-        // Create audio track
-        val audioConstraints = MediaConstraints().apply {
-            mandatory.add(MediaConstraints.KeyValuePair("googEchoCancellation", "true"))
-            mandatory.add(MediaConstraints.KeyValuePair("googNoiseSuppression", "true"))
-            mandatory.add(MediaConstraints.KeyValuePair("googAutoGainControl", "true"))
+            // Create audio track
+            val audioConstraints = MediaConstraints().apply {
+                mandatory.add(MediaConstraints.KeyValuePair("googEchoCancellation", "true"))
+                mandatory.add(MediaConstraints.KeyValuePair("googNoiseSuppression", "true"))
+                mandatory.add(MediaConstraints.KeyValuePair("googAutoGainControl", "true"))
+            }
+            audioSource = peerConnectionFactory?.createAudioSource(audioConstraints)
+            localAudioTrack = peerConnectionFactory?.createAudioTrack("local_audio", audioSource)
+        } catch (e: Exception) {
+            android.util.Log.e("VideoChat", "Error creating media tracks", e)
         }
-        audioSource = peerConnectionFactory?.createAudioSource(audioConstraints)
-        localAudioTrack = peerConnectionFactory?.createAudioTrack("local_audio", audioSource)
     }
 
-    private fun createCameraCapturer(): CameraVideoCapturer? {
-        val enumerator = Camera2Enumerator(requireContext())
+    private fun createCameraCapturer(): VideoCapturer? {
+        val enumerator = if (Camera2Enumerator.isSupported(requireContext())) {
+            Camera2Enumerator(requireContext())
+        } else {
+            Camera1Enumerator(true)
+        }
+
         val deviceNames = enumerator.deviceNames
 
         // Try front camera first
@@ -209,12 +226,17 @@ class VideoChatFragment : Fragment() {
             rtcConfig,
             object : PeerConnection.Observer {
                 override fun onIceCandidate(candidate: IceCandidate?) {
-                    // Send ICE candidate to remote peer via Firebase
                     candidate?.let { sendIceCandidate(it) }
+                }
+                
+                override fun onIceCandidatesRemoved(candidates: Array<out IceCandidate>?) {
+                    // Handle removed ICE candidates
                 }
 
                 override fun onAddStream(stream: MediaStream?) {
-                    stream?.videoTracks?.firstOrNull()?.addSink(binding.remoteVideoView)
+                    lifecycleScope.launch {
+                        stream?.videoTracks?.firstOrNull()?.addSink(binding.remoteVideoView)
+                    }
                 }
 
                 override fun onIceConnectionChange(state: PeerConnection.IceConnectionState?) {
@@ -248,8 +270,9 @@ class VideoChatFragment : Fragment() {
         )
 
         // Add local tracks to peer connection
-        localVideoTrack?.let { peerConnection?.addTrack(it, listOf("stream")) }
-        localAudioTrack?.let { peerConnection?.addTrack(it, listOf("stream")) }
+        val streamId = "stream"
+        localVideoTrack?.let { peerConnection?.addTrack(it, listOf(streamId)) }
+        localAudioTrack?.let { peerConnection?.addTrack(it, listOf(streamId)) }
     }
 
     private fun setupControls() {
@@ -299,10 +322,8 @@ class VideoChatFragment : Fragment() {
         // End call (host)
         binding.btnEndCall.setOnClickListener {
             if (isHost) {
-                // Host ends call for everyone
                 endCallForEveryone()
             } else {
-                // Non-host just leaves
                 leaveCall()
             }
         }
@@ -314,21 +335,26 @@ class VideoChatFragment : Fragment() {
     }
 
     private fun switchCamera() {
-        videoCapturer?.switchCamera(object : CameraVideoCapturer.CameraSwitchHandler {
-            override fun onCameraSwitchDone(isFrontCamera: Boolean) {
-                this@VideoChatFragment.isFrontCamera = isFrontCamera
-                binding.localVideoView.setMirror(isFrontCamera)
-                Toast.makeText(
-                    requireContext(),
-                    if (isFrontCamera) "Front camera" else "Back camera",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
+        try {
+            val cameraVideoCapturer = videoCapturer as? CameraVideoCapturer
+            cameraVideoCapturer?.switchCamera(object : CameraVideoCapturer.CameraSwitchHandler {
+                override fun onCameraSwitchDone(isFrontCamera: Boolean) {
+                    this@VideoChatFragment.isFrontCamera = isFrontCamera
+                    binding.localVideoView.setMirror(isFrontCamera)
+                    Toast.makeText(
+                        requireContext(),
+                        if (isFrontCamera) "Front camera" else "Back camera",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
 
-            override fun onCameraSwitchError(errorDescription: String?) {
-                Toast.makeText(requireContext(), "Failed to switch camera", Toast.LENGTH_SHORT).show()
-            }
-        })
+                override fun onCameraSwitchError(errorDescription: String?) {
+                    Toast.makeText(requireContext(), "Failed to switch camera", Toast.LENGTH_SHORT).show()
+                }
+            })
+        } catch (e: Exception) {
+            Toast.makeText(requireContext(), "Camera switch not supported", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun sendIceCandidate(candidate: IceCandidate) {
@@ -337,6 +363,7 @@ class VideoChatFragment : Fragment() {
             try {
                 val sessionId = CollaborativeSessionManager.getCurrentSessionId() ?: return@launch
                 // Store ICE candidate in Firebase for other peers to receive
+                android.util.Log.d("VideoChat", "ICE candidate: ${candidate.sdp}")
             } catch (e: Exception) {
                 android.util.Log.e("VideoChat", "Failed to send ICE candidate", e)
             }
@@ -349,7 +376,6 @@ class VideoChatFragment : Fragment() {
             .setMessage("End the video call for all participants?")
             .setPositiveButton("End") { _, _ ->
                 lifecycleScope.launch {
-                    // Notify all participants via Firebase
                     val sessionId = CollaborativeSessionManager.getCurrentSessionId()
                     // TODO: Send end call signal to Firebase
                     cleanup()
@@ -367,7 +393,6 @@ class VideoChatFragment : Fragment() {
             .setMessage("Leave the video call?")
             .setPositiveButton("Leave") { _, _ ->
                 lifecycleScope.launch {
-                    // Notify others that you left
                     cleanup()
                     parentFragmentManager.popBackStack()
                     Toast.makeText(requireContext(), "Left call", Toast.LENGTH_SHORT).show()
@@ -403,23 +428,28 @@ class VideoChatFragment : Fragment() {
     }
 
     private fun cleanup() {
-        durationHandler.removeCallbacks(durationRunnable)
-        
-        videoCapturer?.stopCapture()
-        videoCapturer?.dispose()
-        
-        localVideoTrack?.dispose()
-        localAudioTrack?.dispose()
-        videoSource?.dispose()
-        audioSource?.dispose()
-        
-        peerConnection?.close()
-        peerConnection?.dispose()
-        
-        binding.localVideoView.release()
-        binding.remoteVideoView.release()
-        
-        peerConnectionFactory?.dispose()
+        try {
+            durationHandler.removeCallbacks(durationRunnable)
+            
+            videoCapturer?.stopCapture()
+            videoCapturer?.dispose()
+            
+            localVideoTrack?.dispose()
+            localAudioTrack?.dispose()
+            videoSource?.dispose()
+            audioSource?.dispose()
+            
+            peerConnection?.close()
+            peerConnection?.dispose()
+            
+            binding.localVideoView.release()
+            binding.remoteVideoView.release()
+            
+            peerConnectionFactory?.dispose()
+            rootEglBase?.release()
+        } catch (e: Exception) {
+            android.util.Log.e("VideoChat", "Cleanup error", e)
+        }
     }
 
     override fun onDestroyView() {

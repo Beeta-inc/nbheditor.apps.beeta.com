@@ -96,7 +96,7 @@ dependencies {
     implementation("com.google.firebase:firebase-database") // Realtime Database for collaborative editing
     
     // WebRTC for video chat
-    implementation("io.getstream:stream-webrtc-android:1.1.3")
+    implementation("com.mesibo.api:webrtc:1.0.5")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

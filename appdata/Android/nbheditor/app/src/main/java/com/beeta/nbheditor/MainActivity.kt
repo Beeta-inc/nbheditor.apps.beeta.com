@@ -400,6 +400,8 @@ open class MainActivity : AppCompatActivity() {
     fun isGlassModePublic() = isGlassMode
 
     fun getEditorText(): String = editorBinding.textArea.text.toString()
+    
+    fun getFragmentContainerId(): Int = binding.appBarMain.contentMain.fragmentContainer.id
 
     suspend fun callAIPublic(prompt: String, maxTokens: Int = 512): String? = callAI(prompt, maxTokens)
 
