@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/participantCard"
+    android:layout_width="100dp"
+    android:layout_height="120dp"
+    android:layout_margin="4dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp"
+    app:cardBackgroundColor="#2C2C2E">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <!-- Video view -->
+        <io.livekit.android.renderer.TextureViewRenderer
+            android:id="@+id/participantVideoView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <!-- Placeholder when camera is off -->
+        <LinearLayout
+            android:id="@+id/participantPlaceholder"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="#3A3A3C"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/participantInitial"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:text="U"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:gravity="center"
+                android:background="@drawable/circle_bg"
+                android:backgroundTint="#2196F3" />
+        </LinearLayout>
+
+        <!-- Speaking border indicator -->
+        <View
+            android:id="@+id/speakingBorder"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/speaking_border"
+            android:visibility="gone" />
+
+        <!-- User info overlay -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_gravity="bottom"
+            android:background="#CC000000"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:gravity="center_vertical">
+
+            <!-- Speaking indicator -->
+            <View
+                android:id="@+id/speakingIndicator"
+                android:layout_width="6dp"
+                android:layout_height="6dp"
+                android:background="@drawable/circle_bg"
+                android:backgroundTint="#4CAF50"
+                android:layout_marginEnd="6dp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/participantName"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="User"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <!-- Mic muted icon -->
+            <ImageView
+                android:id="@+id/micMuted"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:src="@android:drawable/ic_lock_silent_mode"
+                android:tint="@color/white"
+                android:layout_marginStart="4dp"
+                android:visibility="gone" />
+
+            <!-- Camera off icon -->
+            <ImageView
+                android:id="@+id/cameraOff"
+                android:layout_width="12dp"
+                android:layout_height="12dp"
+                android:src="@android:drawable/presence_video_busy"
+                android:tint="@color/white"
+                android:layout_marginStart="3dp"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <!-- Pin indicator (for maximized user) -->
+        <ImageView
+            android:id="@+id/pinIndicator"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:src="@android:drawable/ic_menu_view"
+            android:tint="#4CAF50"
+            android:layout_gravity="top|end"
+            android:layout_margin="6dp"
+            android:visibility="gone" />
+    </FrameLayout>
+
+</com.google.android.material.card.MaterialCardView>

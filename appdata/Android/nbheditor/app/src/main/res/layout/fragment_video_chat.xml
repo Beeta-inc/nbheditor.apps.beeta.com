@@ -4,32 +4,129 @@
     android:id="@+id/videoChatRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000">
+    android:background="#1C1C1E">
 
-    <!-- Remote video (full screen) -->
-    <io.livekit.android.renderer.TextureViewRenderer
-        android:id="@+id/remoteVideoView"
+    <!-- Main video area (host/maximized participant) -->
+    <FrameLayout
+        android:id="@+id/mainVideoContainer"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:background="#000000"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent" />
-
-    <!-- Local video (picture-in-picture) -->
-    <androidx.cardview.widget.CardView
-        android:id="@+id/localVideoCard"
-        android:layout_width="100dp"
-        android:layout_height="140dp"
-        android:layout_margin="20dp"
-        app:cardCornerRadius="16dp"
-        app:cardElevation="12dp"
-        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/participantsGrid"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
+        <!-- Main video view -->
         <io.livekit.android.renderer.TextureViewRenderer
-            android:id="@+id/localVideoView"
+            android:id="@+id/mainVideoView"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
-    </androidx.cardview.widget.CardView>
+
+        <!-- Placeholder when camera is off -->
+        <LinearLayout
+            android:id="@+id/mainVideoPlaceholder"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="#2C2C2E"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/mainUserInitial"
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                android:text="H"
+                android:textSize="48sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:gravity="center"
+                android:background="@drawable/circle_bg"
+                android:backgroundTint="#4CAF50" />
+
+            <TextView
+                android:id="@+id/mainUserName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Host"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@color/white"
+                android:layout_marginTop="16dp" />
+        </LinearLayout>
+
+        <!-- Main user info overlay -->
+        <LinearLayout
+            android:id="@+id/mainUserInfo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_gravity="bottom|start"
+            android:layout_margin="16dp"
+            android:background="#CC000000"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:gravity="center_vertical">
+
+            <!-- Speaking indicator -->
+            <View
+                android:id="@+id/mainSpeakingIndicator"
+                android:layout_width="8dp"
+                android:layout_height="8dp"
+                android:background="@drawable/circle_bg"
+                android:backgroundTint="#4CAF50"
+                android:layout_marginEnd="8dp"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/mainUserNameOverlay"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Host"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/white" />
+
+            <!-- Mic muted icon -->
+            <ImageView
+                android:id="@+id/mainMicMuted"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@android:drawable/ic_lock_silent_mode"
+                android:tint="@color/white"
+                android:layout_marginStart="8dp"
+                android:visibility="gone" />
+
+            <!-- Camera off icon -->
+            <ImageView
+                android:id="@+id/mainCameraOff"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@android:drawable/presence_video_busy"
+                android:tint="@color/white"
+                android:layout_marginStart="6dp"
+                android:visibility="gone" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <!-- Participants grid (bottom strip) -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/participantsGrid"
+        android:layout_width="match_parent"
+        android:layout_height="140dp"
+        android:orientation="horizontal"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
+        android:background="#1C1C1E"
+        android:clipToPadding="false"
+        app:layout_constraintBottom_toTopOf="@id/topInfoBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <!-- Top info bar -->
     <LinearLayout
@@ -37,13 +134,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:background="@drawable/gradient_top_overlay"
+        android:background="@drawable/gradient_bottom_overlay"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
-        android:paddingTop="20dp"
-        android:paddingBottom="30dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
         android:gravity="center_vertical"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintBottom_toTopOf="@id/controlsBar">
 
         <LinearLayout
             android:layout_width="0dp"
@@ -56,7 +153,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="1 participant"
-                android:textSize="16sp"
+                android:textSize="14sp"
                 android:textStyle="bold"
                 android:textColor="@color/white" />
 
@@ -65,9 +162,9 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="00:00"
-                android:textSize="14sp"
+                android:textSize="12sp"
                 android:textColor="#CCFFFFFF"
-                android:layout_marginTop="4dp" />
+                android:layout_marginTop="2dp" />
         </LinearLayout>
 
         <TextView
@@ -75,14 +172,13 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="● Connected"
-            android:textSize="13sp"
+            android:textSize="12sp"
             android:textColor="#4CAF50"
-            android:background="#1A000000"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:paddingTop="6dp"
-            android:paddingBottom="6dp"
-            android:drawablePadding="6dp" />
+            android:background="#33000000"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp" />
     </LinearLayout>
 
     <!-- Bottom control bar -->
@@ -91,9 +187,9 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="@drawable/gradient_bottom_overlay"
-        android:paddingTop="30dp"
-        android:paddingBottom="40dp"
+        android:background="#1C1C1E"
+        android:paddingTop="16dp"
+        android:paddingBottom="24dp"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
         app:layout_constraintBottom_toBottomOf="parent">
@@ -105,97 +201,208 @@
             android:orientation="horizontal">
 
             <!-- Microphone toggle -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/btnToggleMic"
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                android:layout_margin="10dp"
-                app:cardCornerRadius="28dp"
-                app:cardElevation="6dp"
-                app:cardBackgroundColor="#33FFFFFF">
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:layout_margin="8dp">
 
-                <ImageView
-                    android:id="@+id/imgMic"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:layout_gravity="center"
-                    android:src="@android:drawable/ic_btn_speak_now"
-                    android:tint="@color/white" />
-            </com.google.android.material.card.MaterialCardView>
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/btnToggleMic"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    app:cardCornerRadius="28dp"
+                    app:cardElevation="4dp"
+                    app:cardBackgroundColor="#3A3A3C">
+
+                    <ImageView
+                        android:id="@+id/imgMic"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_gravity="center"
+                        android:src="@android:drawable/ic_btn_speak_now"
+                        android:tint="@color/white" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Mic"
+                    android:textSize="11sp"
+                    android:textColor="#CCFFFFFF"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
 
             <!-- Video toggle -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/btnToggleVideo"
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                android:layout_margin="10dp"
-                app:cardCornerRadius="28dp"
-                app:cardElevation="6dp"
-                app:cardBackgroundColor="#33FFFFFF">
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:layout_margin="8dp">
 
-                <ImageView
-                    android:id="@+id/imgVideo"
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:layout_gravity="center"
-                    android:src="@android:drawable/presence_video_online"
-                    android:tint="@color/white" />
-            </com.google.android.material.card.MaterialCardView>
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/btnToggleVideo"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    app:cardCornerRadius="28dp"
+                    app:cardElevation="4dp"
+                    app:cardBackgroundColor="#3A3A3C">
+
+                    <ImageView
+                        android:id="@+id/imgVideo"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_gravity="center"
+                        android:src="@android:drawable/presence_video_online"
+                        android:tint="@color/white" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Video"
+                    android:textSize="11sp"
+                    android:textColor="#CCFFFFFF"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
 
             <!-- Rotate camera -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/btnRotateCamera"
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                android:layout_margin="10dp"
-                app:cardCornerRadius="28dp"
-                app:cardElevation="6dp"
-                app:cardBackgroundColor="#33FFFFFF">
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:layout_margin="8dp">
 
-                <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:layout_gravity="center"
-                    android:src="@android:drawable/ic_menu_rotate"
-                    android:tint="@color/white" />
-            </com.google.android.material.card.MaterialCardView>
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/btnRotateCamera"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    app:cardCornerRadius="28dp"
+                    app:cardElevation="4dp"
+                    app:cardBackgroundColor="#3A3A3C">
 
-            <!-- End call -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/btnEndCall"
-                android:layout_width="64dp"
-                android:layout_height="64dp"
-                android:layout_margin="10dp"
-                app:cardCornerRadius="32dp"
-                app:cardElevation="8dp"
-                app:cardBackgroundColor="#F44336">
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_gravity="center"
+                        android:src="@android:drawable/ic_menu_rotate"
+                        android:tint="@color/white" />
+                </com.google.android.material.card.MaterialCardView>
 
-                <ImageView
-                    android:layout_width="32dp"
-                    android:layout_height="32dp"
-                    android:layout_gravity="center"
-                    android:src="@android:drawable/ic_menu_call"
-                    android:rotation="135"
-                    android:tint="@color/white" />
-            </com.google.android.material.card.MaterialCardView>
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Flip"
+                    android:textSize="11sp"
+                    android:textColor="#CCFFFFFF"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
+
+            <!-- Settings -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:layout_margin="8dp">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/btnSettings"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    app:cardCornerRadius="28dp"
+                    app:cardElevation="4dp"
+                    app:cardBackgroundColor="#3A3A3C">
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_gravity="center"
+                        android:src="@android:drawable/ic_menu_manage"
+                        android:tint="@color/white" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Settings"
+                    android:textSize="11sp"
+                    android:textColor="#CCFFFFFF"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
+
+            <!-- End/Leave call -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:layout_margin="8dp">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/btnEndCall"
+                    android:layout_width="64dp"
+                    android:layout_height="64dp"
+                    app:cardCornerRadius="32dp"
+                    app:cardElevation="6dp"
+                    app:cardBackgroundColor="#F44336">
+
+                    <ImageView
+                        android:layout_width="32dp"
+                        android:layout_height="32dp"
+                        android:layout_gravity="center"
+                        android:src="@android:drawable/ic_menu_call"
+                        android:rotation="135"
+                        android:tint="@color/white" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    android:id="@+id/tvEndCallLabel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="End"
+                    android:textSize="11sp"
+                    android:textColor="#CCFFFFFF"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
 
             <!-- Leave (for non-host) -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/btnLeaveCall"
-                android:layout_width="56dp"
-                android:layout_height="56dp"
-                android:layout_margin="10dp"
-                app:cardCornerRadius="28dp"
-                app:cardElevation="6dp"
-                app:cardBackgroundColor="#33FFFFFF">
+            <LinearLayout
+                android:id="@+id/btnLeaveCallContainer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:layout_margin="8dp"
+                android:visibility="gone">
 
-                <ImageView
-                    android:layout_width="28dp"
-                    android:layout_height="28dp"
-                    android:layout_gravity="center"
-                    android:src="@android:drawable/ic_menu_revert"
-                    android:tint="@color/white" />
-            </com.google.android.material.card.MaterialCardView>
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/btnLeaveCall"
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    app:cardCornerRadius="28dp"
+                    app:cardElevation="4dp"
+                    app:cardBackgroundColor="#3A3A3C">
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_gravity="center"
+                        android:src="@android:drawable/ic_menu_revert"
+                        android:tint="@color/white" />
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Leave"
+                    android:textSize="11sp"
+                    android:textColor="#CCFFFFFF"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 

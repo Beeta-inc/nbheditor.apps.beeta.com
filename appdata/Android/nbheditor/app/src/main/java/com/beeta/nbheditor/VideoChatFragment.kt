@@ -8,12 +8,17 @@ import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
+import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.beeta.nbheditor.databinding.FragmentVideoChatBinding
 import io.livekit.android.LiveKit
+import io.livekit.android.renderer.TextureViewRenderer
 import io.livekit.android.room.Room
 import io.livekit.android.room.track.LocalVideoTrack
 import io.livekit.android.room.track.Track
@@ -33,6 +38,12 @@ class VideoChatFragment : Fragment() {
 
     private val callStartTime = System.currentTimeMillis()
     private val durationHandler = Handler(Looper.getMainLooper())
+    
+    // Participants management
+    private lateinit var participantsAdapter: VideoParticipantsAdapter
+    private val participants = mutableListOf<VideoParticipant>()
+    private var maximizedParticipantId: String? = null
+
     private val durationRunnable = object : Runnable {
         override fun run() {
             updateCallDuration()
@@ -50,11 +61,67 @@ class VideoChatFragment : Fragment() {
 
         isHost = arguments?.getBoolean("isHost", false) ?: false
         
-        binding.btnLeaveCall.visibility = if (isHost) View.GONE else View.VISIBLE
+        // Update button labels
+        binding.tvEndCallLabel.text = if (isHost) "End" else "Leave"
+        binding.btnLeaveCallContainer.visibility = if (isHost) View.GONE else View.VISIBLE
 
+        setupParticipantsGrid()
         checkPermissionsAndStart()
         setupControls()
         startCallDurationTimer()
+    }
+
+    private fun setupParticipantsGrid() {
+        participantsAdapter = VideoParticipantsAdapter(
+            participants = participants,
+            onParticipantClick = { participant ->
+                // Single click - show info
+                Toast.makeText(requireContext(), participant.name, Toast.LENGTH_SHORT).show()
+            },
+            onParticipantDoubleClick = { participant ->
+                // Double click - maximize
+                maximizeParticipant(participant.id)
+            }
+        )
+        
+        binding.participantsGrid.apply {
+            layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+            adapter = participantsAdapter
+        }
+    }
+
+    private fun maximizeParticipant(participantId: String) {
+        maximizedParticipantId = participantId
+        val participant = participants.find { it.id == participantId }
+        
+        if (participant != null) {
+            // Update main video view
+            updateMainVideoView(participant)
+            
+            // Update pin indicators
+            participantsAdapter.notifyDataSetChanged()
+            
+            Toast.makeText(requireContext(), "${participant.name} maximized", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun updateMainVideoView(participant: VideoParticipant) {
+        // Show/hide video or placeholder
+        if (participant.isVideoEnabled) {
+            binding.mainVideoView.visibility = View.VISIBLE
+            binding.mainVideoPlaceholder.visibility = View.GONE
+        } else {
+            binding.mainVideoView.visibility = View.GONE
+            binding.mainVideoPlaceholder.visibility = View.VISIBLE
+            binding.mainUserInitial.text = participant.name.firstOrNull()?.uppercase() ?: "U"
+            binding.mainUserName.text = participant.name
+        }
+        
+        // Update user info overlay
+        binding.mainUserNameOverlay.text = participant.name
+        binding.mainMicMuted.visibility = if (participant.isMicEnabled) View.GONE else View.VISIBLE
+        binding.mainCameraOff.visibility = if (participant.isVideoEnabled) View.GONE else View.VISIBLE
+        binding.mainSpeakingIndicator.visibility = if (participant.isSpeaking) View.VISIBLE else View.GONE
     }
 
     private fun checkPermissionsAndStart() {
@@ -98,13 +165,32 @@ class VideoChatFragment : Fragment() {
                 val cameraTrack = room?.localParticipant?.getTrackPublication(Track.Source.CAMERA)
                 localVideoTrack = cameraTrack?.track as? LocalVideoTrack
 
-                localVideoTrack?.addRenderer(binding.localVideoView)
+                // Add local participant to list
+                val localUser = CollaborativeSessionManager.getCurrentUserId() ?: "You"
+                val localName = GoogleSignInHelper.getUserName(requireContext()) ?: "You"
+                
+                val localParticipant = VideoParticipant(
+                    id = localUser,
+                    name = localName,
+                    isHost = isHost,
+                    isMicEnabled = true,
+                    isVideoEnabled = true,
+                    isSpeaking = false,
+                    videoTrack = localVideoTrack
+                )
+                
+                participants.add(localParticipant)
+                participantsAdapter.notifyItemInserted(participants.size - 1)
+                
+                // Set host as maximized by default
+                if (isHost) {
+                    maximizeParticipant(localUser)
+                }
 
                 binding.tvConnectionStatus.text = "● Connected"
                 binding.tvConnectionStatus.setTextColor(0xFF4CAF50.toInt())
                 
-                val participantCount = (room?.remoteParticipants?.size ?: 0) + 1
-                binding.tvParticipants.text = "$participantCount participant${if (participantCount != 1) "s" else ""}"
+                updateParticipantCount()
 
                 Toast.makeText(requireContext(), "Video chat connected", Toast.LENGTH_SHORT).show()
 
@@ -117,23 +203,32 @@ class VideoChatFragment : Fragment() {
         }
     }
 
+    private fun updateParticipantCount() {
+        val count = participants.size
+        binding.tvParticipants.text = "$count participant${if (count != 1) "s" else ""}"
+    }
+
     private fun setupControls() {
         binding.btnToggleMic.setOnClickListener {
             lifecycleScope.launch {
                 isMicEnabled = !isMicEnabled
                 room?.localParticipant?.setMicrophoneEnabled(isMicEnabled)
                 
+                // Update local participant
+                participants.find { it.id == CollaborativeSessionManager.getCurrentUserId() }?.let {
+                    it.isMicEnabled = isMicEnabled
+                    participantsAdapter.notifyDataSetChanged()
+                }
+                
                 if (isMicEnabled) {
                     binding.imgMic.setImageResource(android.R.drawable.ic_btn_speak_now)
                     (binding.btnToggleMic as com.google.android.material.card.MaterialCardView)
-                        .setCardBackgroundColor(0x4DFFFFFF)
+                        .setCardBackgroundColor(0xFF3A3A3C.toInt())
                 } else {
                     binding.imgMic.setImageResource(android.R.drawable.ic_lock_silent_mode)
                     (binding.btnToggleMic as com.google.android.material.card.MaterialCardView)
                         .setCardBackgroundColor(0xFFF44336.toInt())
                 }
-                
-                Toast.makeText(requireContext(), if (isMicEnabled) "Mic on" else "Mic off", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -142,19 +237,21 @@ class VideoChatFragment : Fragment() {
                 isVideoEnabled = !isVideoEnabled
                 room?.localParticipant?.setCameraEnabled(isVideoEnabled)
                 
+                // Update local participant
+                participants.find { it.id == CollaborativeSessionManager.getCurrentUserId() }?.let {
+                    it.isVideoEnabled = isVideoEnabled
+                    participantsAdapter.notifyDataSetChanged()
+                }
+                
                 if (isVideoEnabled) {
                     binding.imgVideo.setImageResource(android.R.drawable.presence_video_online)
                     (binding.btnToggleVideo as com.google.android.material.card.MaterialCardView)
-                        .setCardBackgroundColor(0x4DFFFFFF)
-                    binding.localVideoView.visibility = View.VISIBLE
+                        .setCardBackgroundColor(0xFF3A3A3C.toInt())
                 } else {
                     binding.imgVideo.setImageResource(android.R.drawable.presence_video_busy)
                     (binding.btnToggleVideo as com.google.android.material.card.MaterialCardView)
                         .setCardBackgroundColor(0xFFF44336.toInt())
-                    binding.localVideoView.visibility = View.INVISIBLE
                 }
-                
-                Toast.makeText(requireContext(), if (isVideoEnabled) "Video on" else "Video off", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -169,6 +266,10 @@ class VideoChatFragment : Fragment() {
             }
         }
 
+        binding.btnSettings.setOnClickListener {
+            showSettingsDialog()
+        }
+
         binding.btnEndCall.setOnClickListener {
             if (isHost) {
                 endCallForEveryone()
@@ -180,6 +281,55 @@ class VideoChatFragment : Fragment() {
         binding.btnLeaveCall.setOnClickListener {
             leaveCall()
         }
+    }
+
+    private fun showSettingsDialog() {
+        val options = arrayOf("👥 View All Participants", "📊 Call Stats", "⚙️ Audio/Video Settings")
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle("Video Call Settings")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> showParticipantsList()
+                    1 -> showCallStats()
+                    2 -> showAudioVideoSettings()
+                }
+            }
+            .setNegativeButton("Close", null)
+            .show()
+    }
+
+    private fun showParticipantsList() {
+        val participantNames = participants.map { 
+            "${it.name}${if (it.isHost) " (Host)" else ""}${if (!it.isMicEnabled) " 🔇" else ""}${if (!it.isVideoEnabled) " 📹" else ""}"
+        }.toTypedArray()
+        
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle("Participants (${participants.size})")
+            .setItems(participantNames) { _, which ->
+                maximizeParticipant(participants[which].id)
+            }
+            .setPositiveButton("Close", null)
+            .show()
+    }
+
+    private fun showCallStats() {
+        val elapsed = (System.currentTimeMillis() - callStartTime) / 1000
+        val minutes = elapsed / 60
+        val stats = """
+            Call Duration: ${String.format("%02d:%02d", minutes, elapsed % 60)}
+            Participants: ${participants.size}
+            Connection: ${binding.tvConnectionStatus.text}
+        """.trimIndent()
+        
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle("Call Statistics")
+            .setMessage(stats)
+            .setPositiveButton("OK", null)
+            .show()
+    }
+
+    private fun showAudioVideoSettings() {
+        Toast.makeText(requireContext(), "Audio/Video settings coming soon", Toast.LENGTH_SHORT).show()
     }
 
     private fun endCallForEveryone() {
@@ -226,13 +376,19 @@ class VideoChatFragment : Fragment() {
     private fun cleanup() {
         try {
             durationHandler.removeCallbacks(durationRunnable)
-            localVideoTrack?.removeRenderer(binding.localVideoView)
+            participants.forEach { it.videoTrack?.removeRenderer(binding.mainVideoView) }
             room?.disconnect()
             room = null
             localVideoTrack = null
         } catch (e: Exception) {
             android.util.Log.e("VideoChat", "Cleanup error", e)
         }
+    }
+
+    override fun onDestroyView() {
+        super.onDestroyView()
+        cleanup()
+        _binding = null
     }
 
     companion object {
@@ -244,4 +400,84 @@ class VideoChatFragment : Fragment() {
             }
         }
     }
+}
+
+// Data class for participants
+data class VideoParticipant(
+    val id: String,
+    val name: String,
+    val isHost: Boolean,
+    var isMicEnabled: Boolean,
+    var isVideoEnabled: Boolean,
+    var isSpeaking: Boolean,
+    val videoTrack: LocalVideoTrack? = null
+)
+
+// RecyclerView Adapter for participants grid
+class VideoParticipantsAdapter(
+    private val participants: List<VideoParticipant>,
+    private val onParticipantClick: (VideoParticipant) -> Unit,
+    private val onParticipantDoubleClick: (VideoParticipant) -> Unit
+) : RecyclerView.Adapter<VideoParticipantsAdapter.ViewHolder>() {
+
+    inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val videoView: TextureViewRenderer = view.findViewById(R.id.participantVideoView)
+        val placeholder: View = view.findViewById(R.id.participantPlaceholder)
+        val initial: TextView = view.findViewById(R.id.participantInitial)
+        val name: TextView = view.findViewById(R.id.participantName)
+        val micMuted: ImageView = view.findViewById(R.id.micMuted)
+        val cameraOff: ImageView = view.findViewById(R.id.cameraOff)
+        val speakingIndicator: View = view.findViewById(R.id.speakingIndicator)
+        val speakingBorder: View = view.findViewById(R.id.speakingBorder)
+        val pinIndicator: ImageView = view.findViewById(R.id.pinIndicator)
+        
+        private var lastClickTime = 0L
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_video_participant, parent, false)
+        return ViewHolder(view)
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val participant = participants[position]
+        
+        // Set name
+        holder.name.text = participant.name
+        
+        // Set initial
+        holder.initial.text = participant.name.firstOrNull()?.uppercase() ?: "U"
+        
+        // Show/hide video or placeholder
+        if (participant.isVideoEnabled) {
+            holder.videoView.visibility = View.VISIBLE
+            holder.placeholder.visibility = View.GONE
+            participant.videoTrack?.addRenderer(holder.videoView)
+        } else {
+            holder.videoView.visibility = View.GONE
+            holder.placeholder.visibility = View.VISIBLE
+        }
+        
+        // Status indicators
+        holder.micMuted.visibility = if (participant.isMicEnabled) View.GONE else View.VISIBLE
+        holder.cameraOff.visibility = if (participant.isVideoEnabled) View.GONE else View.VISIBLE
+        holder.speakingIndicator.visibility = if (participant.isSpeaking) View.VISIBLE else View.GONE
+        holder.speakingBorder.visibility = if (participant.isSpeaking) View.VISIBLE else View.GONE
+        
+        // Click handling (single and double click)
+        holder.itemView.setOnClickListener {
+            val currentTime = System.currentTimeMillis()
+            if (currentTime - holder.lastClickTime < 300) {
+                // Double click
+                onParticipantDoubleClick(participant)
+            } else {
+                // Single click
+                onParticipantClick(participant)
+            }
+            holder.lastClickTime = currentTime
+        }
+    }
+
+    override fun getItemCount() = participants.size
 }
