@@ -105,6 +105,8 @@ class VideoMiniPlayerService : Service() {
     }
 
     private fun setupTouchListener(params: WindowManager.LayoutParams) {
+        var isDragging = false
+        
         miniPlayerView?.setOnTouchListener { view, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
@@ -112,18 +114,22 @@ class VideoMiniPlayerService : Service() {
                     initialY = params.y
                     initialTouchX = event.rawX
                     initialTouchY = event.rawY
+                    isDragging = false
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    params.x = initialX + (event.rawX - initialTouchX).toInt()
-                    params.y = initialY + (event.rawY - initialTouchY).toInt()
-                    windowManager.updateViewLayout(miniPlayerView, params)
+                    val deltaX = event.rawX - initialTouchX
+                    val deltaY = event.rawY - initialTouchY
+                    if (Math.abs(deltaX) > 10 || Math.abs(deltaY) > 10) {
+                        isDragging = true
+                        params.x = initialX - deltaX.toInt()
+                        params.y = initialY + deltaY.toInt()
+                        windowManager.updateViewLayout(miniPlayerView, params)
+                    }
                     true
                 }
                 MotionEvent.ACTION_UP -> {
-                    val deltaX = Math.abs(event.rawX - initialTouchX)
-                    val deltaY = Math.abs(event.rawY - initialTouchY)
-                    if (deltaX < 10 && deltaY < 10) {
+                    if (!isDragging) {
                         view.performClick()
                     }
                     true
@@ -151,13 +157,13 @@ class VideoMiniPlayerService : Service() {
         val miniY = miniParams?.y ?: 100
 
         val params = WindowManager.LayoutParams(
-            180,  // Same width as mini player
-            120,  // Same height as mini player
+            180,
+            120,
             layoutFlag,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         ).apply {
-            gravity = Gravity.TOP or Gravity.START
+            gravity = Gravity.TOP or Gravity.END
             x = miniX
             y = miniY
         }
@@ -221,13 +227,29 @@ class VideoMiniPlayerService : Service() {
     }
 
     private fun maximizePlayer() {
-        sendBroadcast(Intent("VIDEO_CHAT_MAXIMIZE"))
-        stopSelf()
+        try {
+            hideOverlay()
+            val intent = Intent("VIDEO_CHAT_MAXIMIZE")
+            sendBroadcast(intent)
+            Handler(Looper.getMainLooper()).postDelayed({
+                stopSelf()
+            }, 100)
+        } catch (e: Exception) {
+            android.util.Log.e("MiniPlayer", "Maximize error", e)
+        }
     }
 
     private fun leaveCall() {
-        sendBroadcast(Intent("VIDEO_CHAT_LEAVE"))
-        stopSelf()
+        try {
+            hideOverlay()
+            val intent = Intent("VIDEO_CHAT_LEAVE")
+            sendBroadcast(intent)
+            Handler(Looper.getMainLooper()).postDelayed({
+                stopSelf()
+            }, 100)
+        } catch (e: Exception) {
+            android.util.Log.e("MiniPlayer", "Leave error", e)
+        }
     }
 
     override fun onDestroy() {
