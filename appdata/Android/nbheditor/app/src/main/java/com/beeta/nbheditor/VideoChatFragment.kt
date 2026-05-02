@@ -1,10 +1,17 @@
 package com.beeta.nbheditor
 
 import android.Manifest
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -51,6 +58,17 @@ class VideoChatFragment : Fragment() {
         }
     }
 
+    private val miniPlayerReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                "VIDEO_CHAT_MIC_TOGGLE" -> toggleMic()
+                "VIDEO_CHAT_VIDEO_TOGGLE" -> toggleVideo()
+                "VIDEO_CHAT_MAXIMIZE" -> maximizeFromMiniPlayer()
+                "VIDEO_CHAT_LEAVE" -> leaveCall()
+            }
+        }
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentVideoChatBinding.inflate(inflater, container, false)
         return binding.root
@@ -69,6 +87,7 @@ class VideoChatFragment : Fragment() {
         checkPermissionsAndStart()
         setupControls()
         startCallDurationTimer()
+        registerMiniPlayerReceiver()
     }
 
     private fun setupParticipantsGrid() {
@@ -209,51 +228,8 @@ class VideoChatFragment : Fragment() {
     }
 
     private fun setupControls() {
-        binding.btnToggleMic.setOnClickListener {
-            lifecycleScope.launch {
-                isMicEnabled = !isMicEnabled
-                room?.localParticipant?.setMicrophoneEnabled(isMicEnabled)
-                
-                // Update local participant
-                participants.find { it.id == CollaborativeSessionManager.getCurrentUserId() }?.let {
-                    it.isMicEnabled = isMicEnabled
-                    participantsAdapter.notifyDataSetChanged()
-                }
-                
-                if (isMicEnabled) {
-                    binding.imgMic.setImageResource(android.R.drawable.ic_btn_speak_now)
-                    (binding.btnToggleMic as com.google.android.material.card.MaterialCardView)
-                        .setCardBackgroundColor(0xFF3A3A3C.toInt())
-                } else {
-                    binding.imgMic.setImageResource(android.R.drawable.ic_lock_silent_mode)
-                    (binding.btnToggleMic as com.google.android.material.card.MaterialCardView)
-                        .setCardBackgroundColor(0xFFF44336.toInt())
-                }
-            }
-        }
-
-        binding.btnToggleVideo.setOnClickListener {
-            lifecycleScope.launch {
-                isVideoEnabled = !isVideoEnabled
-                room?.localParticipant?.setCameraEnabled(isVideoEnabled)
-                
-                // Update local participant
-                participants.find { it.id == CollaborativeSessionManager.getCurrentUserId() }?.let {
-                    it.isVideoEnabled = isVideoEnabled
-                    participantsAdapter.notifyDataSetChanged()
-                }
-                
-                if (isVideoEnabled) {
-                    binding.imgVideo.setImageResource(android.R.drawable.presence_video_online)
-                    (binding.btnToggleVideo as com.google.android.material.card.MaterialCardView)
-                        .setCardBackgroundColor(0xFF3A3A3C.toInt())
-                } else {
-                    binding.imgVideo.setImageResource(android.R.drawable.presence_video_busy)
-                    (binding.btnToggleVideo as com.google.android.material.card.MaterialCardView)
-                        .setCardBackgroundColor(0xFFF44336.toInt())
-                }
-            }
-        }
+        binding.btnToggleMic.setOnClickListener { toggleMic() }
+        binding.btnToggleVideo.setOnClickListener { toggleVideo() }
 
         binding.btnRotateCamera.setOnClickListener {
             lifecycleScope.launch {
@@ -280,6 +256,52 @@ class VideoChatFragment : Fragment() {
 
         binding.btnLeaveCall.setOnClickListener {
             leaveCall()
+        }
+    }
+
+    private fun toggleMic() {
+        lifecycleScope.launch {
+            isMicEnabled = !isMicEnabled
+            room?.localParticipant?.setMicrophoneEnabled(isMicEnabled)
+            VideoMiniPlayerService.isMicEnabled = isMicEnabled
+            
+            participants.find { it.id == CollaborativeSessionManager.getCurrentUserId() }?.let {
+                it.isMicEnabled = isMicEnabled
+                participantsAdapter.notifyDataSetChanged()
+            }
+            
+            if (isMicEnabled) {
+                binding.imgMic.setImageResource(android.R.drawable.ic_btn_speak_now)
+                (binding.btnToggleMic as com.google.android.material.card.MaterialCardView)
+                    .setCardBackgroundColor(0xFF3A3A3C.toInt())
+            } else {
+                binding.imgMic.setImageResource(android.R.drawable.ic_lock_silent_mode)
+                (binding.btnToggleMic as com.google.android.material.card.MaterialCardView)
+                    .setCardBackgroundColor(0xFFF44336.toInt())
+            }
+        }
+    }
+
+    private fun toggleVideo() {
+        lifecycleScope.launch {
+            isVideoEnabled = !isVideoEnabled
+            room?.localParticipant?.setCameraEnabled(isVideoEnabled)
+            VideoMiniPlayerService.isVideoEnabled = isVideoEnabled
+            
+            participants.find { it.id == CollaborativeSessionManager.getCurrentUserId() }?.let {
+                it.isVideoEnabled = isVideoEnabled
+                participantsAdapter.notifyDataSetChanged()
+            }
+            
+            if (isVideoEnabled) {
+                binding.imgVideo.setImageResource(android.R.drawable.presence_video_online)
+                (binding.btnToggleVideo as com.google.android.material.card.MaterialCardView)
+                    .setCardBackgroundColor(0xFF3A3A3C.toInt())
+            } else {
+                binding.imgVideo.setImageResource(android.R.drawable.presence_video_busy)
+                (binding.btnToggleVideo as com.google.android.material.card.MaterialCardView)
+                    .setCardBackgroundColor(0xFFF44336.toInt())
+            }
         }
     }
 
@@ -353,6 +375,7 @@ class VideoChatFragment : Fragment() {
             .setMessage("Leave the video call?")
             .setPositiveButton("Leave") { _, _ ->
                 lifecycleScope.launch {
+                    stopMiniPlayer()
                     cleanup()
                     parentFragmentManager.popBackStack()
                     Toast.makeText(requireContext(), "Left call", Toast.LENGTH_SHORT).show()
@@ -360,6 +383,59 @@ class VideoChatFragment : Fragment() {
             }
             .setNegativeButton("Cancel", null)
             .show()
+    }
+
+    private fun registerMiniPlayerReceiver() {
+        val filter = IntentFilter().apply {
+            addAction("VIDEO_CHAT_MIC_TOGGLE")
+            addAction("VIDEO_CHAT_VIDEO_TOGGLE")
+            addAction("VIDEO_CHAT_MAXIMIZE")
+            addAction("VIDEO_CHAT_LEAVE")
+        }
+        requireContext().registerReceiver(miniPlayerReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+    }
+
+    private fun startMiniPlayer() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!Settings.canDrawOverlays(requireContext())) {
+                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${requireContext().packageName}"))
+                startActivityForResult(intent, 302)
+                return
+            }
+        }
+        
+        VideoMiniPlayerService.isMicEnabled = isMicEnabled
+        VideoMiniPlayerService.isVideoEnabled = isVideoEnabled
+        VideoMiniPlayerService.localUserName = GoogleSignInHelper.getUserName(requireContext()) ?: "You"
+        VideoMiniPlayerService.remoteUserName = participants.getOrNull(1)?.name ?: "User"
+        VideoMiniPlayerService.pinnedUserId = maximizedParticipantId
+        
+        val intent = Intent(requireContext(), VideoMiniPlayerService::class.java)
+        requireContext().startService(intent)
+        
+        requireActivity().moveTaskToBack(true)
+    }
+
+    private fun stopMiniPlayer() {
+        val intent = Intent(requireContext(), VideoMiniPlayerService::class.java)
+        requireContext().stopService(intent)
+    }
+
+    private fun maximizeFromMiniPlayer() {
+        stopMiniPlayer()
+        requireActivity().moveTaskToBack(false)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (requireActivity().isFinishing.not()) {
+            startMiniPlayer()
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        stopMiniPlayer()
     }
 
     private fun startCallDurationTimer() {
@@ -387,6 +463,10 @@ class VideoChatFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        try {
+            requireContext().unregisterReceiver(miniPlayerReceiver)
+        } catch (e: Exception) {}
+        stopMiniPlayer()
         cleanup()
         _binding = null
     }

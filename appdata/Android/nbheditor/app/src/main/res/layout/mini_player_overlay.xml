@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#80000000"
+    android:clickable="true"
+    android:focusable="true">
+
+    <!-- Maximize Button (Top Right) -->
+    <ImageView
+        android:id="@+id/btnMaximize"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="16dp"
+        android:background="@drawable/circle_bg"
+        android:padding="12dp"
+        android:src="@android:drawable/ic_menu_zoom"
+        android:contentDescription="Maximize"
+        android:clickable="true"
+        android:focusable="true" />
+
+    <!-- Leave Button (Center) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/btnLeaveOverlay"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_gravity="center"
+        app:cardCornerRadius="40dp"
+        app:cardElevation="8dp"
+        app:cardBackgroundColor="#F44336"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_gravity="center"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:contentDescription="Leave"
+            android:tint="#FFFFFF" />
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Bottom Controls -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="24dp"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <!-- Mic Toggle -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/btnMicOverlay"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_margin="8dp"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#3A3A3C"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:id="@+id/imgMicOverlay"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_gravity="center"
+                android:src="@android:drawable/ic_btn_speak_now"
+                android:contentDescription="Toggle Mic"
+                android:tint="#FFFFFF" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Video Toggle -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/btnVideoOverlay"
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_margin="8dp"
+            app:cardCornerRadius="28dp"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="#3A3A3C"
+            android:clickable="true"
+            android:focusable="true">
+
+            <ImageView
+                android:id="@+id/imgVideoOverlay"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_gravity="center"
+                android:src="@android:drawable/presence_video_online"
+                android:contentDescription="Toggle Video"
+                android:tint="#FFFFFF" />
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
+
+</FrameLayout>
