@@ -102,7 +102,6 @@ class CollabChatFragment : Fragment() {
 
         binding.btnCloseChat.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.btnCancelReply.setOnClickListener { hideReplyPreview() }
-        binding.btnVideoCall.setOnClickListener { startVideoCall() }
 
         view.translationX = view.width.toFloat()
         view.animate().translationX(0f).setDuration(280)

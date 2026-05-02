@@ -76,42 +76,91 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:layout_marginBottom="20dp">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnViewUsers"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="10dp"
-            android:text="View Users"
-            android:textAllCaps="false"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            app:icon="@android:drawable/ic_menu_myplaces"
-            app:iconGravity="textStart"
-            app:iconSize="22dp"
-            app:strokeColor="#1976D2"
-            app:strokeWidth="2dp"
-            app:cornerRadius="14dp" />
+        <!-- First row: Users and Leave -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="10dp">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnLeaveSession"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_weight="1"
-            android:layout_marginStart="10dp"
-            android:text="Leave"
-            android:textAllCaps="false"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            android:backgroundTint="#D32F2F"
-            app:icon="@android:drawable/ic_menu_close_clear_cancel"
-            app:iconGravity="textStart"
-            app:iconSize="22dp"
-            app:cornerRadius="14dp" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnViewUsers"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="10dp"
+                android:text="View Users"
+                android:textAllCaps="false"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                app:icon="@android:drawable/ic_menu_myplaces"
+                app:iconGravity="textStart"
+                app:iconSize="22dp"
+                app:strokeColor="#1976D2"
+                app:strokeWidth="2dp"
+                app:cornerRadius="14dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnLeaveSession"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:layout_marginStart="10dp"
+                android:text="Leave"
+                android:textAllCaps="false"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:backgroundTint="#D32F2F"
+                app:icon="@android:drawable/ic_menu_close_clear_cancel"
+                app:iconGravity="textStart"
+                app:iconSize="22dp"
+                app:cornerRadius="14dp" />
+
+        </LinearLayout>
+
+        <!-- Second row: Chat and Video Call -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnOpenChat"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:layout_marginEnd="10dp"
+                android:text="Chat"
+                android:textAllCaps="false"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:backgroundTint="#1976D2"
+                app:icon="@android:drawable/ic_menu_send"
+                app:iconGravity="textStart"
+                app:iconSize="22dp"
+                app:cornerRadius="14dp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnVideoCall"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_weight="1"
+                android:layout_marginStart="10dp"
+                android:text="Video Call"
+                android:textAllCaps="false"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:backgroundTint="#4CAF50"
+                app:icon="@android:drawable/presence_video_online"
+                app:iconGravity="textStart"
+                app:iconSize="22dp"
+                app:cornerRadius="14dp" />
+
+        </LinearLayout>
 
     </LinearLayout>
 

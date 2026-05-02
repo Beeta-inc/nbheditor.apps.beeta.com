@@ -5649,14 +5649,33 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
         }
     }
     
+    // Session controls menu with video call support
     private fun showSessionControlsMenu(sessionId: String) {
-        val items = arrayOf("💬 Team Chat", "👥 View Users", "📋 Copy Session Code", "🚪 Leave Session")
+        val items = arrayOf("💬 Team Chat", "📹 Video Call", "👥 View Users", "📋 Copy Session Code", "🚪 Leave Session")
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("Session: $sessionId")
             .setItems(items) { _, which ->
                 when (which) {
                     0 -> showCollabChatDialog()
                     1 -> {
+                        // Start video call
+                        lifecycleScope.launch {
+                            val session = CollaborativeSessionManager.getCurrentSession()
+                            val currentUserId = CollaborativeSessionManager.getCurrentUserId()
+                            val isHost = session?.creatorId == currentUserId
+                            
+                            val fragment = VideoChatFragment.newInstance(isHost)
+                            supportFragmentManager.beginTransaction()
+                                .replace(binding.appBarMain.contentMain.fragmentContainer.id, fragment)
+                                .addToBackStack(null)
+                                .commit()
+                            
+                            binding.appBarMain.contentMain.fragmentContainer.visibility = View.VISIBLE
+                            binding.appBarMain.contentMain.bottomNavView?.visibility = View.GONE
+                            binding.appBarMain.toolbarTitle?.text = "Video Call"
+                        }
+                    }
+                    2 -> {
                         val isCreator = CollaborativeSessionManager.getCurrentUserId()?.let { userId ->
                             lifecycleScope.launch {
                                 val session = CollaborativeSessionManager.observeSession(sessionId)
@@ -5666,13 +5685,13 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
                         }
                         showSessionUsersDialog(sessionId, false)
                     }
-                    2 -> {
+                    3 -> {
                         val clipboard = getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                         val clip = android.content.ClipData.newPlainText("Session Code", sessionId)
                         clipboard.setPrimaryClip(clip)
                         Toast.makeText(this, "✓ Session code copied: $sessionId", Toast.LENGTH_SHORT).show()
                     }
-                    3 -> {
+                    4 -> {
                         androidx.appcompat.app.AlertDialog.Builder(this)
                             .setTitle("Leave Session?")
                             .setMessage("Are you sure you want to leave this collaborative session?")
