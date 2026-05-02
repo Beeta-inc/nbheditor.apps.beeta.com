@@ -55,16 +55,21 @@ class VideoMiniPlayerService : Service() {
             WindowManager.LayoutParams.TYPE_PHONE
         }
 
+        // Convert dp to pixels
+        val displayMetrics = resources.displayMetrics
+        val widthPx = (180 * displayMetrics.density).toInt()
+        val heightPx = (120 * displayMetrics.density).toInt()
+
         val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.WRAP_CONTENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
+            widthPx,
+            heightPx,
             layoutFlag,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.END
-            x = 16
-            y = 100
+            x = (16 * displayMetrics.density).toInt()
+            y = (100 * displayMetrics.density).toInt()
         }
 
         miniPlayerView = LayoutInflater.from(this).inflate(R.layout.mini_player_video, null)
@@ -153,12 +158,17 @@ class VideoMiniPlayerService : Service() {
 
         // Get mini player position
         val miniParams = miniPlayerView?.layoutParams as? WindowManager.LayoutParams
-        val miniX = miniParams?.x ?: 100
+        val miniX = miniParams?.x ?: 16
         val miniY = miniParams?.y ?: 100
 
+        // Convert dp to pixels
+        val displayMetrics = resources.displayMetrics
+        val widthPx = (180 * displayMetrics.density).toInt()
+        val heightPx = (120 * displayMetrics.density).toInt()
+
         val params = WindowManager.LayoutParams(
-            180,
-            120,
+            widthPx,
+            heightPx,
             layoutFlag,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
