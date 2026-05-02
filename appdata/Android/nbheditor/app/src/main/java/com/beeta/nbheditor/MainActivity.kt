@@ -5449,6 +5449,43 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
         }
         infoBar.addView(btnChat)
         
+        // Video Call button
+        val btnVideoCall = com.google.android.material.button.MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
+            text = "📹 Video"
+            setTextColor(0xFFFFFFFF.toInt())
+            strokeColor = android.content.res.ColorStateList.valueOf(0xFF4CAF50.toInt())
+            strokeWidth = 2
+            backgroundTintList = android.content.res.ColorStateList.valueOf(0x00000000)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                marginEnd = 8
+            }
+            minWidth = 0
+            minimumWidth = 0
+            textSize = 11f
+            setPadding(20, 4, 20, 4)
+            setOnClickListener {
+                lifecycleScope.launch {
+                    val session = CollaborativeSessionManager.getCurrentSession()
+                    val currentUserId = CollaborativeSessionManager.getCurrentUserId()
+                    val isHost = session?.creatorId == currentUserId
+                    
+                    val fragment = VideoChatFragment.newInstance(isHost)
+                    supportFragmentManager.beginTransaction()
+                        .replace(binding.appBarMain.contentMain.fragmentContainer.id, fragment)
+                        .addToBackStack(null)
+                        .commit()
+                    
+                    binding.appBarMain.contentMain.fragmentContainer.visibility = View.VISIBLE
+                    binding.appBarMain.contentMain.bottomNavView?.visibility = View.GONE
+                    binding.appBarMain.toolbarTitle?.text = "Video Call"
+                }
+            }
+        }
+        infoBar.addView(btnVideoCall)
+        
         // Copy code button
         val btnCopy = com.google.android.material.button.MaterialButton(this, null, com.google.android.material.R.attr.materialButtonOutlinedStyle).apply {
             text = "📋"
@@ -5651,10 +5688,13 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
     
     // Session controls menu with video call support
     private fun showSessionControlsMenu(sessionId: String) {
+        android.util.Log.d("SessionMenu", "Showing session controls menu for: $sessionId")
         val items = arrayOf("💬 Team Chat", "📹 Video Call", "👥 View Users", "📋 Copy Session Code", "🚪 Leave Session")
+        android.util.Log.d("SessionMenu", "Menu items: ${items.joinToString(", ")}")
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("Session: $sessionId")
             .setItems(items) { _, which ->
+                android.util.Log.d("SessionMenu", "Selected item index: $which")
                 when (which) {
                     0 -> showCollabChatDialog()
                     1 -> {
