@@ -169,34 +169,30 @@ class VideoMiniPlayerService : Service() {
             maximizePlayer()
         }
         
-        overlayView?.findViewById<CardView>(R.id.btnLeaveOverlay)?.setOnClickListener {
+        overlayView?.findViewById<androidx.cardview.widget.CardView>(R.id.btnLeaveOverlay)?.setOnClickListener {
             leaveCall()
         }
         
-        val btnMicOverlay = overlayView?.findViewById<CardView>(R.id.btnMicOverlay)
+        val btnMicOverlay = overlayView?.findViewById<androidx.cardview.widget.CardView>(R.id.btnMicOverlay)
         val imgMicOverlay = overlayView?.findViewById<ImageView>(R.id.imgMicOverlay)
         btnMicOverlay?.setOnClickListener {
             isMicEnabled = !isMicEnabled
             if (isMicEnabled) {
                 imgMicOverlay?.setImageResource(android.R.drawable.ic_btn_speak_now)
-                btnMicOverlay.setCardBackgroundColor(0xFF3A3A3C.toInt())
             } else {
                 imgMicOverlay?.setImageResource(android.R.drawable.ic_lock_silent_mode)
-                btnMicOverlay.setCardBackgroundColor(0xFFF44336.toInt())
             }
             sendBroadcast(Intent("VIDEO_CHAT_MIC_TOGGLE"))
         }
         
-        val btnVideoOverlay = overlayView?.findViewById<CardView>(R.id.btnVideoOverlay)
+        val btnVideoOverlay = overlayView?.findViewById<androidx.cardview.widget.CardView>(R.id.btnVideoOverlay)
         val imgVideoOverlay = overlayView?.findViewById<ImageView>(R.id.imgVideoOverlay)
         btnVideoOverlay?.setOnClickListener {
             isVideoEnabled = !isVideoEnabled
             if (isVideoEnabled) {
                 imgVideoOverlay?.setImageResource(android.R.drawable.presence_video_online)
-                btnVideoOverlay.setCardBackgroundColor(0xFF3A3A3C.toInt())
             } else {
                 imgVideoOverlay?.setImageResource(android.R.drawable.presence_video_busy)
-                btnVideoOverlay.setCardBackgroundColor(0xFFF44336.toInt())
             }
             setupMiniPlayerViews()
             sendBroadcast(Intent("VIDEO_CHAT_VIDEO_TOGGLE"))

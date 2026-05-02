@@ -22,7 +22,7 @@
         android:focusable="true" />
 
     <!-- Leave Button (Center) -->
-    <com.google.android.material.card.MaterialCardView
+    <androidx.cardview.widget.CardView
         android:id="@+id/btnLeaveOverlay"
         android:layout_width="80dp"
         android:layout_height="80dp"
@@ -40,7 +40,7 @@
             android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:contentDescription="Leave"
             android:tint="#FFFFFF" />
-    </com.google.android.material.card.MaterialCardView>
+    </androidx.cardview.widget.CardView>
 
     <!-- Bottom Controls -->
     <LinearLayout
@@ -52,7 +52,7 @@
         android:gravity="center">
 
         <!-- Mic Toggle -->
-        <com.google.android.material.card.MaterialCardView
+        <androidx.cardview.widget.CardView
             android:id="@+id/btnMicOverlay"
             android:layout_width="56dp"
             android:layout_height="56dp"
@@ -71,10 +71,10 @@
                 android:src="@android:drawable/ic_btn_speak_now"
                 android:contentDescription="Toggle Mic"
                 android:tint="#FFFFFF" />
-        </com.google.android.material.card.MaterialCardView>
+        </androidx.cardview.widget.CardView>
 
         <!-- Video Toggle -->
-        <com.google.android.material.card.MaterialCardView
+        <androidx.cardview.widget.CardView
             android:id="@+id/btnVideoOverlay"
             android:layout_width="56dp"
             android:layout_height="56dp"
@@ -93,7 +93,7 @@
                 android:src="@android:drawable/presence_video_online"
                 android:contentDescription="Toggle Video"
                 android:tint="#FFFFFF" />
-        </com.google.android.material.card.MaterialCardView>
+        </androidx.cardview.widget.CardView>
 
     </LinearLayout>
 
