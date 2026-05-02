@@ -424,11 +424,6 @@ class VideoChatFragment : Fragment() {
     private fun maximizeFromMiniPlayer() {
         try {
             stopMiniPlayer()
-            requireActivity().apply {
-                val intent = Intent(this, MainActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
-                startActivity(intent)
-            }
         } catch (e: Exception) {
             android.util.Log.e("VideoChat", "Maximize error", e)
         }
@@ -436,7 +431,7 @@ class VideoChatFragment : Fragment() {
 
     override fun onPause() {
         super.onPause()
-        if (requireActivity().isFinishing.not()) {
+        if (requireActivity().isChangingConfigurations.not() && requireActivity().isFinishing.not()) {
             startMiniPlayer()
         }
     }
