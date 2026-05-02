@@ -74,6 +74,7 @@ class VideoChatFragment : Fragment() {
         }
     }
 
+    @Deprecated("Deprecated in Java")
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == 301) {
@@ -89,21 +90,16 @@ class VideoChatFragment : Fragment() {
     private fun initializeLiveKit() {
         lifecycleScope.launch {
             try {
-                // Create LiveKit room
                 room = LiveKit.create(requireContext().applicationContext)
 
-                // Enable camera and microphone
                 room?.localParticipant?.setCameraEnabled(true)
                 room?.localParticipant?.setMicrophoneEnabled(true)
 
-                // Get local video track
                 val cameraTrack = room?.localParticipant?.getTrackPublication(Track.Source.CAMERA)
                 localVideoTrack = cameraTrack?.track as? LocalVideoTrack
 
-                // Attach local video to view
                 localVideoTrack?.addRenderer(binding.localVideoView)
 
-                // Demo mode - show ready status
                 binding.tvConnectionStatus.text = "● Ready (Demo Mode)"
                 binding.tvConnectionStatus.setTextColor(0xFF4CAF50.toInt())
                 binding.tvParticipants.text = "1 participant"
@@ -120,7 +116,6 @@ class VideoChatFragment : Fragment() {
     }
 
     private fun setupControls() {
-        // Toggle microphone
         binding.btnToggleMic.setOnClickListener {
             lifecycleScope.launch {
                 isMicEnabled = !isMicEnabled
@@ -140,7 +135,6 @@ class VideoChatFragment : Fragment() {
             }
         }
 
-        // Toggle video
         binding.btnToggleVideo.setOnClickListener {
             lifecycleScope.launch {
                 isVideoEnabled = !isVideoEnabled
@@ -162,7 +156,6 @@ class VideoChatFragment : Fragment() {
             }
         }
 
-        // Rotate camera
         binding.btnRotateCamera.setOnClickListener {
             lifecycleScope.launch {
                 try {
@@ -174,7 +167,6 @@ class VideoChatFragment : Fragment() {
             }
         }
 
-        // End call
         binding.btnEndCall.setOnClickListener {
             if (isHost) {
                 endCallForEveryone()
@@ -183,7 +175,6 @@ class VideoChatFragment : Fragment() {
             }
         }
 
-        // Leave call
         binding.btnLeaveCall.setOnClickListener {
             leaveCall()
         }
