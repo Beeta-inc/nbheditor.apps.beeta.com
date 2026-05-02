@@ -62,8 +62,8 @@ class VideoMiniPlayerService : Service() {
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
         ).apply {
-            gravity = Gravity.TOP or Gravity.START
-            x = 100
+            gravity = Gravity.TOP or Gravity.END
+            x = 16
             y = 100
         }
 
@@ -145,13 +145,22 @@ class VideoMiniPlayerService : Service() {
             WindowManager.LayoutParams.TYPE_PHONE
         }
 
+        // Get mini player position
+        val miniParams = miniPlayerView?.layoutParams as? WindowManager.LayoutParams
+        val miniX = miniParams?.x ?: 100
+        val miniY = miniParams?.y ?: 100
+
         val params = WindowManager.LayoutParams(
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.MATCH_PARENT,
+            180,  // Same width as mini player
+            120,  // Same height as mini player
             layoutFlag,
-            WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
             PixelFormat.TRANSLUCENT
-        )
+        ).apply {
+            gravity = Gravity.TOP or Gravity.START
+            x = miniX
+            y = miniY
+        }
 
         overlayView = LayoutInflater.from(this).inflate(R.layout.mini_player_overlay, null)
         
