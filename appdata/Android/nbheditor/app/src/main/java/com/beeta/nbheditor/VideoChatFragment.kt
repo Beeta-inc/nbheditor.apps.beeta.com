@@ -431,7 +431,7 @@ class VideoParticipantsAdapter(
         val speakingBorder: View = view.findViewById(R.id.speakingBorder)
         val pinIndicator: ImageView = view.findViewById(R.id.pinIndicator)
         
-        private var lastClickTime = 0L
+        var lastClickTime = 0L
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
