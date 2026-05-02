@@ -107,17 +107,17 @@
             android:src="@android:drawable/ic_menu_camera"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:tint="@color/white"
-            android:contentDescription="Video" />
-        
+            android:contentDescription="Video"
+            android:layout_marginEnd="4dp" />
+
         <ImageButton
-            android:id="@+id/btnStartVideoCall"
+            android:id="@+id/btnVideoCall"
             android:layout_width="44dp"
             android:layout_height="44dp"
             android:src="@android:drawable/presence_video_online"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:tint="#4CAF50"
-            android:contentDescription="Start Video Call"
-            android:layout_marginStart="8dp" />
+            android:tint="@color/white"
+            android:contentDescription="Video Call" />
     </LinearLayout>
 
     <!-- @ mention popup (shown above input when user types @) -->

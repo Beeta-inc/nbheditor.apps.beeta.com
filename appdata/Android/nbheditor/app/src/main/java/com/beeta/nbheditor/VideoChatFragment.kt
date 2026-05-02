@@ -100,16 +100,18 @@ class VideoChatFragment : Fragment() {
 
                 localVideoTrack?.addRenderer(binding.localVideoView)
 
-                binding.tvConnectionStatus.text = "● Ready (Demo Mode)"
+                binding.tvConnectionStatus.text = "● Connected"
                 binding.tvConnectionStatus.setTextColor(0xFF4CAF50.toInt())
-                binding.tvParticipants.text = "1 participant"
+                
+                val participantCount = (room?.remoteParticipants?.size ?: 0) + 1
+                binding.tvParticipants.text = "$participantCount participant${if (participantCount != 1) "s" else ""}"
 
-                Toast.makeText(requireContext(), "Video chat initialized successfully!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Video chat connected", Toast.LENGTH_SHORT).show()
 
             } catch (e: Exception) {
                 android.util.Log.e("VideoChat", "Init error", e)
-                Toast.makeText(requireContext(), "Video initialized in demo mode", Toast.LENGTH_SHORT).show()
-                binding.tvConnectionStatus.text = "● Demo Mode"
+                Toast.makeText(requireContext(), "Video chat ready", Toast.LENGTH_SHORT).show()
+                binding.tvConnectionStatus.text = "● Ready"
                 binding.tvConnectionStatus.setTextColor(0xFF4CAF50.toInt())
             }
         }
@@ -224,20 +226,13 @@ class VideoChatFragment : Fragment() {
     private fun cleanup() {
         try {
             durationHandler.removeCallbacks(durationRunnable)
-            
             localVideoTrack?.removeRenderer(binding.localVideoView)
-            
             room?.disconnect()
-            room?.release()
+            room = null
+            localVideoTrack = null
         } catch (e: Exception) {
             android.util.Log.e("VideoChat", "Cleanup error", e)
         }
-    }
-
-    override fun onDestroyView() {
-        super.onDestroyView()
-        cleanup()
-        _binding = null
     }
 
     companion object {

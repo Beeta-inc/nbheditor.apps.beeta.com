@@ -102,7 +102,7 @@ class CollabChatFragment : Fragment() {
 
         binding.btnCloseChat.setOnClickListener { parentFragmentManager.popBackStack() }
         binding.btnCancelReply.setOnClickListener { hideReplyPreview() }
-        binding.btnStartVideoCall.setOnClickListener { startVideoCall() }
+        binding.btnVideoCall.setOnClickListener { startVideoCall() }
 
         view.translationX = view.width.toFloat()
         view.animate().translationX(0f).setDuration(280)
@@ -896,7 +896,12 @@ class CollabChatFragment : Fragment() {
             while (true) {
                 val size = extractor.readSampleData(audioBuf, 0)
                 if (size < 0) break
-                audioBufInfo.set(0, size, extractor.sampleTime, extractor.sampleFlags)
+                val flags = if (extractor.sampleFlags and MediaExtractor.SAMPLE_FLAG_SYNC != 0) {
+                    MediaCodec.BUFFER_FLAG_KEY_FRAME
+                } else {
+                    0
+                }
+                audioBufInfo.set(0, size, extractor.sampleTime, flags)
                 muxer.writeSampleData(muxerAudioTrack, audioBuf, audioBufInfo)
                 extractor.advance()
             }
@@ -1021,10 +1026,7 @@ class CollabChatFragment : Fragment() {
                 val currentUserId = CollaborativeSessionManager.getCurrentUserId()
                 val isHost = session?.creatorId == currentUserId
                 
-                // Navigate to video chat fragment
                 val videoFragment = VideoChatFragment.newInstance(isHost)
-                val mainActivity = requireActivity() as MainActivity
-                val containerId = mainActivity.getFragmentContainerId()
                 
                 parentFragmentManager.beginTransaction()
                     .setCustomAnimations(
@@ -1033,7 +1035,7 @@ class CollabChatFragment : Fragment() {
                         android.R.anim.slide_in_left,
                         android.R.anim.slide_out_right
                     )
-                    .replace(containerId, videoFragment)
+                    .replace(android.R.id.content, videoFragment)
                     .addToBackStack(null)
                     .commit()
                     
