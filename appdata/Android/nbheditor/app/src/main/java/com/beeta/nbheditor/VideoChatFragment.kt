@@ -367,11 +367,9 @@ class VideoChatFragment : Fragment() {
             .setTitle("End Call")
             .setMessage("End the video call for all participants?")
             .setPositiveButton("End") { _, _ ->
-                lifecycleScope.launch {
-                    cleanup()
-                    safelyCloseFragment()
-                    Toast.makeText(requireContext(), "Call ended", Toast.LENGTH_SHORT).show()
-                }
+                cleanup()
+                safelyCloseFragment()
+                Toast.makeText(requireContext(), "Call ended", Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton("Cancel", null)
             .show()
@@ -382,12 +380,10 @@ class VideoChatFragment : Fragment() {
             .setTitle("Leave Call")
             .setMessage("Leave the video call?")
             .setPositiveButton("Leave") { _, _ ->
-                lifecycleScope.launch {
-                    stopMiniPlayer()
-                    cleanup()
-                    safelyCloseFragment()
-                    Toast.makeText(requireContext(), "Left call", Toast.LENGTH_SHORT).show()
-                }
+                stopMiniPlayer()
+                cleanup()
+                safelyCloseFragment()
+                Toast.makeText(requireContext(), "Left call", Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton("Cancel", null)
             .show()
@@ -481,25 +477,40 @@ class VideoChatFragment : Fragment() {
             
             android.util.Log.d("VideoChat", "Back stack count: ${fragmentManager.backStackEntryCount}")
             
-            // Always use activity's fragment manager and pop by name to be safe
+            // Pop back stack to return to previous fragment (CollabChatFragment)
             if (fragmentManager.backStackEntryCount > 0) {
-                android.util.Log.d("VideoChat", "Popping back stack entry 'video_call'")
-                fragmentManager.popBackStack("video_call", androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
+                android.util.Log.d("VideoChat", "Popping back stack")
+                // Use popBackStackImmediate to ensure it completes before activity might finish
+                fragmentManager.popBackStackImmediate()
             } else {
-                // If no back stack, just remove this fragment without finishing activity
-                android.util.Log.d("VideoChat", "No back stack, removing fragment directly")
+                // No back stack - this shouldn't happen, but handle it gracefully
+                android.util.Log.w("VideoChat", "No back stack found, hiding fragment container")
+                // Just hide the fragment container to return to editor
+                (activity as? MainActivity)?.let { mainActivity ->
+                    try {
+                        // Access the fragment container view directly by ID
+                        val containerView = activity.findViewById<View>(R.id.fragment_container)
+                        containerView?.visibility = View.GONE
+                    } catch (e: Exception) {
+                        android.util.Log.e("VideoChat", "Failed to hide container", e)
+                    }
+                }
+                // Remove this fragment
                 fragmentManager.beginTransaction()
                     .remove(this)
                     .commitAllowingStateLoss()
             }
         } catch (e: Exception) {
             android.util.Log.e("VideoChat", "Error closing fragment", e)
-            // Last resort: try to remove the fragment directly
+            // Last resort: try to remove the fragment and hide container
             try {
                 if (isAdded && !isDetached) {
-                    requireActivity().supportFragmentManager.beginTransaction()
+                    val activity = requireActivity()
+                    activity.supportFragmentManager.beginTransaction()
                         .remove(this)
                         .commitAllowingStateLoss()
+                    // Hide container
+                    activity.findViewById<View>(R.id.fragment_container)?.visibility = View.GONE
                 }
             } catch (ex: Exception) {
                 android.util.Log.e("VideoChat", "Failed to remove fragment", ex)
