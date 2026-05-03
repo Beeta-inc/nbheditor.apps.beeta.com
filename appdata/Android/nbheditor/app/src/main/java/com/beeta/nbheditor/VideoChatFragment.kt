@@ -369,8 +369,12 @@ class VideoChatFragment : Fragment() {
             .setPositiveButton("End") { _, _ ->
                 // Get context before cleanup/close since fragment will be detached
                 val context = requireContext().applicationContext
-                cleanup()
+                // Replace fragment FIRST, then cleanup
                 safelyCloseFragment()
+                // Cleanup after fragment is replaced
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                    cleanup()
+                }, 100)
                 Toast.makeText(context, "Call ended", Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton("Cancel", null)
@@ -384,9 +388,13 @@ class VideoChatFragment : Fragment() {
             .setPositiveButton("Leave") { _, _ ->
                 // Get context before cleanup/close since fragment will be detached
                 val context = requireContext().applicationContext
-                stopMiniPlayer()
-                cleanup()
+                // Replace fragment FIRST, then cleanup
                 safelyCloseFragment()
+                // Cleanup after fragment is replaced
+                android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                    stopMiniPlayer()
+                    cleanup()
+                }, 100)
                 Toast.makeText(context, "Left call", Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton("Cancel", null)
@@ -462,65 +470,61 @@ class VideoChatFragment : Fragment() {
 
     private fun safelyCloseFragment() {
         try {
-            // Ensure we're on the main thread
-            if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper()) {
-                lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Main) {
-                    safelyCloseFragment()
-                }
+            android.util.Log.d("VideoChat", "safelyCloseFragment called")
+            
+            val activity = requireActivity() as? MainActivity
+            if (activity == null) {
+                android.util.Log.e("VideoChat", "Activity is not MainActivity")
                 return
             }
             
-            // Check if fragment is still attached
-            if (!isAdded || isDetached) {
-                android.util.Log.w("VideoChat", "Fragment not attached, cannot close")
-                return
-            }
+            // Check if session exists
+            val hasSession = CollaborativeSessionManager.isInSession()
+            android.util.Log.d("VideoChat", "Has session: $hasSession")
             
-            val activity = requireActivity()
-            val fragmentManager = activity.supportFragmentManager
-            
-            android.util.Log.d("VideoChat", "Back stack count: ${fragmentManager.backStackEntryCount}")
-            
-            // Log all back stack entries for debugging
-            for (i in 0 until fragmentManager.backStackEntryCount) {
-                val entry = fragmentManager.getBackStackEntryAt(i)
-                android.util.Log.d("VideoChat", "Back stack [$i]: ${entry.name}")
-            }
-            
-            // ALWAYS ensure CollabChatFragment is shown, regardless of back stack
-            if (CollaborativeSessionManager.isInSession()) {
-                android.util.Log.d("VideoChat", "Session active - replacing with CollabChatFragment")
-                // Replace this fragment with CollabChatFragment
-                val collabFragment = CollabChatFragment.newInstance()
-                fragmentManager.beginTransaction()
-                    .replace(R.id.fragment_container, collabFragment)
-                    .addToBackStack("collab_chat")
-                    .commitAllowingStateLoss()
-                android.util.Log.d("VideoChat", "CollabChatFragment transaction committed")
-            } else {
-                // No session - try to pop back stack or hide container
-                android.util.Log.d("VideoChat", "No session - attempting to pop or hide")
-                if (fragmentManager.backStackEntryCount > 0) {
-                    fragmentManager.popBackStackImmediate()
-                } else {
-                    activity.findViewById<View>(R.id.fragment_container)?.visibility = View.GONE
+            activity.runOnUiThread {
+                try {
+                    if (hasSession) {
+                        // Directly replace with CollabChatFragment
+                        android.util.Log.d("VideoChat", "Replacing with CollabChatFragment")
+                        val collabFragment = CollabChatFragment.newInstance()
+                        activity.supportFragmentManager.beginTransaction()
+                            .setCustomAnimations(
+                                android.R.anim.slide_in_left, android.R.anim.slide_out_right,
+                                android.R.anim.slide_in_left, android.R.anim.slide_out_right
+                            )
+                            .replace(activity.getFragmentContainerId(), collabFragment)
+                            .addToBackStack("collab_chat")
+                            .commitAllowingStateLoss()
+                        android.util.Log.d("VideoChat", "CollabChatFragment replacement committed")
+                        
+                        // Ensure activity stays in foreground
+                        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                            try {
+                                // Bring activity to front if it went to background
+                                if (activity.isFinishing.not()) {
+                                    val intent = android.content.Intent(activity, activity.javaClass)
+                                    intent.flags = android.content.Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                                    activity.startActivity(intent)
+                                    android.util.Log.d("VideoChat", "Activity brought to front")
+                                }
+                            } catch (e: Exception) {
+                                android.util.Log.e("VideoChat", "Failed to bring activity to front", e)
+                            }
+                        }, 100)
+                    } else {
+                        // No session, just remove this fragment
+                        android.util.Log.d("VideoChat", "No session, removing fragment")
+                        activity.supportFragmentManager.beginTransaction()
+                            .remove(this)
+                            .commitAllowingStateLoss()
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("VideoChat", "Error in fragment replacement", e)
                 }
             }
         } catch (e: Exception) {
-            android.util.Log.e("VideoChat", "Error closing fragment", e)
-            // Last resort: manually show collab chat if in session
-            try {
-                if (CollaborativeSessionManager.isInSession()) {
-                    val activity = requireActivity()
-                    val collabFragment = CollabChatFragment.newInstance()
-                    activity.supportFragmentManager.beginTransaction()
-                        .replace(R.id.fragment_container, collabFragment)
-                        .addToBackStack("collab_chat")
-                        .commitAllowingStateLoss()
-                }
-            } catch (ex: Exception) {
-                android.util.Log.e("VideoChat", "Failed to show collab chat", ex)
-            }
+            android.util.Log.e("VideoChat", "Error in safelyCloseFragment", e)
         }
     }
 
