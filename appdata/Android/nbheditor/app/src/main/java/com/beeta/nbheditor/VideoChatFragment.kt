@@ -481,43 +481,48 @@ class VideoChatFragment : Fragment() {
             
             android.util.Log.d("VideoChat", "Back stack count: ${fragmentManager.backStackEntryCount}")
             
-            // Pop back stack to return to previous fragment (CollabChatFragment)
+            // Log all back stack entries for debugging
+            for (i in 0 until fragmentManager.backStackEntryCount) {
+                val entry = fragmentManager.getBackStackEntryAt(i)
+                android.util.Log.d("VideoChat", "Back stack [$i]: ${entry.name}")
+            }
+            
+            // Pop back stack to return to previous fragment
             if (fragmentManager.backStackEntryCount > 0) {
-                android.util.Log.d("VideoChat", "Popping back stack")
-                // Use popBackStackImmediate to ensure it completes before activity might finish
-                fragmentManager.popBackStackImmediate()
-            } else {
-                // No back stack - this shouldn't happen, but handle it gracefully
-                android.util.Log.w("VideoChat", "No back stack found, hiding fragment container")
-                // Just hide the fragment container to return to editor
-                (activity as? MainActivity)?.let { mainActivity ->
-                    try {
-                        // Access the fragment container view directly by ID
-                        val containerView = activity.findViewById<View>(R.id.fragment_container)
-                        containerView?.visibility = View.GONE
-                    } catch (e: Exception) {
-                        android.util.Log.e("VideoChat", "Failed to hide container", e)
-                    }
+                android.util.Log.d("VideoChat", "Popping back stack immediately")
+                val popped = fragmentManager.popBackStackImmediate()
+                android.util.Log.d("VideoChat", "Pop result: $popped, new count: ${fragmentManager.backStackEntryCount}")
+                
+                // If back stack is now empty, we need to prevent activity finish
+                if (fragmentManager.backStackEntryCount == 0) {
+                    android.util.Log.w("VideoChat", "Back stack empty after pop - showing CollabChatFragment")
+                    // Manually show the collab chat fragment
+                    val collabFragment = CollabChatFragment.newInstance()
+                    fragmentManager.beginTransaction()
+                        .replace(R.id.fragment_container, collabFragment)
+                        .commitNowAllowingStateLoss()
                 }
-                // Remove this fragment
+            } else {
+                // No back stack - manually navigate to collab chat
+                android.util.Log.w("VideoChat", "No back stack - manually showing CollabChatFragment")
+                val collabFragment = CollabChatFragment.newInstance()
                 fragmentManager.beginTransaction()
-                    .remove(this)
-                    .commitAllowingStateLoss()
+                    .replace(R.id.fragment_container, collabFragment)
+                    .commitNowAllowingStateLoss()
             }
         } catch (e: Exception) {
             android.util.Log.e("VideoChat", "Error closing fragment", e)
-            // Last resort: try to remove the fragment and hide container
+            // Last resort: manually show collab chat
             try {
                 if (isAdded && !isDetached) {
                     val activity = requireActivity()
+                    val collabFragment = CollabChatFragment.newInstance()
                     activity.supportFragmentManager.beginTransaction()
-                        .remove(this)
+                        .replace(R.id.fragment_container, collabFragment)
                         .commitAllowingStateLoss()
-                    // Hide container
-                    activity.findViewById<View>(R.id.fragment_container)?.visibility = View.GONE
                 }
             } catch (ex: Exception) {
-                android.util.Log.e("VideoChat", "Failed to remove fragment", ex)
+                android.util.Log.e("VideoChat", "Failed to show collab chat", ex)
             }
         }
     }
