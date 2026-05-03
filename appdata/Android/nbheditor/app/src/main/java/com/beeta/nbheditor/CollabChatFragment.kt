@@ -1027,15 +1027,17 @@ class CollabChatFragment : Fragment() {
                 
                 val videoFragment = VideoChatFragment.newInstance(isHost)
                 
-                parentFragmentManager.beginTransaction()
+                // Use activity's fragment manager to replace current fragment
+                val activity = requireActivity() as MainActivity
+                activity.supportFragmentManager.beginTransaction()
                     .setCustomAnimations(
                         android.R.anim.slide_in_left,
                         android.R.anim.slide_out_right,
                         android.R.anim.slide_in_left,
                         android.R.anim.slide_out_right
                     )
-                    .replace(android.R.id.content, videoFragment)
-                    .addToBackStack(null)
+                    .replace(R.id.fragment_container, videoFragment)
+                    .addToBackStack("video_call")
                     .commit()
                     
                 Toast.makeText(requireContext(), "Starting video call...", Toast.LENGTH_SHORT).show()

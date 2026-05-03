@@ -79,6 +79,14 @@ class VideoChatFragment : Fragment() {
 
         isHost = arguments?.getBoolean("isHost", false) ?: false
         
+        // Handle back button press to prevent activity finish
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, object : androidx.activity.OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                // Show leave dialog instead of directly closing
+                leaveCall()
+            }
+        })
+        
         // Update button labels
         binding.tvEndCallLabel.text = if (isHost) "End" else "Leave"
         binding.btnLeaveCallContainer.visibility = if (isHost) View.GONE else View.VISIBLE
@@ -361,7 +369,7 @@ class VideoChatFragment : Fragment() {
             .setPositiveButton("End") { _, _ ->
                 lifecycleScope.launch {
                     cleanup()
-                    parentFragmentManager.popBackStack()
+                    safelyCloseFragment()
                     Toast.makeText(requireContext(), "Call ended", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -377,7 +385,7 @@ class VideoChatFragment : Fragment() {
                 lifecycleScope.launch {
                     stopMiniPlayer()
                     cleanup()
-                    parentFragmentManager.popBackStack()
+                    safelyCloseFragment()
                     Toast.makeText(requireContext(), "Left call", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -450,6 +458,48 @@ class VideoChatFragment : Fragment() {
         val minutes = elapsed / 60
         val seconds = elapsed % 60
         binding.tvCallDuration.text = String.format("%02d:%02d", minutes, seconds)
+    }
+
+    private fun safelyCloseFragment() {
+        try {
+            // Ensure we're on the main thread
+            if (android.os.Looper.myLooper() != android.os.Looper.getMainLooper()) {
+                lifecycleScope.launch(kotlinx.coroutines.Dispatchers.Main) {
+                    safelyCloseFragment()
+                }
+                return
+            }
+            
+            // Check if fragment is still attached
+            if (!isAdded || isDetached) {
+                android.util.Log.w("VideoChat", "Fragment not attached, cannot close")
+                return
+            }
+            
+            // Try to pop back stack
+            if (parentFragmentManager.backStackEntryCount > 0) {
+                android.util.Log.d("VideoChat", "Popping back stack (count: ${parentFragmentManager.backStackEntryCount})")
+                parentFragmentManager.popBackStack()
+            } else {
+                // If no back stack, just remove this fragment without finishing activity
+                android.util.Log.d("VideoChat", "No back stack, removing fragment directly")
+                parentFragmentManager.beginTransaction()
+                    .remove(this)
+                    .commitAllowingStateLoss()
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("VideoChat", "Error closing fragment", e)
+            // Last resort: try to remove the fragment directly
+            try {
+                if (isAdded && !isDetached) {
+                    parentFragmentManager.beginTransaction()
+                        .remove(this)
+                        .commitAllowingStateLoss()
+                }
+            } catch (ex: Exception) {
+                android.util.Log.e("VideoChat", "Failed to remove fragment", ex)
+            }
+        }
     }
 
     private fun cleanup() {
