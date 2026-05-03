@@ -73,6 +73,9 @@
       <change beforePath="$PROJECT_DIR$/.gradle/9.4.1/fileHashes/fileHashes.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.4.1/fileHashes/fileHashes.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/9.4.1/fileHashes/resourceHashesCache.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.4.1/fileHashes/resourceHashesCache.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatFragment.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/CollabChatFragment.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/VideoChatFragment.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/VideoChatFragment.kt" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -174,12 +177,12 @@
     &quot;assignee&quot;: &quot;Beeta-inc&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/Beeta-inc/nbheditor.apps.beeta.com.git",
-    "accountId": "e4c07006-ea8c-46ca-8baf-68824a48db5a"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/Beeta-inc/nbheditor.apps.beeta.com.git&quot;,
+    &quot;accountId&quot;: &quot;e4c07006-ea8c-46ca-8baf-68824a48db5a&quot;
   }
-}]]></component>
+}</component>
   <component name="GradleScriptDefinitionsStorage" workingDir="$PROJECT_DIR$" gradleHome="$USER_HOME$/.gradle/wrapper/dists/gradle-9.4.1-bin/arn2x92ynaizyzdaamcbpbhtj/gradle-9.4.1" javaHome="$USER_HOME$/.jbr/jbr_jcef-21.0.10-linux-x64-b1163.110" gradleVersion="9.4.1" />
   <component name="ProblemsViewState">
     <option name="selectedTabId" value="CurrentFile" />
@@ -210,6 +213,7 @@
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.readMode.enableVisualFormatting": "true",
     "android-custom-view/home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/RichEditText.kt_SELECTED": "RichEditText",
+    "android.gradle.sync.needed": "true",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
     "com.google.services.firebase.aqiPopupShown": "true",
@@ -372,70 +376,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1774176942839</updated>
-    </task>
-    <task id="LOCAL-00101" summary=" collaborative session ui fixes">
-      <option name="closed" value="true" />
-      <created>1775642233727</created>
-      <option name="number" value="00101" />
-      <option name="presentableId" value="LOCAL-00101" />
-      <option name="project" value="LOCAL" />
-      <updated>1775642233727</updated>
-    </task>
-    <task id="LOCAL-00102" summary=" collaborative session ui improvement">
-      <option name="closed" value="true" />
-      <created>1775726226523</created>
-      <option name="number" value="00102" />
-      <option name="presentableId" value="LOCAL-00102" />
-      <option name="project" value="LOCAL" />
-      <updated>1775726226524</updated>
-    </task>
-    <task id="LOCAL-00103" summary=" collaborative session ui improvement and added features">
-      <option name="closed" value="true" />
-      <created>1775726806766</created>
-      <option name="number" value="00103" />
-      <option name="presentableId" value="LOCAL-00103" />
-      <option name="project" value="LOCAL" />
-      <updated>1775726806766</updated>
-    </task>
-    <task id="LOCAL-00104" summary=" collaborative session ui bug fix">
-      <option name="closed" value="true" />
-      <created>1775727212849</created>
-      <option name="number" value="00104" />
-      <option name="presentableId" value="LOCAL-00104" />
-      <option name="project" value="LOCAL" />
-      <updated>1775727212849</updated>
-    </task>
-    <task id="LOCAL-00105" summary="versioning update">
-      <option name="closed" value="true" />
-      <created>1775727491059</created>
-      <option name="number" value="00105" />
-      <option name="presentableId" value="LOCAL-00105" />
-      <option name="project" value="LOCAL" />
-      <updated>1775727491059</updated>
-    </task>
-    <task id="LOCAL-00106" summary="versioning update">
-      <option name="closed" value="true" />
-      <created>1775727587809</created>
-      <option name="number" value="00106" />
-      <option name="presentableId" value="LOCAL-00106" />
-      <option name="project" value="LOCAL" />
-      <updated>1775727587809</updated>
-    </task>
-    <task id="LOCAL-00107" summary="bug fixes">
-      <option name="closed" value="true" />
-      <created>1775811115657</created>
-      <option name="number" value="00107" />
-      <option name="presentableId" value="LOCAL-00107" />
-      <option name="project" value="LOCAL" />
-      <updated>1775811115661</updated>
-    </task>
-    <task id="LOCAL-00108" summary="bug fixes ui update">
-      <option name="closed" value="true" />
-      <created>1775812930310</created>
-      <option name="number" value="00108" />
-      <option name="presentableId" value="LOCAL-00108" />
-      <option name="project" value="LOCAL" />
-      <updated>1775812930310</updated>
     </task>
     <task id="LOCAL-00109" summary="bug fixes ui update">
       <option name="closed" value="true" />
@@ -765,7 +705,71 @@
       <option name="project" value="LOCAL" />
       <updated>1777801966035</updated>
     </task>
-    <option name="localTasksCounter" value="150" />
+    <task id="LOCAL-00150" summary="bug fixes">
+      <option name="closed" value="true" />
+      <created>1777802352929</created>
+      <option name="number" value="00150" />
+      <option name="presentableId" value="LOCAL-00150" />
+      <option name="project" value="LOCAL" />
+      <updated>1777802352930</updated>
+    </task>
+    <task id="LOCAL-00151" summary="bug fixes">
+      <option name="closed" value="true" />
+      <created>1777802532350</created>
+      <option name="number" value="00151" />
+      <option name="presentableId" value="LOCAL-00151" />
+      <option name="project" value="LOCAL" />
+      <updated>1777802532350</updated>
+    </task>
+    <task id="LOCAL-00152" summary="bug fixes">
+      <option name="closed" value="true" />
+      <created>1777802941053</created>
+      <option name="number" value="00152" />
+      <option name="presentableId" value="LOCAL-00152" />
+      <option name="project" value="LOCAL" />
+      <updated>1777802941053</updated>
+    </task>
+    <task id="LOCAL-00153" summary="bug fixes">
+      <option name="closed" value="true" />
+      <created>1777803072132</created>
+      <option name="number" value="00153" />
+      <option name="presentableId" value="LOCAL-00153" />
+      <option name="project" value="LOCAL" />
+      <updated>1777803072132</updated>
+    </task>
+    <task id="LOCAL-00154" summary="bug fixes">
+      <option name="closed" value="true" />
+      <created>1777803243217</created>
+      <option name="number" value="00154" />
+      <option name="presentableId" value="LOCAL-00154" />
+      <option name="project" value="LOCAL" />
+      <updated>1777803243218</updated>
+    </task>
+    <task id="LOCAL-00155" summary="bug fixes">
+      <option name="closed" value="true" />
+      <created>1777803278341</created>
+      <option name="number" value="00155" />
+      <option name="presentableId" value="LOCAL-00155" />
+      <option name="project" value="LOCAL" />
+      <updated>1777803278341</updated>
+    </task>
+    <task id="LOCAL-00156" summary="bug fixes">
+      <option name="closed" value="true" />
+      <created>1777803477456</created>
+      <option name="number" value="00156" />
+      <option name="presentableId" value="LOCAL-00156" />
+      <option name="project" value="LOCAL" />
+      <updated>1777803477457</updated>
+    </task>
+    <task id="LOCAL-00157" summary="bug fixes">
+      <option name="closed" value="true" />
+      <created>1777805351364</created>
+      <option name="number" value="00157" />
+      <option name="presentableId" value="LOCAL-00157" />
+      <option name="project" value="LOCAL" />
+      <updated>1777805351364</updated>
+    </task>
+    <option name="localTasksCounter" value="158" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">

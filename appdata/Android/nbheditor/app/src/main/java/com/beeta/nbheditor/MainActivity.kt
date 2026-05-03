@@ -251,6 +251,10 @@ open class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+        
+        // Force keyboard to show properly
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
+        
         setSupportActionBar(binding.appBarMain.toolbar)
         supportActionBar?.setDisplayShowTitleEnabled(false)
 
@@ -3600,6 +3604,11 @@ open class MainActivity : AppCompatActivity() {
                 when {
                     binding.drawerLayout.isDrawerOpen(GravityCompat.START) ->
                         binding.drawerLayout.closeDrawer(GravityCompat.START)
+                    // Check if there's an active collaborative session with fragments
+                    CollaborativeSessionManager.isInSession() && supportFragmentManager.backStackEntryCount > 0 -> {
+                        // Let the fragment handle back press
+                        supportFragmentManager.popBackStack()
+                    }
                     !isHomeVisible -> showHome()
                     else -> {
                         isEnabled = false

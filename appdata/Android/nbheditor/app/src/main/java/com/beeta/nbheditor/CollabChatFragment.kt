@@ -1027,7 +1027,7 @@ class CollabChatFragment : Fragment() {
                 
                 val videoFragment = VideoChatFragment.newInstance(isHost)
                 
-                // Use activity's fragment manager to replace current fragment
+                // Use activity's fragment manager to add video fragment on top
                 val activity = requireActivity() as MainActivity
                 activity.supportFragmentManager.beginTransaction()
                     .setCustomAnimations(
@@ -1036,7 +1036,8 @@ class CollabChatFragment : Fragment() {
                         android.R.anim.slide_in_left,
                         android.R.anim.slide_out_right
                     )
-                    .replace(R.id.fragment_container, videoFragment)
+                    .hide(this@CollabChatFragment)  // Hide current fragment instead of removing
+                    .add(R.id.fragment_container, videoFragment, "video_call")  // Add on top
                     .addToBackStack("video_call")
                     .commit()
                     
