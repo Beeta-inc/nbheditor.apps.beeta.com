@@ -493,24 +493,25 @@ class VideoChatFragment : Fragment() {
                 val popped = fragmentManager.popBackStackImmediate()
                 android.util.Log.d("VideoChat", "Pop result: $popped, new count: ${fragmentManager.backStackEntryCount}")
                 
-                // If back stack is now empty or has only 1 entry, ensure CollabChatFragment is shown
-                if (fragmentManager.backStackEntryCount <= 1) {
-                    android.util.Log.w("VideoChat", "Back stack low after pop - ensuring CollabChatFragment is visible")
+                // Only create new CollabChatFragment if back stack is completely empty
+                if (fragmentManager.backStackEntryCount == 0) {
+                    android.util.Log.w("VideoChat", "Back stack empty after pop - checking if we need to show CollabChatFragment")
                     // Check if collaborative session still exists
                     if (CollaborativeSessionManager.isInSession()) {
-                        // Manually show the collab chat fragment without adding to back stack
-                        // (it will be added to back stack by the normal flow)
+                        // Manually show the collab chat fragment
+                        android.util.Log.d("VideoChat", "Session exists - creating new CollabChatFragment")
                         val collabFragment = CollabChatFragment.newInstance()
                         fragmentManager.beginTransaction()
                             .replace(R.id.fragment_container, collabFragment)
                             .addToBackStack("collab_chat")
                             .commitAllowingStateLoss()
-                        android.util.Log.d("VideoChat", "CollabChatFragment added")
                     } else {
                         // No session - just hide the container
                         android.util.Log.d("VideoChat", "No session - hiding container")
                         activity.findViewById<View>(R.id.fragment_container)?.visibility = View.GONE
                     }
+                } else {
+                    android.util.Log.d("VideoChat", "Back stack not empty (count=${fragmentManager.backStackEntryCount}), previous fragment should be visible")
                 }
             } else {
                 // No back stack - manually navigate to collab chat if in session
