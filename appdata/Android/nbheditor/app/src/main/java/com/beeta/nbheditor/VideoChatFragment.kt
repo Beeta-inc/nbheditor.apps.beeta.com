@@ -498,14 +498,17 @@ class VideoChatFragment : Fragment() {
                     android.util.Log.w("VideoChat", "Back stack low after pop - ensuring CollabChatFragment is visible")
                     // Check if collaborative session still exists
                     if (CollaborativeSessionManager.isInSession()) {
-                        // Manually show the collab chat fragment
+                        // Manually show the collab chat fragment without adding to back stack
+                        // (it will be added to back stack by the normal flow)
                         val collabFragment = CollabChatFragment.newInstance()
                         fragmentManager.beginTransaction()
                             .replace(R.id.fragment_container, collabFragment)
                             .addToBackStack("collab_chat")
-                            .commitNowAllowingStateLoss()
+                            .commitAllowingStateLoss()
+                        android.util.Log.d("VideoChat", "CollabChatFragment added")
                     } else {
                         // No session - just hide the container
+                        android.util.Log.d("VideoChat", "No session - hiding container")
                         activity.findViewById<View>(R.id.fragment_container)?.visibility = View.GONE
                     }
                 }
@@ -517,7 +520,7 @@ class VideoChatFragment : Fragment() {
                     fragmentManager.beginTransaction()
                         .replace(R.id.fragment_container, collabFragment)
                         .addToBackStack("collab_chat")
-                        .commitNowAllowingStateLoss()
+                        .commitAllowingStateLoss()
                 } else {
                     activity.findViewById<View>(R.id.fragment_container)?.visibility = View.GONE
                 }
@@ -532,6 +535,7 @@ class VideoChatFragment : Fragment() {
                         val collabFragment = CollabChatFragment.newInstance()
                         activity.supportFragmentManager.beginTransaction()
                             .replace(R.id.fragment_container, collabFragment)
+                            .addToBackStack("collab_chat")
                             .commitAllowingStateLoss()
                     }
                 }
