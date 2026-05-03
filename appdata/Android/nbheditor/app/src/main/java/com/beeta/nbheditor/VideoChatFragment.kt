@@ -367,9 +367,11 @@ class VideoChatFragment : Fragment() {
             .setTitle("End Call")
             .setMessage("End the video call for all participants?")
             .setPositiveButton("End") { _, _ ->
+                // Get context before cleanup/close since fragment will be detached
+                val context = requireContext().applicationContext
                 cleanup()
                 safelyCloseFragment()
-                Toast.makeText(requireContext(), "Call ended", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Call ended", Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton("Cancel", null)
             .show()
@@ -380,10 +382,12 @@ class VideoChatFragment : Fragment() {
             .setTitle("Leave Call")
             .setMessage("Leave the video call?")
             .setPositiveButton("Leave") { _, _ ->
+                // Get context before cleanup/close since fragment will be detached
+                val context = requireContext().applicationContext
                 stopMiniPlayer()
                 cleanup()
                 safelyCloseFragment()
-                Toast.makeText(requireContext(), "Left call", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Left call", Toast.LENGTH_SHORT).show()
             }
             .setNegativeButton("Cancel", null)
             .show()
