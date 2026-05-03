@@ -476,14 +476,19 @@ class VideoChatFragment : Fragment() {
                 return
             }
             
-            // Try to pop back stack
-            if (parentFragmentManager.backStackEntryCount > 0) {
-                android.util.Log.d("VideoChat", "Popping back stack (count: ${parentFragmentManager.backStackEntryCount})")
-                parentFragmentManager.popBackStack()
+            val activity = requireActivity()
+            val fragmentManager = activity.supportFragmentManager
+            
+            android.util.Log.d("VideoChat", "Back stack count: ${fragmentManager.backStackEntryCount}")
+            
+            // Always use activity's fragment manager and pop by name to be safe
+            if (fragmentManager.backStackEntryCount > 0) {
+                android.util.Log.d("VideoChat", "Popping back stack entry 'video_call'")
+                fragmentManager.popBackStack("video_call", androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
             } else {
                 // If no back stack, just remove this fragment without finishing activity
                 android.util.Log.d("VideoChat", "No back stack, removing fragment directly")
-                parentFragmentManager.beginTransaction()
+                fragmentManager.beginTransaction()
                     .remove(this)
                     .commitAllowingStateLoss()
             }
@@ -492,7 +497,7 @@ class VideoChatFragment : Fragment() {
             // Last resort: try to remove the fragment directly
             try {
                 if (isAdded && !isDetached) {
-                    parentFragmentManager.beginTransaction()
+                    requireActivity().supportFragmentManager.beginTransaction()
                         .remove(this)
                         .commitAllowingStateLoss()
                 }
