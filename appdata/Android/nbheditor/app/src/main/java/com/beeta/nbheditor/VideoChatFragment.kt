@@ -487,41 +487,21 @@ class VideoChatFragment : Fragment() {
                 android.util.Log.d("VideoChat", "Back stack [$i]: ${entry.name}")
             }
             
-            // Pop back stack to return to previous fragment
-            if (fragmentManager.backStackEntryCount > 0) {
-                android.util.Log.d("VideoChat", "Popping back stack immediately")
-                val popped = fragmentManager.popBackStackImmediate()
-                android.util.Log.d("VideoChat", "Pop result: $popped, new count: ${fragmentManager.backStackEntryCount}")
-                
-                // Only create new CollabChatFragment if back stack is completely empty
-                if (fragmentManager.backStackEntryCount == 0) {
-                    android.util.Log.w("VideoChat", "Back stack empty after pop - checking if we need to show CollabChatFragment")
-                    // Check if collaborative session still exists
-                    if (CollaborativeSessionManager.isInSession()) {
-                        // Manually show the collab chat fragment
-                        android.util.Log.d("VideoChat", "Session exists - creating new CollabChatFragment")
-                        val collabFragment = CollabChatFragment.newInstance()
-                        fragmentManager.beginTransaction()
-                            .replace(R.id.fragment_container, collabFragment)
-                            .addToBackStack("collab_chat")
-                            .commitAllowingStateLoss()
-                    } else {
-                        // No session - just hide the container
-                        android.util.Log.d("VideoChat", "No session - hiding container")
-                        activity.findViewById<View>(R.id.fragment_container)?.visibility = View.GONE
-                    }
-                } else {
-                    android.util.Log.d("VideoChat", "Back stack not empty (count=${fragmentManager.backStackEntryCount}), previous fragment should be visible")
-                }
+            // ALWAYS ensure CollabChatFragment is shown, regardless of back stack
+            if (CollaborativeSessionManager.isInSession()) {
+                android.util.Log.d("VideoChat", "Session active - replacing with CollabChatFragment")
+                // Replace this fragment with CollabChatFragment
+                val collabFragment = CollabChatFragment.newInstance()
+                fragmentManager.beginTransaction()
+                    .replace(R.id.fragment_container, collabFragment)
+                    .addToBackStack("collab_chat")
+                    .commitAllowingStateLoss()
+                android.util.Log.d("VideoChat", "CollabChatFragment transaction committed")
             } else {
-                // No back stack - manually navigate to collab chat if in session
-                android.util.Log.w("VideoChat", "No back stack - checking session")
-                if (CollaborativeSessionManager.isInSession()) {
-                    val collabFragment = CollabChatFragment.newInstance()
-                    fragmentManager.beginTransaction()
-                        .replace(R.id.fragment_container, collabFragment)
-                        .addToBackStack("collab_chat")
-                        .commitAllowingStateLoss()
+                // No session - try to pop back stack or hide container
+                android.util.Log.d("VideoChat", "No session - attempting to pop or hide")
+                if (fragmentManager.backStackEntryCount > 0) {
+                    fragmentManager.popBackStackImmediate()
                 } else {
                     activity.findViewById<View>(R.id.fragment_container)?.visibility = View.GONE
                 }
@@ -530,15 +510,13 @@ class VideoChatFragment : Fragment() {
             android.util.Log.e("VideoChat", "Error closing fragment", e)
             // Last resort: manually show collab chat if in session
             try {
-                if (isAdded && !isDetached) {
+                if (CollaborativeSessionManager.isInSession()) {
                     val activity = requireActivity()
-                    if (CollaborativeSessionManager.isInSession()) {
-                        val collabFragment = CollabChatFragment.newInstance()
-                        activity.supportFragmentManager.beginTransaction()
-                            .replace(R.id.fragment_container, collabFragment)
-                            .addToBackStack("collab_chat")
-                            .commitAllowingStateLoss()
-                    }
+                    val collabFragment = CollabChatFragment.newInstance()
+                    activity.supportFragmentManager.beginTransaction()
+                        .replace(R.id.fragment_container, collabFragment)
+                        .addToBackStack("collab_chat")
+                        .commitAllowingStateLoss()
                 }
             } catch (ex: Exception) {
                 android.util.Log.e("VideoChat", "Failed to show collab chat", ex)
