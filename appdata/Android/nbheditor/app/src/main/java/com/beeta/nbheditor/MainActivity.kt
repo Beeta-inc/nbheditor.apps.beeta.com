@@ -4474,26 +4474,29 @@ open class MainActivity : AppCompatActivity() {
     
     private fun showAboutDialog() {
         val message = """
-            📝 NBH Editor v4.5.1
+            📝 NBH Editor v6.0.0
             
-            A blazing-fast, modern text editor with rich text support.
+            A blazing-fast, modern text editor with advanced features.
             
             ✨ Features:
+            • Advanced Math Editor (14 categories)
             • Rich Text Editing (Markdown/HTML)
             • AI-Assisted Editing (Beeta AI)
             • Real-Time Collaboration
+            • Video Chat with Mini Player
             • Auto-sync to Google Cloud
-            • Smart Font Control
+            • Multi-Tab Interface
+            • 41 Premium Fonts
+            • Media Preview System
             • Dark & Light Themes
             • Voice Input
-            • Image Support
             • Chat Memory
             
             🔒 Privacy:
             All data synced to your personal Google account.
             No third-party access.
             
-            Made with ❤️ by Beeta
+            Made with ❤️ by Beeta Technologies Inc
             "Made For Human"
         """.trimIndent()
         
