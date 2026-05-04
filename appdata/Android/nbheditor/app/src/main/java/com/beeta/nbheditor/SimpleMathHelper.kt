@@ -382,6 +382,8 @@ object SimpleMathHelper {
     private fun showFractionWizard(context: Context, preview: ImageView) {
         val input = EditText(context).apply {
             hint = "Enter numerator"
+            isFocusable = false
+            setOnClickListener { showNestedMathBuilder(context, this) }
         }
         
         AlertDialog.Builder(context)
@@ -400,6 +402,8 @@ object SimpleMathHelper {
     private fun showFractionStep2(context: Context, preview: ImageView, numerator: String) {
         val input = EditText(context).apply {
             hint = "Enter denominator"
+            isFocusable = false
+            setOnClickListener { showNestedMathBuilder(context, this) }
         }
         
         AlertDialog.Builder(context)
@@ -420,6 +424,8 @@ object SimpleMathHelper {
     private fun showPowerWizard(context: Context, preview: ImageView) {
         val input = EditText(context).apply {
             hint = "Enter base"
+            isFocusable = false
+            setOnClickListener { showNestedMathBuilder(context, this) }
         }
         
         AlertDialog.Builder(context)
@@ -438,6 +444,8 @@ object SimpleMathHelper {
     private fun showPowerStep2(context: Context, preview: ImageView, base: String) {
         val input = EditText(context).apply {
             hint = "Enter exponent"
+            isFocusable = false
+            setOnClickListener { showNestedMathBuilder(context, this) }
         }
         
         AlertDialog.Builder(context)
@@ -458,6 +466,8 @@ object SimpleMathHelper {
     private fun showRootWizard(context: Context, preview: ImageView) {
         val input = EditText(context).apply {
             hint = "Enter expression (leave empty for square root)"
+            isFocusable = false
+            setOnClickListener { showNestedMathBuilder(context, this) }
         }
         
         AlertDialog.Builder(context)
@@ -477,6 +487,8 @@ object SimpleMathHelper {
     private fun showIntegralWizard(context: Context, preview: ImageView) {
         val input = EditText(context).apply {
             hint = "Enter function"
+            isFocusable = false
+            setOnClickListener { showNestedMathBuilder(context, this) }
         }
         
         AlertDialog.Builder(context)
@@ -495,6 +507,8 @@ object SimpleMathHelper {
     private fun showIntegralStep2(context: Context, preview: ImageView, function: String) {
         val input = EditText(context).apply {
             hint = "Lower limit (optional)"
+            isFocusable = false
+            setOnClickListener { showNestedMathBuilder(context, this) }
         }
         
         AlertDialog.Builder(context)
@@ -513,6 +527,8 @@ object SimpleMathHelper {
     private fun showIntegralStep3(context: Context, preview: ImageView, function: String, lower: String) {
         val input = EditText(context).apply {
             hint = "Upper limit (optional)"
+            isFocusable = false
+            setOnClickListener { showNestedMathBuilder(context, this) }
         }
         
         AlertDialog.Builder(context)
@@ -536,6 +552,8 @@ object SimpleMathHelper {
     private fun showSumWizard(context: Context, preview: ImageView) {
         val input = EditText(context).apply {
             hint = "Enter expression"
+            isFocusable = false
+            setOnClickListener { showNestedMathBuilder(context, this) }
         }
         
         AlertDialog.Builder(context)
@@ -554,6 +572,8 @@ object SimpleMathHelper {
     private fun showSumStep2(context: Context, preview: ImageView, expression: String) {
         val input = EditText(context).apply {
             hint = "e.g., i=1"
+            isFocusable = false
+            setOnClickListener { showNestedMathBuilder(context, this) }
         }
         
         AlertDialog.Builder(context)
@@ -572,6 +592,8 @@ object SimpleMathHelper {
     private fun showSumStep3(context: Context, preview: ImageView, expression: String, lower: String) {
         val input = EditText(context).apply {
             hint = "e.g., n"
+            isFocusable = false
+            setOnClickListener { showNestedMathBuilder(context, this) }
         }
         
         AlertDialog.Builder(context)
@@ -590,6 +612,8 @@ object SimpleMathHelper {
     private fun showLimitWizard(context: Context, preview: ImageView) {
         val input = EditText(context).apply {
             hint = "Enter expression"
+            isFocusable = false
+            setOnClickListener { showNestedMathBuilder(context, this) }
         }
         
         AlertDialog.Builder(context)
@@ -609,6 +633,8 @@ object SimpleMathHelper {
         val input = EditText(context).apply {
             hint = "e.g., x"
             setText("x")
+            isFocusable = false
+            setOnClickListener { showNestedMathBuilder(context, this) }
         }
         
         AlertDialog.Builder(context)
@@ -628,6 +654,8 @@ object SimpleMathHelper {
         val input = EditText(context).apply {
             hint = "e.g., 0, \\infty"
             setText("0")
+            isFocusable = false
+            setOnClickListener { showNestedMathBuilder(context, this) }
         }
         
         AlertDialog.Builder(context)
@@ -721,5 +749,79 @@ object SimpleMathHelper {
             }
             .setNegativeButton("Cancel", null)
             .show()
+    }
+
+    private fun showNestedMathBuilder(context: Context, targetEditText: EditText) {
+        var nestedLatex = targetEditText.text.toString()
+        
+        val nestedDialog = android.app.Dialog(context)
+        val nestedView = LayoutInflater.from(context).inflate(R.layout.dialog_simple_math, null)
+        nestedDialog.setContentView(nestedView)
+        nestedDialog.window?.setLayout(
+            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        
+        val nestedPreview = nestedView.findViewById<ImageView>(R.id.mathPreview)
+        val nestedContainer = nestedView.findViewById<LinearLayout>(R.id.mathButtons)
+        
+        fun updateNested(latex: String) {
+            nestedLatex += latex
+            try {
+                val drawable = JLatexMathDrawable.builder(nestedLatex)
+                    .textSize(40f)
+                    .padding(8)
+                    .background(Color.WHITE)
+                    .build()
+                nestedPreview.setImageDrawable(drawable)
+            } catch (e: Exception) {
+                nestedPreview.setImageDrawable(null)
+            }
+        }
+        
+        nestedContainer.removeAllViews()
+        addButtonRow(context, nestedContainer, listOf(
+            "x" to { updateNested("x") },
+            "y" to { updateNested("y") },
+            "x²" to { updateNested("x^2") },
+            "+" to { updateNested("+") }
+        ))
+        addButtonRow(context, nestedContainer, listOf(
+            "sin" to { updateNested("\\sin(") },
+            "cos" to { updateNested("\\cos(") },
+            "log" to { updateNested("\\log(") },
+            ")" to { updateNested(")") }
+        ))
+        addButtonRow(context, nestedContainer, listOf(
+            "(" to { updateNested("(") },
+            "-" to { updateNested("-") },
+            "×" to { updateNested("\\times") },
+            "÷" to { updateNested("\\div") }
+        ))
+        
+        val insertBtn = Button(context).apply {
+            text = "Insert"
+            setOnClickListener {
+                targetEditText.setText(nestedLatex)
+                nestedDialog.dismiss()
+            }
+        }
+        
+        val clearBtn = Button(context).apply {
+            text = "Clear"
+            setOnClickListener {
+                nestedLatex = ""
+                nestedPreview.setImageDrawable(null)
+            }
+        }
+        
+        val btnRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            addView(clearBtn, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            addView(insertBtn, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        }
+        
+        nestedContainer.addView(btnRow)
+        nestedDialog.show()
     }
 }
