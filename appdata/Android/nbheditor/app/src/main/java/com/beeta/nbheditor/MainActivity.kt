@@ -1779,15 +1779,24 @@ open class MainActivity : AppCompatActivity() {
         val popup = android.widget.PopupMenu(this, editorBinding.textArea, android.view.Gravity.NO_GRAVITY)
         popup.menu.add("MathEQ - Write Math Formula")
         popup.setOnMenuItemClickListener {
-            MathFormulaHelper.showMathFormulaDialog(this) { formula ->
+            SimpleMathHelper.showMathDialog(this) { bitmap ->
+                // Insert the rendered formula as an image
                 val cursor = editorBinding.textArea.selectionStart
                 val text = editorBinding.textArea.text
                 // Remove the @ symbol that triggered this
                 if (cursor > 0 && text?.get(cursor - 1) == '@') {
                     text?.delete(cursor - 1, cursor)
                 }
-                // Insert the formula
-                text?.insert(editorBinding.textArea.selectionStart, formula)
+                // Create ImageSpan from bitmap
+                val drawable = android.graphics.drawable.BitmapDrawable(resources, bitmap)
+                drawable.setBounds(0, 0, bitmap.width, bitmap.height)
+                val imageSpan = android.text.style.ImageSpan(drawable, android.text.style.ImageSpan.ALIGN_BASELINE)
+                
+                // Insert as spannable
+                val spannableString = android.text.SpannableString(" ")
+                spannableString.setSpan(imageSpan, 0, 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                text?.insert(editorBinding.textArea.selectionStart, spannableString)
+                
                 android.widget.Toast.makeText(this, "Formula inserted", android.widget.Toast.LENGTH_SHORT).show()
             }
             true
