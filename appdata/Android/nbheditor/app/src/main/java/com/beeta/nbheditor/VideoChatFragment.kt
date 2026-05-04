@@ -441,7 +441,11 @@ class VideoChatFragment : Fragment() {
 
     override fun onPause() {
         super.onPause()
-        if (requireActivity().isChangingConfigurations.not() && requireActivity().isFinishing.not()) {
+        // Only start mini player if user is minimizing app, not when leaving/ending call
+        if (requireActivity().isChangingConfigurations.not() && 
+            requireActivity().isFinishing.not() &&
+            isAdded && 
+            !isRemoving) {
             startMiniPlayer()
         }
     }
