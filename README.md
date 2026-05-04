@@ -1,6 +1,6 @@
 <div align="center">
   <img src="assets/logo-beeta.png" alt="NbhEditor Logo" width="150"/>
-  <h1>NbhEditor v5.0.0</h1>
+  <h1>NbhEditor v6.0.0</h1>
   <p><b>A fast, modern, and AI-powered open-source text editor for Linux and Android.</b></p>
 </div>
 
@@ -8,7 +8,17 @@
 
 **NbhEditor** is built with performance, simplicity, and intelligent assistance in mind. Whether you are a casual user taking notes or a developer writing code, it combines a lightweight editing experience with powerful, opt-in AI tools to boost your productivity.
 
-## ✨ What's New in v5.0.0
+## ✨ What's New in v6.0.0
+
+* 🧮 **Advanced Math Editor:** Complete GUI-driven LaTeX math formula builder with 14 categories (Basic, Fractions, Exponents, Roots, Calculus, Trigonometry, Geometry, Algebra, Functions, Matrices, Greek, Symbols, Logic, Sets)
+* 🎯 **Step-by-Step Wizards:** Build complex expressions like integrals, sums, limits, and matrices through intuitive multi-step dialogs
+* ⌨️ **Flexible Input:** Type custom values (x^9000, any variable) or use GUI buttons - combine both for maximum flexibility
+* 🖼️ **Formula Rendering:** Math formulas inserted as beautifully rendered images, not raw LaTeX text
+* 📹 **Video Chat Mini Player:** Picture-in-picture mode for video calls with split view (local + remote/active speaker)
+* 🎨 **Media Preview System:** Automatic thumbnail generation for images, videos (first frame), PDFs (first page), and documents in chat
+* 🔐 **Permission Management:** Smart permission dialogs with detailed explanations before requesting system overlay access
+
+## Previous Updates (v5.0.0)
 
 * 📑 **Multi-Tab Interface:** Open multiple files in separate tabs with smart tab management
 * 🎨 **41 Premium Fonts:** Expanded font library with JetBrains Mono, Source Code Pro, Merriweather, and more

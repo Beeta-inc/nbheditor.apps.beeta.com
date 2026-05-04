@@ -2,110 +2,102 @@
 
 All notable changes to NbhEditor will be documented in this file.
 
-## [4.5.1] - 2026-04-29
-
-### Fixed
-- 🎤 **Voice Input**: Fixed voice-to-text not typing into editor
-  - Corrected position calculation for text insertion
-  - Added comprehensive logging for debugging
-  - Improved error handling and user feedback
-  - Enhanced focus management for EditText
-  - Voice input now properly inserts recognized speech at cursor position
-
-## [4.5.0] - 2026-04-28
+## [6.0.0] - 2025-01-XX
 
 ### Added
-- 📝 **Rich Text Editor**: Full Markdown and HTML rendering support with live formatting
-  - Supports headings (# H1, ## H2, ### H3, #### H4)
-  - Bold text (**bold** or __bold__)
-  - Italic text (*italic* or _italic_)
-  - Inline code (`code`)
-  - Strikethrough (~~text~~)
-  - Bullet lists (- item or * item)
-  - HTML tag rendering
-- ✍️ **Smart Font Control**: Apply fonts and sizes to selected text or future typing
-  - Font options: Monospace, Sans Serif, Serif, Casual, Cursive
-  - Size options: 12sp, 14sp, 16sp, 18sp, 20sp, 24sp
-  - Selective formatting: Apply to selection or set for new text
-- 🎨 **Text Type Button**: Quick access toolbar button for font style and size options
-- ⚙️ **Rich Text Toggle**: Enable/disable formatting from Settings menu
-  - Located in Settings → Editor Settings
-  - Persists across app restarts
-- 🔧 **Auto-Formatting**: Smart formatting that applies when you stop typing
-  - 1.5 second delay after typing stops
-  - Only formats when not actively typing
-  - Preserves cursor position
-
-### Fixed
-- 📏 **Line Number Alignment**: Perfect alignment with editor text lines
-  - Line numbers now match exact line height of editor
-  - Proper spacing and padding applied
-  - Numbers align perfectly with each text line
-- 🐛 **Rich Text Crash**: Fixed IndexOutOfBoundsException when applying formatting
-  - Added comprehensive error handling
-  - Safe span application with bounds checking
-  - Cursor position preservation
+- **Advanced Math Editor:** Complete GUI-driven LaTeX math formula builder with 14 categories
+  - Basic operators, Fractions, Exponents, Roots, Calculus symbols
+  - Trigonometry, Geometry, Algebra, Functions, Matrices
+  - Greek letters, Mathematical symbols, Logic operators, Set theory
+- **Step-by-Step Wizards:** Intuitive multi-step dialogs for complex expressions
+  - Integrals (with optional limits and variables)
+  - Summations and products
+  - Limits and derivatives
+  - Fractions, powers, roots, and matrices
+- **Flexible Math Input:** Nested expression builder with text input + GUI buttons
+  - Type custom values (x^9000, any variable name)
+  - Use category buttons for symbols and structures
+  - Combine typing and buttons for maximum flexibility
+- **Formula Rendering:** Math formulas inserted as beautifully rendered images using JLatexMath
+- **Video Chat Mini Player:** Picture-in-picture mode for video calls
+  - Split view showing local POV and remote/active speaker
+  - Draggable overlay window with minimize/maximize controls
+  - Smart permission management with explanation dialogs
+- **Media Preview System:** Automatic thumbnail generation for chat attachments
+  - Images: Scaled with aspect ratio preservation
+  - Videos: First frame extraction with play icon overlay
+  - PDFs: First page rendering
+  - Documents: File type icons with metadata
+- **Permission Management:** Detailed explanation dialogs before requesting system permissions
 
 ### Changed
-- 🎯 **Settings Organization**: Moved rich text toggle from toolbar to Settings
-- 🔄 **Font Application**: Changed from global to selective font/size changes
-
-## [4.4.0] - 2026-04-15
-
-### Added
-- 🔗 **Collaborative Session Auto-Save**: Sessions automatically save when you end or leave
-- 📂 **Organized Home Screen**: Separate sections for regular files and collaborative sessions
-- ☁️ **Drive Sync for Sessions**: Collaborative sessions sync across all your devices
-- 🎯 **Smart Session Management**: Tap to open, long-press to delete saved sessions
-- 🔄 **Cross-Device Sync**: Work on any device, your sessions follow you
+- Math formulas now render as images instead of raw LaTeX text
+- Improved wizard UX with clickable input fields that open nested builders
+- Enhanced video chat controls with better error handling
 
 ### Fixed
-- 🐛 **Deep Link Support**: Fixed collaborative session deep links
-- 🔒 **Typing Indicator Security**: Fixed email exposure in typing indicators
-- 💬 **Chat Synchronization**: Fixed mobile-web chat sync issues
-- 📱 **Media Support**: Added full media attachment support in collaborative chat
+- Mini player now displays correct size (180×120dp) instead of full screen
+- Video chat buttons no longer crash when fragment is not attached
+- Math editor properly handles complex nested expressions
 
-## [4.3.0] - 2026-03-20
-
-### Added
-- 🤝 **Real-Time Collaboration**: Work together with others in real-time
-- 💬 **Collaborative Chat**: Built-in chat for collaborative sessions
-- 👥 **User Presence**: See who's online and typing
-- 🔗 **Session Invitations**: Easy sharing with session codes
-
-## [4.2.0] - 2026-02-10
+## [5.0.0] - 2024-XX-XX
 
 ### Added
-- ☁️ **Google Drive Integration**: Sync files across devices
-- 🔐 **Google Sign-In**: Secure authentication
-- 📤 **Auto-Upload**: Automatic cloud backup
+- Multi-tab interface for opening multiple files
+- 41 premium fonts including JetBrains Mono, Source Code Pro, Merriweather
+- Tab bar auto-hide when only one file is open
+- Smart tab indicators showing modified files
+- Tab state management (content, cursor position, file URI)
 
-## [4.1.0] - 2026-01-15
+## [4.5.1] - 2024-XX-XX
+
+### Fixed
+- Voice input now properly types recognized speech into editor
+- Improved position calculation for voice input
+- Enhanced error handling for voice recognition
 
 ### Added
-- 🧠 **AI Assistance**: Smart suggestions and improvements
-- 🎤 **Voice Input**: Hands-free text entry
-- 🖼️ **Image Support**: Insert and manage images in documents
+- Better debugging support with enhanced logging
 
-## [4.0.0] - 2025-12-01
+## [4.5.0] - 2024-XX-XX
 
 ### Added
-- ✨ **Modern Glass UI**: Beautiful, clean interface
-- 🌙 **Dark Mode**: Eye-friendly dark theme
-- 📱 **Android Support**: Native Android app
-- 💾 **Auto-Save**: Never lose your work
+- Rich text editor with Markdown and HTML rendering
+- Smart font control for selected text or future typing
+- Fixed line numbers with perfect alignment
+- Rich text toggle in Settings
+- Text type button for quick font style and size access
+- Auto-formatting that applies when typing stops
 
----
+## [4.0.0] - 2024-XX-XX
 
-## Version Format
+### Added
+- Real-time collaboration with Firebase Realtime Database
+- Session management with auto-save and sync
+- Video chat integration with LiveKit
+- Collaborative chat and roadmap features
+- Google Drive sync for cloud storage
 
-Versions follow [Semantic Versioning](https://semver.org/):
-- **MAJOR** version for incompatible API changes
-- **MINOR** version for new functionality in a backwards compatible manner
-- **PATCH** version for backwards compatible bug fixes
+## [3.0.0] - 2024-XX-XX
 
-## Links
+### Added
+- AI-powered assistance with smart suggestions
+- Memory system for context-aware conversations
+- Voice mode for hands-free interaction
+- Media capabilities (image generation, video analysis)
 
-- [GitHub Repository](https://github.com/beeta-technologies/nbheditor)
-- [Official Website](https://nbheditor.pages.dev)
-- [Documentation](https://nbheditor.pages.dev/docs)
+## [2.0.0] - 2024-XX-XX
+
+### Added
+- Modern glass UI design
+- Dynamic theming (Dark/Light modes)
+- Enhanced editor with syntax highlighting
+- File management improvements
+
+## [1.0.0] - 2023-XX-XX
+
+### Added
+- Initial release
+- Basic text editing functionality
+- File open/save operations
+- Simple UI
