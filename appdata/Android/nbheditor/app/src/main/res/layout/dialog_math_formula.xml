@@ -58,35 +58,11 @@
                 android:padding="4dp" />
         </HorizontalScrollView>
 
-        <!-- LaTeX Input -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="LaTeX Code:"
-            android:textSize="14sp"
-            android:textColor="@color/editor_text"
-            android:layout_marginBottom="8dp" />
-
-        <EditText
-            android:id="@+id/mathInput"
-            android:layout_width="match_parent"
-            android:layout_height="120dp"
-            android:background="@drawable/bg_glass_card"
-            android:padding="12dp"
-            android:gravity="top|start"
-            android:inputType="textMultiLine"
-            android:textSize="14sp"
-            android:fontFamily="monospace"
-            android:textColor="@color/editor_text"
-            android:hint="Enter LaTeX code or use buttons above..."
-            android:textColorHint="@color/editor_hint"
-            android:layout_marginBottom="16dp" />
-
         <!-- Preview -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Live Preview:"
+            android:text="Formula Preview:"
             android:textSize="14sp"
             android:textColor="@color/editor_text"
             android:layout_marginBottom="8dp" />
@@ -118,6 +94,15 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="end">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/clearButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Clear"
+                android:textAllCaps="false"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_marginEnd="8dp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/cancelButton"

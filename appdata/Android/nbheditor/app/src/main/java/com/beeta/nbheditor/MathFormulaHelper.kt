@@ -18,6 +18,7 @@ import ru.noties.jlatexmath.JLatexMathDrawable
 object MathFormulaHelper {
     
     private var mathFonts: List<Typeface> = emptyList()
+    private var currentLatex = ""
     
     fun initialize(context: Context) {
         if (mathFonts.isNotEmpty()) return
@@ -37,15 +38,15 @@ object MathFormulaHelper {
         initialize(context)
         
         val dialogView = LayoutInflater.from(context).inflate(R.layout.dialog_math_formula, null)
-        val mathInput = dialogView.findViewById<EditText>(R.id.mathInput)
         val mathPreview = dialogView.findViewById<ImageView>(R.id.mathPreview)
         val controlsContainer = dialogView.findViewById<LinearLayout>(R.id.controlsContainer)
         val categoryTabs = dialogView.findViewById<android.widget.HorizontalScrollView>(R.id.categoryTabs)
         val tabsLayout = dialogView.findViewById<LinearLayout>(R.id.tabsLayout)
         val cancelButton = dialogView.findViewById<Button>(R.id.cancelButton)
         val insertButton = dialogView.findViewById<Button>(R.id.insertButton)
+        val clearButton = dialogView.findViewById<Button>(R.id.clearButton)
         
-        var currentLatex = ""
+        currentLatex = ""
         
         // Setup category tabs
         val categories = listOf(
@@ -81,37 +82,31 @@ object MathFormulaHelper {
                             ContextCompat.getDrawable(context, R.drawable.bg_tab_unselected)
                         }
                     }
-                    updateControls(context, controlsContainer, mathInput, category)
+                    updateControls(context, controlsContainer, mathPreview, category)
                 }
             }
             tabsLayout.addView(tab)
         }
         
         // Load initial controls
-        updateControls(context, controlsContainer, mathInput, categories[0])
-        
-        // Live LaTeX preview
-        mathInput.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                currentLatex = s?.toString() ?: ""
-                updateLatexPreview(mathPreview, currentLatex)
-            }
-            override fun afterTextChanged(s: Editable?) {}
-        })
+        updateControls(context, controlsContainer, mathPreview, categories[0])
         
         val dialog = AlertDialog.Builder(context)
             .setView(dialogView)
             .create()
+        
+        clearButton.setOnClickListener {
+            currentLatex = ""
+            updateLatexPreview(mathPreview, currentLatex)
+        }
         
         cancelButton.setOnClickListener {
             dialog.dismiss()
         }
         
         insertButton.setOnClickListener {
-            val formula = mathInput.text.toString()
-            if (formula.isNotBlank()) {
-                onInsert(formula)
+            if (currentLatex.isNotBlank()) {
+                onInsert(currentLatex)
                 dialog.dismiss()
             }
         }
@@ -119,216 +114,143 @@ object MathFormulaHelper {
         dialog.show()
     }
     
-    private fun updateControls(context: Context, container: LinearLayout, input: EditText, category: String) {
+    private fun updateControls(context: Context, container: LinearLayout, preview: ImageView, category: String) {
         container.removeAllViews()
         
         when (category) {
-            "Basic" -> addBasicControls(context, container, input)
-            "Fractions" -> addFractionControls(context, container, input)
-            "Exponents" -> addExponentControls(context, container, input)
-            "Roots" -> addRootControls(context, container, input)
-            "Calculus" -> addCalculusControls(context, container, input)
-            "Trigonometry" -> addTrigonometryControls(context, container, input)
-            "Geometry" -> addGeometryControls(context, container, input)
-            "Algebra" -> addAlgebraControls(context, container, input)
-            "Functions" -> addFunctionControls(context, container, input)
-            "Matrices" -> addMatrixControls(context, container, input)
-            "Greek" -> addGreekControls(context, container, input)
-            "Symbols" -> addSymbolControls(context, container, input)
-            "Logic" -> addLogicControls(context, container, input)
-            "Sets" -> addSetControls(context, container, input)
+            "Basic" -> addBasicControls(context, container, preview)
+            "Fractions" -> addFractionControls(context, container, preview)
+            "Exponents" -> addExponentControls(context, container, preview)
+            "Roots" -> addRootControls(context, container, preview)
+            "Calculus" -> addCalculusControls(context, container, preview)
+            "Trigonometry" -> addTrigonometryControls(context, container, preview)
+            "Geometry" -> addGeometryControls(context, container, preview)
+            "Algebra" -> addAlgebraControls(context, container, preview)
+            "Functions" -> addFunctionControls(context, container, preview)
+            "Matrices" -> addMatrixControls(context, container, preview)
+            "Greek" -> addGreekControls(context, container, preview)
+            "Symbols" -> addSymbolControls(context, container, preview)
+            "Logic" -> addLogicControls(context, container, preview)
+            "Sets" -> addSetControls(context, container, preview)
         }
     }
 
-    private fun addBasicControls(context: Context, container: LinearLayout, input: EditText) {
-        addControlButton(context, container, "x²", "x^{2}", input)
-        addControlButton(context, container, "xⁿ", "x^{n}", input)
-        addControlButton(context, container, "x₂", "x_{2}", input)
-        addControlButton(context, container, "xₙ", "x_{n}", input)
-        addControlButton(context, container, "√", "\\sqrt{}", input, -1)
-        addControlButton(context, container, "±", "\\pm", input)
-        addControlButton(context, container, "×", "\\times", input)
-        addControlButton(context, container, "÷", "\\div", input)
-        addControlButton(context, container, "=", "=", input)
-        addControlButton(context, container, "≠", "\\neq", input)
-        addControlButton(context, container, "≈", "\\approx", input)
-        addControlButton(context, container, "<", "<", input)
-        addControlButton(context, container, ">", ">", input)
-        addControlButton(context, container, "≤", "\\leq", input)
-        addControlButton(context, container, "≥", "\\geq", input)
+    private fun appendToFormula(latex: String, preview: ImageView) {
+        currentLatex += latex
+        updateLatexPreview(preview, currentLatex)
     }
 
-    private fun addFractionControls(context: Context, container: LinearLayout, input: EditText) {
-        addControlButton(context, container, "a/b", "\\frac{a}{b}", input)
-        addControlButton(context, container, "∂/∂x", "\\frac{\\partial}{\\partial x}", input)
-        addControlButton(context, container, "dy/dx", "\\frac{dy}{dx}", input)
-        addControlButton(context, container, "d²y/dx²", "\\frac{d^2y}{dx^2}", input)
-        addControlButton(context, container, "∂²/∂x²", "\\frac{\\partial^2}{\\partial x^2}", input)
-        addControlButton(context, container, "Custom", showCustomDialog = "fraction", input = input)
+    private fun addBasicControls(context: Context, container: LinearLayout, preview: ImageView) {
+        addControlButton(context, container, "x²", "x^{2}", preview)
+        addControlButton(context, container, "xⁿ", "x^{n}", preview)
+        addControlButton(context, container, "x₂", "x_{2}", preview)
+        addControlButton(context, container, "xₙ", "x_{n}", preview)
+        addControlButton(context, container, "√", "\\sqrt{x}", preview)
+        addControlButton(context, container, "±", "\\pm ", preview)
+        addControlButton(context, container, "×", "\\times ", preview)
+        addControlButton(context, container, "÷", "\\div ", preview)
+        addControlButton(context, container, "=", "=", preview)
+        addControlButton(context, container, "≠", "\\neq ", preview)
+        addControlButton(context, container, "≈", "\\approx ", preview)
+        addControlButton(context, container, "<", "<", preview)
+        addControlButton(context, container, ">", ">", preview)
+        addControlButton(context, container, "≤", "\\leq ", preview)
+        addControlButton(context, container, "≥", "\\geq ", preview)
     }
 
-    private fun addExponentControls(context: Context, container: LinearLayout, input: EditText) {
-        addControlButton(context, container, "eˣ", "e^{x}", input)
-        addControlButton(context, container, "e^(x²)", "e^{x^2}", input)
-        addControlButton(context, container, "10ˣ", "10^{x}", input)
-        addControlButton(context, container, "aⁿ", "a^{n}", input)
-        addControlButton(context, container, "x^(a+b)", "x^{a+b}", input)
-        addControlButton(context, container, "2ˣ", "2^{x}", input)
+    private fun addFractionControls(context: Context, container: LinearLayout, preview: ImageView) {
+        addControlButton(context, container, "Simple Fraction", showWizard = "fraction", preview = preview)
+        addControlButton(context, container, "∂/∂x", showWizard = "partial", preview = preview)
+        addControlButton(context, container, "dy/dx", showWizard = "derivative", preview = preview)
     }
 
-    private fun addRootControls(context: Context, container: LinearLayout, input: EditText) {
-        addControlButton(context, container, "√x", "\\sqrt{x}", input)
-        addControlButton(context, container, "∛x", "\\sqrt[3]{x}", input)
-        addControlButton(context, container, "ⁿ√x", "\\sqrt[n]{x}", input)
-        addControlButton(context, container, "√(x²+y²)", "\\sqrt{x^2+y^2}", input)
-        addControlButton(context, container, "Custom √", showCustomDialog = "root", input = input)
+    private fun addExponentControls(context: Context, container: LinearLayout, preview: ImageView) {
+        addControlButton(context, container, "eˣ", "e^{x}", preview)
+        addControlButton(context, container, "10ˣ", "10^{x}", preview)
+        addControlButton(context, container, "Custom Power", showWizard = "power", preview = preview)
     }
 
-    private fun addCalculusControls(context: Context, container: LinearLayout, input: EditText) {
-        addControlButton(context, container, "∫ dx", "\\int dx", input)
-        addControlButton(context, container, "∫₀¹", "\\int_{0}^{1}", input)
-        addControlButton(context, container, "∫ₐᵇ", "\\int_{a}^{b}", input)
-        addControlButton(context, container, "∫₋∞^∞", "\\int_{-\\infty}^{\\infty}", input)
-        addControlButton(context, container, "∬", "\\iint", input)
-        addControlButton(context, container, "∭", "\\iiint", input)
-        addControlButton(context, container, "∮", "\\oint", input)
-        addControlButton(context, container, "Custom ∫", showCustomDialog = "integral", input = input)
-        addControlButton(context, container, "∑", "\\sum", input)
-        addControlButton(context, container, "∑ᵢ₌₁ⁿ", "\\sum_{i=1}^{n}", input)
-        addControlButton(context, container, "∑ₖ₌₀^∞", "\\sum_{k=0}^{\\infty}", input)
-        addControlButton(context, container, "Custom ∑", showCustomDialog = "sum", input = input)
-        addControlButton(context, container, "∏", "\\prod", input)
-        addControlButton(context, container, "∏ᵢ₌₁ⁿ", "\\prod_{i=1}^{n}", input)
-        addControlButton(context, container, "lim", "\\lim", input)
-        addControlButton(context, container, "lim(x→0)", "\\lim_{x \\to 0}", input)
-        addControlButton(context, container, "lim(x→∞)", "\\lim_{x \\to \\infty}", input)
-        addControlButton(context, container, "Custom lim", showCustomDialog = "limit", input = input)
-        addControlButton(context, container, "∂", "\\partial", input)
-        addControlButton(context, container, "∇", "\\nabla", input)
+    private fun addRootControls(context: Context, container: LinearLayout, preview: ImageView) {
+        addControlButton(context, container, "√x", "\\sqrt{x}", preview)
+        addControlButton(context, container, "∛x", "\\sqrt[3]{x}", preview)
+        addControlButton(context, container, "Custom Root", showWizard = "root", preview = preview)
     }
 
-    private fun addTrigonometryControls(context: Context, container: LinearLayout, input: EditText) {
-        addControlButton(context, container, "sin", "\\sin", input)
-        addControlButton(context, container, "cos", "\\cos", input)
-        addControlButton(context, container, "tan", "\\tan", input)
-        addControlButton(context, container, "cot", "\\cot", input)
-        addControlButton(context, container, "sec", "\\sec", input)
-        addControlButton(context, container, "csc", "\\csc", input)
-        addControlButton(context, container, "sin⁻¹", "\\sin^{-1}", input)
-        addControlButton(context, container, "cos⁻¹", "\\cos^{-1}", input)
-        addControlButton(context, container, "tan⁻¹", "\\tan^{-1}", input)
-        addControlButton(context, container, "sinh", "\\sinh", input)
-        addControlButton(context, container, "cosh", "\\cosh", input)
-        addControlButton(context, container, "tanh", "\\tanh", input)
-        addControlButton(context, container, "arcsin", "\\arcsin", input)
-        addControlButton(context, container, "arccos", "\\arccos", input)
-        addControlButton(context, container, "arctan", "\\arctan", input)
+    private fun addCalculusControls(context: Context, container: LinearLayout, preview: ImageView) {
+        addControlButton(context, container, "∫ Integral", showWizard = "integral", preview = preview)
+        addControlButton(context, container, "∑ Sum", showWizard = "sum", preview = preview)
+        addControlButton(context, container, "lim Limit", showWizard = "limit", preview = preview)
+        addControlButton(context, container, "∂", "\\partial ", preview)
+        addControlButton(context, container, "∇", "\\nabla ", preview)
     }
 
-    private fun addGeometryControls(context: Context, container: LinearLayout, input: EditText) {
-        addControlButton(context, container, "∠", "\\angle", input)
-        addControlButton(context, container, "°", "^\\circ", input)
-        addControlButton(context, container, "△", "\\triangle", input)
-        addControlButton(context, container, "⊥", "\\perp", input)
-        addControlButton(context, container, "∥", "\\parallel", input)
-        addControlButton(context, container, "≅", "\\cong", input)
-        addControlButton(context, container, "∼", "\\sim", input)
-        addControlButton(context, container, "Area", "A = ", input)
-        addControlButton(context, container, "Perimeter", "P = ", input)
-        addControlButton(context, container, "Circle", "\\pi r^2", input)
-        addControlButton(context, container, "Sphere", "\\frac{4}{3}\\pi r^3", input)
-        addControlButton(context, container, "Cylinder", "\\pi r^2 h", input)
+    private fun addTrigonometryControls(context: Context, container: LinearLayout, preview: ImageView) {
+        addControlButton(context, container, "sin", "\\sin(", preview)
+        addControlButton(context, container, "cos", "\\cos(", preview)
+        addControlButton(context, container, "tan", "\\tan(", preview)
+        addControlButton(context, container, "cot", "\\cot(", preview)
+        addControlButton(context, container, "sec", "\\sec(", preview)
+        addControlButton(context, container, "csc", "\\csc(", preview)
+        addControlButton(context, container, ")", ")", preview)
     }
 
-    private fun addAlgebraControls(context: Context, container: LinearLayout, input: EditText) {
-        addControlButton(context, container, "(a+b)²", "(a+b)^2 = a^2 + 2ab + b^2", input)
-        addControlButton(context, container, "(a-b)²", "(a-b)^2 = a^2 - 2ab + b^2", input)
-        addControlButton(context, container, "a²-b²", "a^2 - b^2 = (a+b)(a-b)", input)
-        addControlButton(context, container, "Quadratic", "x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}", input)
-        addControlButton(context, container, "System", "\\begin{cases} a_1x + b_1y = c_1 \\\\ a_2x + b_2y = c_2 \\end{cases}", input)
-        addControlButton(context, container, "Inequality", "ax + b < c", input)
+    private fun addGeometryControls(context: Context, container: LinearLayout, preview: ImageView) {
+        addControlButton(context, container, "∠", "\\angle ", preview)
+        addControlButton(context, container, "°", "^\\circ", preview)
+        addControlButton(context, container, "△", "\\triangle ", preview)
+        addControlButton(context, container, "⊥", "\\perp ", preview)
+        addControlButton(context, container, "∥", "\\parallel ", preview)
     }
 
-    private fun addFunctionControls(context: Context, container: LinearLayout, input: EditText) {
-        addControlButton(context, container, "f(x)", "f(x) = ", input)
-        addControlButton(context, container, "g(x)", "g(x) = ", input)
-        addControlButton(context, container, "f∘g", "(f \\circ g)(x)", input)
-        addControlButton(context, container, "f⁻¹", "f^{-1}(x)", input)
-        addControlButton(context, container, "exp", "\\exp", input)
-        addControlButton(context, container, "ln", "\\ln", input)
-        addControlButton(context, container, "log", "\\log", input)
-        addControlButton(context, container, "log₂", "\\log_2", input)
-        addControlButton(context, container, "log₁₀", "\\log_{10}", input)
-        addControlButton(context, container, "max", "\\max", input)
-        addControlButton(context, container, "min", "\\min", input)
-        addControlButton(context, container, "abs", "|x|", input)
-        addControlButton(context, container, "floor", "\\lfloor x \\rfloor", input)
-        addControlButton(context, container, "ceil", "\\lceil x \\rceil", input)
+    private fun addAlgebraControls(context: Context, container: LinearLayout, preview: ImageView) {
+        addControlButton(context, container, "Quadratic Formula", showWizard = "quadratic", preview = preview)
+        addControlButton(context, container, "System of Equations", showWizard = "system", preview = preview)
     }
 
-    private fun addMatrixControls(context: Context, container: LinearLayout, input: EditText) {
-        addControlButton(context, container, "2×2", "\\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}", input)
-        addControlButton(context, container, "3×3", "\\begin{pmatrix} a & b & c \\\\ d & e & f \\\\ g & h & i \\end{pmatrix}", input)
-        addControlButton(context, container, "Vector", "\\begin{pmatrix} x \\\\ y \\\\ z \\end{pmatrix}", input)
-        addControlButton(context, container, "Det", "\\begin{vmatrix} a & b \\\\ c & d \\end{vmatrix}", input)
-        addControlButton(context, container, "Custom", showCustomDialog = "matrix", input = input)
-        addControlButton(context, container, "Transpose", "A^T", input)
-        addControlButton(context, container, "Inverse", "A^{-1}", input)
-        addControlButton(context, container, "Identity", "I", input)
+    private fun addFunctionControls(context: Context, container: LinearLayout, preview: ImageView) {
+        addControlButton(context, container, "f(x)=", "f(x)=", preview)
+        addControlButton(context, container, "ln", "\\ln(", preview)
+        addControlButton(context, container, "log", "\\log(", preview)
+        addControlButton(context, container, ")", ")", preview)
     }
 
-    private fun addGreekControls(context: Context, container: LinearLayout, input: EditText) {
+    private fun addMatrixControls(context: Context, container: LinearLayout, preview: ImageView) {
+        addControlButton(context, container, "2×2 Matrix", showWizard = "matrix", preview = preview)
+    }
+
+    private fun addGreekControls(context: Context, container: LinearLayout, preview: ImageView) {
         val greekLetters = listOf(
-            "α" to "\\alpha", "β" to "\\beta", "γ" to "\\gamma", "δ" to "\\delta",
-            "ε" to "\\epsilon", "ζ" to "\\zeta", "η" to "\\eta", "θ" to "\\theta",
-            "λ" to "\\lambda", "μ" to "\\mu", "π" to "\\pi", "σ" to "\\sigma",
-            "τ" to "\\tau", "φ" to "\\phi", "ω" to "\\omega", "ρ" to "\\rho",
-            "Γ" to "\\Gamma", "Δ" to "\\Delta", "Θ" to "\\Theta", "Λ" to "\\Lambda",
-            "Σ" to "\\Sigma", "Φ" to "\\Phi", "Ω" to "\\Omega", "Π" to "\\Pi"
+            "α" to "\\alpha ", "β" to "\\beta ", "γ" to "\\gamma ", "δ" to "\\delta ",
+            "ε" to "\\epsilon ", "θ" to "\\theta ", "λ" to "\\lambda ", "μ" to "\\mu ",
+            "π" to "\\pi ", "σ" to "\\sigma ", "τ" to "\\tau ", "φ" to "\\phi ", "ω" to "\\omega "
         )
         greekLetters.forEach { (display, latex) ->
-            addControlButton(context, container, display, latex, input)
+            addControlButton(context, container, display, latex, preview)
         }
     }
 
-    private fun addSymbolControls(context: Context, container: LinearLayout, input: EditText) {
+    private fun addSymbolControls(context: Context, container: LinearLayout, preview: ImageView) {
         val symbols = listOf(
-            "∞" to "\\infty", "∂" to "\\partial", "∇" to "\\nabla",
-            "→" to "\\rightarrow", "←" to "\\leftarrow", "⇒" to "\\Rightarrow",
-            "⇐" to "\\Leftarrow", "↔" to "\\leftrightarrow", "⇔" to "\\Leftrightarrow",
-            "∀" to "\\forall", "∃" to "\\exists", "∄" to "\\nexists",
-            "ℕ" to "\\mathbb{N}", "ℤ" to "\\mathbb{Z}", "ℚ" to "\\mathbb{Q}",
-            "ℝ" to "\\mathbb{R}", "ℂ" to "\\mathbb{C}"
+            "∞" to "\\infty ", "→" to "\\rightarrow ", "←" to "\\leftarrow ",
+            "∀" to "\\forall ", "∃" to "\\exists "
         )
         symbols.forEach { (display, latex) ->
-            addControlButton(context, container, display, latex, input)
+            addControlButton(context, container, display, latex, preview)
         }
     }
 
-    private fun addLogicControls(context: Context, container: LinearLayout, input: EditText) {
-        addControlButton(context, container, "∧", "\\land", input)
-        addControlButton(context, container, "∨", "\\lor", input)
-        addControlButton(context, container, "¬", "\\neg", input)
-        addControlButton(context, container, "⇒", "\\Rightarrow", input)
-        addControlButton(context, container, "⇔", "\\Leftrightarrow", input)
-        addControlButton(context, container, "∴", "\\therefore", input)
-        addControlButton(context, container, "∵", "\\because", input)
-        addControlButton(context, container, "⊤", "\\top", input)
-        addControlButton(context, container, "⊥", "\\bot", input)
+    private fun addLogicControls(context: Context, container: LinearLayout, preview: ImageView) {
+        addControlButton(context, container, "∧", "\\land ", preview)
+        addControlButton(context, container, "∨", "\\lor ", preview)
+        addControlButton(context, container, "¬", "\\neg ", preview)
     }
 
-    private fun addSetControls(context: Context, container: LinearLayout, input: EditText) {
-        addControlButton(context, container, "∈", "\\in", input)
-        addControlButton(context, container, "∉", "\\notin", input)
-        addControlButton(context, container, "⊂", "\\subset", input)
-        addControlButton(context, container, "⊃", "\\supset", input)
-        addControlButton(context, container, "⊆", "\\subseteq", input)
-        addControlButton(context, container, "⊇", "\\supseteq", input)
-        addControlButton(context, container, "∪", "\\cup", input)
-        addControlButton(context, container, "∩", "\\cap", input)
-        addControlButton(context, container, "∅", "\\emptyset", input)
-        addControlButton(context, container, "∖", "\\setminus", input)
-        addControlButton(context, container, "×", "\\times", input)
+    private fun addSetControls(context: Context, container: LinearLayout, preview: ImageView) {
+        addControlButton(context, container, "∈", "\\in ", preview)
+        addControlButton(context, container, "∉", "\\notin ", preview)
+        addControlButton(context, container, "∪", "\\cup ", preview)
+        addControlButton(context, container, "∩", "\\cap ", preview)
+        addControlButton(context, container, "∅", "\\emptyset ", preview)
     }
 
 
@@ -337,9 +259,8 @@ object MathFormulaHelper {
         container: LinearLayout,
         label: String,
         latex: String = "",
-        input: EditText,
-        cursorOffset: Int = 0,
-        showCustomDialog: String = ""
+        preview: ImageView? = null,
+        showWizard: String = ""
     ) {
         val button = Button(context).apply {
             text = label
@@ -356,18 +277,21 @@ object MathFormulaHelper {
             }
             
             setOnClickListener {
-                when (showCustomDialog) {
-                    "integral" -> showCustomIntegralDialog(context, input)
-                    "sum" -> showCustomSumDialog(context, input)
-                    "limit" -> showCustomLimitDialog(context, input)
-                    "matrix" -> showCustomMatrixDialog(context, input)
-                    "fraction" -> showCustomFractionDialog(context, input)
-                    "root" -> showCustomRootDialog(context, input)
+                when (showWizard) {
+                    "integral" -> showIntegralWizard(context, preview!!)
+                    "sum" -> showSumWizard(context, preview!!)
+                    "limit" -> showLimitWizard(context, preview!!)
+                    "fraction" -> showFractionWizard(context, preview!!)
+                    "partial" -> showPartialDerivativeWizard(context, preview!!)
+                    "derivative" -> showDerivativeWizard(context, preview!!)
+                    "power" -> showPowerWizard(context, preview!!)
+                    "root" -> showRootWizard(context, preview!!)
+                    "matrix" -> showMatrixWizard(context, preview!!)
+                    "quadratic" -> appendToFormula("x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}", preview!!)
+                    "system" -> appendToFormula("\\begin{cases} a_1x + b_1y = c_1 \\\\ a_2x + b_2y = c_2 \\end{cases}", preview!!)
                     else -> {
-                        val cursor = input.selectionStart
-                        input.text.insert(cursor, latex)
-                        if (cursorOffset != 0) {
-                            input.setSelection(cursor + latex.length + cursorOffset)
+                        if (preview != null && latex.isNotEmpty()) {
+                            appendToFormula(latex, preview)
                         }
                     }
                 }
@@ -526,6 +450,486 @@ object MathFormulaHelper {
                 
                 val cursor = input.selectionStart
                 input.text.insert(cursor, latex)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun updateLatexPreview(imageView: ImageView, latex: String) {
+        try {
+            if (latex.isBlank()) {
+                imageView.setImageDrawable(null)
+                return
+            }
+            
+            val drawable = JLatexMathDrawable.builder(latex)
+                .textSize(60f)
+                .padding(8)
+                .background(0x00000000)
+                .align(JLatexMathDrawable.ALIGN_LEFT)
+                .build()
+            
+            imageView.setImageDrawable(drawable)
+        } catch (e: Exception) {
+            android.util.Log.e("MathFormula", "LaTeX preview error", e)
+        }
+    }
+}
+
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // STEP-BY-STEP WIZARDS - No LaTeX code visible to user
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    private fun showIntegralWizard(context: Context, preview: ImageView) {
+        // Step 1: Ask for function
+        val step1View = LayoutInflater.from(context).inflate(R.layout.dialog_wizard_step, null)
+        val input1 = step1View.findViewById<EditText>(R.id.wizardInput)
+        val title1 = step1View.findViewById<TextView>(R.id.wizardTitle)
+        val hint1 = step1View.findViewById<TextView>(R.id.wizardHint)
+        
+        title1.text = "Step 1: Enter the function f(x)"
+        hint1.text = "Example: x^2, sin(x), e^x"
+        input1.hint = "Enter function..."
+        
+        AlertDialog.Builder(context)
+            .setView(step1View)
+            .setPositiveButton("Next") { _, _ ->
+                val function = input1.text.toString()
+                if (function.isNotEmpty()) {
+                    showIntegralStep2(context, preview, function)
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+    
+    private fun showIntegralStep2(context: Context, preview: ImageView, function: String) {
+        // Step 2: Ask for lower limit
+        val step2View = LayoutInflater.from(context).inflate(R.layout.dialog_wizard_step, null)
+        val input2 = step2View.findViewById<EditText>(R.id.wizardInput)
+        val title2 = step2View.findViewById<TextView>(R.id.wizardTitle)
+        val hint2 = step2View.findViewById<TextView>(R.id.wizardHint)
+        
+        title2.text = "Step 2: Enter lower limit (optional)"
+        hint2.text = "Leave empty for indefinite integral\nExamples: 0, a, -\\infty"
+        input2.hint = "Lower limit..."
+        
+        AlertDialog.Builder(context)
+            .setView(step2View)
+            .setPositiveButton("Next") { _, _ ->
+                val lower = input2.text.toString()
+                showIntegralStep3(context, preview, function, lower)
+            }
+            .setNegativeButton("Back") { _, _ ->
+                showIntegralWizard(context, preview)
+            }
+            .show()
+    }
+    
+    private fun showIntegralStep3(context: Context, preview: ImageView, function: String, lower: String) {
+        // Step 3: Ask for upper limit
+        val step3View = LayoutInflater.from(context).inflate(R.layout.dialog_wizard_step, null)
+        val input3 = step3View.findViewById<EditText>(R.id.wizardInput)
+        val title3 = step3View.findViewById<TextView>(R.id.wizardTitle)
+        val hint3 = step3View.findViewById<TextView>(R.id.wizardHint)
+        
+        title3.text = "Step 3: Enter upper limit (optional)"
+        hint3.text = "Leave empty for indefinite integral\nExamples: 1, b, \\infty"
+        input3.hint = "Upper limit..."
+        
+        AlertDialog.Builder(context)
+            .setView(step3View)
+            .setPositiveButton("Next") { _, _ ->
+                val upper = input3.text.toString()
+                showIntegralStep4(context, preview, function, lower, upper)
+            }
+            .setNegativeButton("Back") { _, _ ->
+                showIntegralStep2(context, preview, function)
+            }
+            .show()
+    }
+    
+    private fun showIntegralStep4(context: Context, preview: ImageView, function: String, lower: String, upper: String) {
+        // Step 4: Ask for variable
+        val step4View = LayoutInflater.from(context).inflate(R.layout.dialog_wizard_step, null)
+        val input4 = step4View.findViewById<EditText>(R.id.wizardInput)
+        val title4 = step4View.findViewById<TextView>(R.id.wizardTitle)
+        val hint4 = step4View.findViewById<TextView>(R.id.wizardHint)
+        
+        title4.text = "Step 4: Enter variable of integration"
+        hint4.text = "Usually 'x', 't', 'u', etc."
+        input4.hint = "Variable..."
+        input4.setText("x")
+        
+        AlertDialog.Builder(context)
+            .setView(step4View)
+            .setPositiveButton("Done") { _, _ ->
+                val variable = input4.text.toString().ifEmpty { "x" }
+                
+                // Generate LaTeX (user never sees this!)
+                val latex = if (lower.isNotEmpty() || upper.isNotEmpty()) {
+                    "\\int_{$lower}^{$upper} $function \\, d$variable"
+                } else {
+                    "\\int $function \\, d$variable"
+                }
+                
+                appendToFormula(latex, preview)
+            }
+            .setNegativeButton("Back") { _, _ ->
+                showIntegralStep3(context, preview, function, lower)
+            }
+            .show()
+    }
+
+    private fun showSumWizard(context: Context, preview: ImageView) {
+        val step1View = LayoutInflater.from(context).inflate(R.layout.dialog_wizard_step, null)
+        val input1 = step1View.findViewById<EditText>(R.id.wizardInput)
+        val title1 = step1View.findViewById<TextView>(R.id.wizardTitle)
+        val hint1 = step1View.findViewById<TextView>(R.id.wizardHint)
+        
+        title1.text = "Step 1: Enter the expression"
+        hint1.text = "Example: i^2, a_i, 1/n"
+        input1.hint = "Expression..."
+        
+        AlertDialog.Builder(context)
+            .setView(step1View)
+            .setPositiveButton("Next") { _, _ ->
+                val expression = input1.text.toString()
+                if (expression.isNotEmpty()) {
+                    showSumStep2(context, preview, expression)
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+    
+    private fun showSumStep2(context: Context, preview: ImageView, expression: String) {
+        val step2View = LayoutInflater.from(context).inflate(R.layout.dialog_wizard_step, null)
+        val input2 = step2View.findViewById<EditText>(R.id.wizardInput)
+        val title2 = step2View.findViewById<TextView>(R.id.wizardTitle)
+        val hint2 = step2View.findViewById<TextView>(R.id.wizardHint)
+        
+        title2.text = "Step 2: Enter lower limit"
+        hint2.text = "Example: i=1, k=0, n=1"
+        input2.hint = "Lower limit..."
+        
+        AlertDialog.Builder(context)
+            .setView(step2View)
+            .setPositiveButton("Next") { _, _ ->
+                val lower = input2.text.toString()
+                showSumStep3(context, preview, expression, lower)
+            }
+            .setNegativeButton("Back") { _, _ ->
+                showSumWizard(context, preview)
+            }
+            .show()
+    }
+    
+    private fun showSumStep3(context: Context, preview: ImageView, expression: String, lower: String) {
+        val step3View = LayoutInflater.from(context).inflate(R.layout.dialog_wizard_step, null)
+        val input3 = step3View.findViewById<EditText>(R.id.wizardInput)
+        val title3 = step3View.findViewById<TextView>(R.id.wizardTitle)
+        val hint3 = step3View.findViewById<TextView>(R.id.wizardHint)
+        
+        title3.text = "Step 3: Enter upper limit"
+        hint3.text = "Example: n, \\infty, 100"
+        input3.hint = "Upper limit..."
+        
+        AlertDialog.Builder(context)
+            .setView(step3View)
+            .setPositiveButton("Done") { _, _ ->
+                val upper = input3.text.toString()
+                val latex = "\\sum_{$lower}^{$upper} $expression"
+                appendToFormula(latex, preview)
+            }
+            .setNegativeButton("Back") { _, _ ->
+                showSumStep2(context, preview, expression)
+            }
+            .show()
+    }
+
+    private fun showLimitWizard(context: Context, preview: ImageView) {
+        val step1View = LayoutInflater.from(context).inflate(R.layout.dialog_wizard_step, null)
+        val input1 = step1View.findViewById<EditText>(R.id.wizardInput)
+        val title1 = step1View.findViewById<TextView>(R.id.wizardTitle)
+        val hint1 = step1View.findViewById<TextView>(R.id.wizardHint)
+        
+        title1.text = "Step 1: Enter the expression"
+        hint1.text = "Example: (sin(x))/x, x^2"
+        input1.hint = "Expression..."
+        
+        AlertDialog.Builder(context)
+            .setView(step1View)
+            .setPositiveButton("Next") { _, _ ->
+                val expression = input1.text.toString()
+                if (expression.isNotEmpty()) {
+                    showLimitStep2(context, preview, expression)
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+    
+    private fun showLimitStep2(context: Context, preview: ImageView, expression: String) {
+        val step2View = LayoutInflater.from(context).inflate(R.layout.dialog_wizard_step, null)
+        val input2 = step2View.findViewById<EditText>(R.id.wizardInput)
+        val title2 = step2View.findViewById<TextView>(R.id.wizardTitle)
+        val hint2 = step2View.findViewById<TextView>(R.id.wizardHint)
+        
+        title2.text = "Step 2: Enter variable"
+        hint2.text = "Usually 'x', 'n', 't', etc."
+        input2.hint = "Variable..."
+        input2.setText("x")
+        
+        AlertDialog.Builder(context)
+            .setView(step2View)
+            .setPositiveButton("Next") { _, _ ->
+                val variable = input2.text.toString().ifEmpty { "x" }
+                showLimitStep3(context, preview, expression, variable)
+            }
+            .setNegativeButton("Back") { _, _ ->
+                showLimitWizard(context, preview)
+            }
+            .show()
+    }
+    
+    private fun showLimitStep3(context: Context, preview: ImageView, expression: String, variable: String) {
+        val step3View = LayoutInflater.from(context).inflate(R.layout.dialog_wizard_step, null)
+        val input3 = step3View.findViewById<EditText>(R.id.wizardInput)
+        val title3 = step3View.findViewById<TextView>(R.id.wizardTitle)
+        val hint3 = step3View.findViewById<TextView>(R.id.wizardHint)
+        
+        title3.text = "Step 3: Variable approaches..."
+        hint3.text = "Example: 0, \\infty, a"
+        input3.hint = "Approaches..."
+        input3.setText("0")
+        
+        AlertDialog.Builder(context)
+            .setView(step3View)
+            .setPositiveButton("Done") { _, _ ->
+                val approaches = input3.text.toString().ifEmpty { "0" }
+                val latex = "\\lim_{$variable \\to $approaches} $expression"
+                appendToFormula(latex, preview)
+            }
+            .setNegativeButton("Back") { _, _ ->
+                showLimitStep2(context, preview, expression)
+            }
+            .show()
+    }
+
+    private fun showFractionWizard(context: Context, preview: ImageView) {
+        val step1View = LayoutInflater.from(context).inflate(R.layout.dialog_wizard_step, null)
+        val input1 = step1View.findViewById<EditText>(R.id.wizardInput)
+        val title1 = step1View.findViewById<TextView>(R.id.wizardTitle)
+        val hint1 = step1View.findViewById<TextView>(R.id.wizardHint)
+        
+        title1.text = "Step 1: Enter numerator"
+        hint1.text = "Top part of the fraction"
+        input1.hint = "Numerator..."
+        
+        AlertDialog.Builder(context)
+            .setView(step1View)
+            .setPositiveButton("Next") { _, _ ->
+                val numerator = input1.text.toString()
+                if (numerator.isNotEmpty()) {
+                    showFractionStep2(context, preview, numerator)
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+    
+    private fun showFractionStep2(context: Context, preview: ImageView, numerator: String) {
+        val step2View = LayoutInflater.from(context).inflate(R.layout.dialog_wizard_step, null)
+        val input2 = step2View.findViewById<EditText>(R.id.wizardInput)
+        val title2 = step2View.findViewById<TextView>(R.id.wizardTitle)
+        val hint2 = step2View.findViewById<TextView>(R.id.wizardHint)
+        
+        title2.text = "Step 2: Enter denominator"
+        hint2.text = "Bottom part of the fraction"
+        input2.hint = "Denominator..."
+        
+        AlertDialog.Builder(context)
+            .setView(step2View)
+            .setPositiveButton("Done") { _, _ ->
+                val denominator = input2.text.toString()
+                if (denominator.isNotEmpty()) {
+                    val latex = "\\frac{$numerator}{$denominator}"
+                    appendToFormula(latex, preview)
+                }
+            }
+            .setNegativeButton("Back") { _, _ ->
+                showFractionWizard(context, preview)
+            }
+            .show()
+    }
+
+    private fun showPartialDerivativeWizard(context: Context, preview: ImageView) {
+        val stepView = LayoutInflater.from(context).inflate(R.layout.dialog_wizard_step, null)
+        val input = stepView.findViewById<EditText>(R.id.wizardInput)
+        val title = stepView.findViewById<TextView>(R.id.wizardTitle)
+        val hint = stepView.findViewById<TextView>(R.id.wizardHint)
+        
+        title.text = "Enter variable"
+        hint.text = "Variable for partial derivative (e.g., x, y, z)"
+        input.hint = "Variable..."
+        input.setText("x")
+        
+        AlertDialog.Builder(context)
+            .setView(stepView)
+            .setPositiveButton("Done") { _, _ ->
+                val variable = input.text.toString().ifEmpty { "x" }
+                val latex = "\\frac{\\partial}{\\partial $variable}"
+                appendToFormula(latex, preview)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showDerivativeWizard(context: Context, preview: ImageView) {
+        val stepView = LayoutInflater.from(context).inflate(R.layout.dialog_wizard_step, null)
+        val input = stepView.findViewById<EditText>(R.id.wizardInput)
+        val title = stepView.findViewById<TextView>(R.id.wizardTitle)
+        val hint = stepView.findViewById<TextView>(R.id.wizardHint)
+        
+        title.text = "Enter variables"
+        hint.text = "Format: y/x for dy/dx"
+        input.hint = "y/x"
+        input.setText("y/x")
+        
+        AlertDialog.Builder(context)
+            .setView(stepView)
+            .setPositiveButton("Done") { _, _ ->
+                val vars = input.text.toString().split("/")
+                if (vars.size == 2) {
+                    val latex = "\\frac{d${vars[0]}}{d${vars[1]}}"
+                    appendToFormula(latex, preview)
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun showPowerWizard(context: Context, preview: ImageView) {
+        val step1View = LayoutInflater.from(context).inflate(R.layout.dialog_wizard_step, null)
+        val input1 = step1View.findViewById<EditText>(R.id.wizardInput)
+        val title1 = step1View.findViewById<TextView>(R.id.wizardTitle)
+        val hint1 = step1View.findViewById<TextView>(R.id.wizardHint)
+        
+        title1.text = "Step 1: Enter base"
+        hint1.text = "The number or expression being raised to a power"
+        input1.hint = "Base..."
+        
+        AlertDialog.Builder(context)
+            .setView(step1View)
+            .setPositiveButton("Next") { _, _ ->
+                val base = input1.text.toString()
+                if (base.isNotEmpty()) {
+                    showPowerStep2(context, preview, base)
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+    
+    private fun showPowerStep2(context: Context, preview: ImageView, base: String) {
+        val step2View = LayoutInflater.from(context).inflate(R.layout.dialog_wizard_step, null)
+        val input2 = step2View.findViewById<EditText>(R.id.wizardInput)
+        val title2 = step2View.findViewById<TextView>(R.id.wizardTitle)
+        val hint2 = step2View.findViewById<TextView>(R.id.wizardHint)
+        
+        title2.text = "Step 2: Enter exponent"
+        hint2.text = "The power to raise the base to"
+        input2.hint = "Exponent..."
+        
+        AlertDialog.Builder(context)
+            .setView(step2View)
+            .setPositiveButton("Done") { _, _ ->
+                val exponent = input2.text.toString()
+                if (exponent.isNotEmpty()) {
+                    val latex = "$base^{$exponent}"
+                    appendToFormula(latex, preview)
+                }
+            }
+            .setNegativeButton("Back") { _, _ ->
+                showPowerWizard(context, preview)
+            }
+            .show()
+    }
+
+    private fun showRootWizard(context: Context, preview: ImageView) {
+        val step1View = LayoutInflater.from(context).inflate(R.layout.dialog_wizard_step, null)
+        val input1 = step1View.findViewById<EditText>(R.id.wizardInput)
+        val title1 = step1View.findViewById<TextView>(R.id.wizardTitle)
+        val hint1 = step1View.findViewById<TextView>(R.id.wizardHint)
+        
+        title1.text = "Step 1: Enter root index"
+        hint1.text = "Leave empty for square root (2)\nExamples: 3 for cube root, n for nth root"
+        input1.hint = "Root index (optional)..."
+        
+        AlertDialog.Builder(context)
+            .setView(step1View)
+            .setPositiveButton("Next") { _, _ ->
+                val index = input1.text.toString()
+                showRootStep2(context, preview, index)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+    
+    private fun showRootStep2(context: Context, preview: ImageView, index: String) {
+        val step2View = LayoutInflater.from(context).inflate(R.layout.dialog_wizard_step, null)
+        val input2 = step2View.findViewById<EditText>(R.id.wizardInput)
+        val title2 = step2View.findViewById<TextView>(R.id.wizardTitle)
+        val hint2 = step2View.findViewById<TextView>(R.id.wizardHint)
+        
+        title2.text = "Step 2: Enter radicand"
+        hint2.text = "The expression under the root"
+        input2.hint = "Radicand..."
+        
+        AlertDialog.Builder(context)
+            .setView(step2View)
+            .setPositiveButton("Done") { _, _ ->
+                val radicand = input2.text.toString()
+                if (radicand.isNotEmpty()) {
+                    val latex = if (index.isNotEmpty() && index != "2") {
+                        "\\sqrt[$index]{$radicand}"
+                    } else {
+                        "\\sqrt{$radicand}"
+                    }
+                    appendToFormula(latex, preview)
+                }
+            }
+            .setNegativeButton("Back") { _, _ ->
+                showRootWizard(context, preview)
+            }
+            .show()
+    }
+
+    private fun showMatrixWizard(context: Context, preview: ImageView) {
+        val stepView = LayoutInflater.from(context).inflate(R.layout.dialog_custom_matrix, null)
+        val rows = stepView.findViewById<EditText>(R.id.matrixRows)
+        val cols = stepView.findViewById<EditText>(R.id.matrixCols)
+        
+        AlertDialog.Builder(context)
+            .setTitle("Matrix Size")
+            .setView(stepView)
+            .setPositiveButton("Done") { _, _ ->
+                val r = rows.text.toString().toIntOrNull() ?: 2
+                val c = cols.text.toString().toIntOrNull() ?: 2
+                
+                val matrixContent = StringBuilder()
+                for (i in 0 until r) {
+                    for (j in 0 until c) {
+                        matrixContent.append("a_{${i+1}${j+1}}")
+                        if (j < c - 1) matrixContent.append(" & ")
+                    }
+                    if (i < r - 1) matrixContent.append(" \\\\ ")
+                }
+                
+                val latex = "\\begin{pmatrix} $matrixContent \\end{pmatrix}"
+                appendToFormula(latex, preview)
             }
             .setNegativeButton("Cancel", null)
             .show()

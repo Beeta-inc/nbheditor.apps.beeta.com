@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="@color/editor_bg">
+
+    <TextView
+        android:id="@+id/wizardTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Step Title"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@color/editor_text"
+        android:layout_marginBottom="12dp" />
+
+    <TextView
+        android:id="@+id/wizardHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Hint text"
+        android:textSize="14sp"
+        android:textColor="@color/editor_hint"
+        android:layout_marginBottom="16dp" />
+
+    <EditText
+        android:id="@+id/wizardInput"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_glass_card"
+        android:padding="12dp"
+        android:textSize="16sp"
+        android:textColor="@color/editor_text"
+        android:hint="Enter value..."
+        android:textColorHint="@color/editor_hint"
+        android:inputType="text" />
+
+</LinearLayout>
