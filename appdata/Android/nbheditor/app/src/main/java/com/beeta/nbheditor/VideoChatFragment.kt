@@ -51,6 +51,8 @@ class VideoChatFragment : Fragment() {
     private val participants = mutableListOf<VideoParticipant>()
     private var maximizedParticipantId: String? = null
 
+    private var allowMiniPlayer = true
+
     private val durationRunnable = object : Runnable {
         override fun run() {
             updateCallDuration()
@@ -177,6 +179,26 @@ class VideoChatFragment : Fragment() {
             } else {
                 Toast.makeText(requireContext(), "Camera and microphone permissions required", Toast.LENGTH_LONG).show()
                 parentFragmentManager.popBackStack()
+            }
+        }
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 302) {
+            // Check if overlay permission was granted
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (Settings.canDrawOverlays(requireContext())) {
+                    Toast.makeText(requireContext(), "Mini player enabled", Toast.LENGTH_SHORT).show()
+                    // Try to start mini player if app is in background
+                    if (!requireActivity().hasWindowFocus()) {
+                        startMiniPlayer()
+                    }
+                } else {
+                    allowMiniPlayer = false
+                    Toast.makeText(requireContext(), "Mini player disabled - permission not granted", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
@@ -406,10 +428,14 @@ class VideoChatFragment : Fragment() {
     }
 
     private fun startMiniPlayer() {
+        if (!allowMiniPlayer) {
+            android.util.Log.d("VideoChat", "Mini player disabled by user")
+            return
+        }
+        
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (!Settings.canDrawOverlays(requireContext())) {
-                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${requireContext().packageName}"))
-                startActivityForResult(intent, 302)
+                showOverlayPermissionDialog()
                 return
             }
         }
@@ -424,6 +450,30 @@ class VideoChatFragment : Fragment() {
         requireContext().startService(intent)
         
         requireActivity().moveTaskToBack(true)
+    }
+
+    private fun showOverlayPermissionDialog() {
+        androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            .setTitle("Mini Player Permission")
+            .setMessage("To keep the video call visible when you switch apps, NbhEditor needs permission to display over other apps.\n\nThis allows you to:\n• See participants while using other apps\n• Control mic and camera from anywhere\n• Quickly return to the full video call\n\nYour privacy is protected - we only show the mini player during active video calls.")
+            .setPositiveButton("Allow") { _, _ ->
+                try {
+                    val intent = Intent(
+                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:${requireContext().packageName}")
+                    )
+                    startActivityForResult(intent, 302)
+                } catch (e: Exception) {
+                    android.util.Log.e("VideoChat", "Error opening overlay settings", e)
+                    Toast.makeText(requireContext(), "Could not open settings", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("Don't Allow") { _, _ ->
+                allowMiniPlayer = false
+                Toast.makeText(requireContext(), "Mini player disabled", Toast.LENGTH_SHORT).show()
+            }
+            .setCancelable(false)
+            .show()
     }
 
     private fun stopMiniPlayer() {
