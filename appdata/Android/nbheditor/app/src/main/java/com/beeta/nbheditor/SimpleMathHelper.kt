@@ -11,6 +11,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -755,73 +756,398 @@ object SimpleMathHelper {
         var nestedLatex = targetEditText.text.toString()
         
         val nestedDialog = android.app.Dialog(context)
-        val nestedView = LayoutInflater.from(context).inflate(R.layout.dialog_simple_math, null)
-        nestedDialog.setContentView(nestedView)
-        nestedDialog.window?.setLayout(
-            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-        )
+        nestedDialog.setTitle("Build Expression")
         
-        val nestedPreview = nestedView.findViewById<ImageView>(R.id.mathPreview)
-        val nestedContainer = nestedView.findViewById<LinearLayout>(R.id.mathButtons)
+        val mainLayout = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(16, 16, 16, 16)
+        }
         
-        fun updateNested(latex: String) {
-            nestedLatex += latex
+        // Preview
+        val previewScroll = ScrollView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                200
+            )
+        }
+        val nestedPreview = ImageView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+        previewScroll.addView(nestedPreview)
+        mainLayout.addView(previewScroll)
+        
+        fun updateNestedPreview(latex: String, preview: ImageView) {
             try {
-                val drawable = JLatexMathDrawable.builder(nestedLatex)
+                if (latex.isEmpty()) {
+                    preview.setImageDrawable(null)
+                    return
+                }
+                val drawable = JLatexMathDrawable.builder(latex)
                     .textSize(40f)
                     .padding(8)
                     .background(Color.WHITE)
                     .build()
-                nestedPreview.setImageDrawable(drawable)
+                preview.setImageDrawable(drawable)
             } catch (e: Exception) {
-                nestedPreview.setImageDrawable(null)
+                preview.setImageDrawable(null)
             }
         }
         
-        nestedContainer.removeAllViews()
-        addButtonRow(context, nestedContainer, listOf(
-            "x" to { updateNested("x") },
-            "y" to { updateNested("y") },
-            "x²" to { updateNested("x^2") },
-            "+" to { updateNested("+") }
-        ))
-        addButtonRow(context, nestedContainer, listOf(
-            "sin" to { updateNested("\\sin(") },
-            "cos" to { updateNested("\\cos(") },
-            "log" to { updateNested("\\log(") },
-            ")" to { updateNested(")") }
-        ))
-        addButtonRow(context, nestedContainer, listOf(
-            "(" to { updateNested("(") },
-            "-" to { updateNested("-") },
-            "×" to { updateNested("\\times") },
-            "÷" to { updateNested("\\div") }
-        ))
+        fun appendNested(latex: String) {
+            nestedLatex += latex
+            updateNestedPreview(nestedLatex, nestedPreview)
+        }
+        
+        // Text input for typing
+        val textInput = EditText(context).apply {
+            hint = "Type here or use buttons below"
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = 16
+                bottomMargin = 8
+            }
+        }
+        mainLayout.addView(textInput)
+        
+        // Add typed text button
+        val addTextBtn = Button(context).apply {
+            text = "Add Typed Text"
+            setOnClickListener {
+                val typed = textInput.text.toString()
+                if (typed.isNotEmpty()) {
+                    appendNested(typed)
+                    textInput.text.clear()
+                }
+            }
+        }
+        mainLayout.addView(addTextBtn)
+        
+        // Category tabs
+        val tabsScroll = android.widget.HorizontalScrollView(context).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = 16
+            }
+        }
+        val tabsLayout = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+        }
+        tabsScroll.addView(tabsLayout)
+        mainLayout.addView(tabsScroll)
+        
+        // Buttons container
+        val buttonsContainer = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = 8
+            }
+        }
+        mainLayout.addView(buttonsContainer)
+        
+        // Setup categories
+        val categories = listOf(
+            "Basic", "Fractions", "Powers", "Roots", "Calculus",
+            "Trig", "Greek", "Symbols", "Operators"
+        )
+        
+        categories.forEachIndexed { index, category ->
+            val tab = Button(context).apply {
+                text = category
+                textSize = 11f
+                setPadding(16, 8, 16, 8)
+                setOnClickListener {
+                    for (i in 0 until tabsLayout.childCount) {
+                        (tabsLayout.getChildAt(i) as Button).isEnabled = true
+                    }
+                    isEnabled = false
+                    loadNestedCategory(context, buttonsContainer, category) { appendNested(it) }
+                }
+            }
+            tabsLayout.addView(tab)
+            if (index == 0) {
+                tab.isEnabled = false
+                loadNestedCategory(context, buttonsContainer, category) { appendNested(it) }
+            }
+        }
+        
+        // Control buttons
+        val controlRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = 16
+            }
+        }
+        
+        val clearBtn = Button(context).apply {
+            text = "Clear"
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            setOnClickListener {
+                nestedLatex = ""
+                updateNestedPreview(nestedLatex, nestedPreview)
+            }
+        }
         
         val insertBtn = Button(context).apply {
             text = "Insert"
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             setOnClickListener {
                 targetEditText.setText(nestedLatex)
                 nestedDialog.dismiss()
             }
         }
         
-        val clearBtn = Button(context).apply {
-            text = "Clear"
-            setOnClickListener {
-                nestedLatex = ""
-                nestedPreview.setImageDrawable(null)
+        controlRow.addView(clearBtn)
+        controlRow.addView(insertBtn)
+        mainLayout.addView(controlRow)
+        
+        nestedDialog.setContentView(mainLayout)
+        nestedDialog.window?.setLayout(
+            android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+            android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        nestedDialog.show()
+    }
+    
+    private fun loadNestedCategory(context: Context, container: LinearLayout, category: String, onAppend: (String) -> Unit) {
+        container.removeAllViews()
+        
+        when (category) {
+            "Basic" -> {
+                addButtonRow(context, container, listOf(
+                    "x" to { onAppend("x") },
+                    "y" to { onAppend("y") },
+                    "z" to { onAppend("z") },
+                    "n" to { onAppend("n") }
+                ))
+                addButtonRow(context, container, listOf(
+                    "0" to { onAppend("0") },
+                    "1" to { onAppend("1") },
+                    "2" to { onAppend("2") },
+                    "3" to { onAppend("3") }
+                ))
+                addButtonRow(context, container, listOf(
+                    "(" to { onAppend("(") },
+                    ")" to { onAppend(")") },
+                    "[" to { onAppend("[") },
+                    "]" to { onAppend("]") }
+                ))
+            }
+            "Fractions" -> {
+                addButtonRow(context, container, listOf(
+                    "a/b" to { showQuickFraction(context, onAppend) },
+                    "∂/∂x" to { onAppend("\\frac{\\partial}{\\partial x}") },
+                    "d/dx" to { onAppend("\\frac{d}{dx}") }
+                ))
+            }
+            "Powers" -> {
+                addButtonRow(context, container, listOf(
+                    "x²" to { onAppend("x^{2}") },
+                    "x³" to { onAppend("x^{3}") },
+                    "xⁿ" to { showQuickPower(context, onAppend) },
+                    "eˣ" to { onAppend("e^{x}") }
+                ))
+                addButtonRow(context, container, listOf(
+                    "10ˣ" to { onAppend("10^{x}") },
+                    "2ˣ" to { onAppend("2^{x}") },
+                    "_subscript" to { showQuickSubscript(context, onAppend) }
+                ))
+            }
+            "Roots" -> {
+                addButtonRow(context, container, listOf(
+                    "√x" to { onAppend("\\sqrt{x}") },
+                    "∛x" to { onAppend("\\sqrt[3]{x}") },
+                    "√custom" to { showQuickRoot(context, onAppend) }
+                ))
+            }
+            "Calculus" -> {
+                addButtonRow(context, container, listOf(
+                    "∫" to { onAppend("\\int ") },
+                    "∑" to { onAppend("\\sum ") },
+                    "∏" to { onAppend("\\prod ") },
+                    "lim" to { onAppend("\\lim ") }
+                ))
+                addButtonRow(context, container, listOf(
+                    "∂" to { onAppend("\\partial ") },
+                    "∇" to { onAppend("\\nabla ") },
+                    "∆" to { onAppend("\\Delta ") },
+                    "dx" to { onAppend("\\, dx") }
+                ))
+            }
+            "Trig" -> {
+                addButtonRow(context, container, listOf(
+                    "sin" to { onAppend("\\sin(") },
+                    "cos" to { onAppend("\\cos(") },
+                    "tan" to { onAppend("\\tan(") },
+                    ")" to { onAppend(")") }
+                ))
+                addButtonRow(context, container, listOf(
+                    "log" to { onAppend("\\log(") },
+                    "ln" to { onAppend("\\ln(") },
+                    "sinh" to { onAppend("\\sinh(") },
+                    "cosh" to { onAppend("\\cosh(") }
+                ))
+            }
+            "Greek" -> {
+                addButtonRow(context, container, listOf(
+                    "α" to { onAppend("\\alpha ") },
+                    "β" to { onAppend("\\beta ") },
+                    "γ" to { onAppend("\\gamma ") },
+                    "δ" to { onAppend("\\delta ") }
+                ))
+                addButtonRow(context, container, listOf(
+                    "θ" to { onAppend("\\theta ") },
+                    "λ" to { onAppend("\\lambda ") },
+                    "π" to { onAppend("\\pi ") },
+                    "σ" to { onAppend("\\sigma ") }
+                ))
+            }
+            "Symbols" -> {
+                addButtonRow(context, container, listOf(
+                    "∞" to { onAppend("\\infty ") },
+                    "→" to { onAppend("\\rightarrow ") },
+                    "∀" to { onAppend("\\forall ") },
+                    "∃" to { onAppend("\\exists ") }
+                ))
+                addButtonRow(context, container, listOf(
+                    "∈" to { onAppend("\\in ") },
+                    "∉" to { onAppend("\\notin ") },
+                    "⊂" to { onAppend("\\subset ") },
+                    "∅" to { onAppend("\\emptyset ") }
+                ))
+            }
+            "Operators" -> {
+                addButtonRow(context, container, listOf(
+                    "+" to { onAppend("+") },
+                    "-" to { onAppend("-") },
+                    "×" to { onAppend("\\times ") },
+                    "÷" to { onAppend("\\div ") }
+                ))
+                addButtonRow(context, container, listOf(
+                    "=" to { onAppend("=") },
+                    "≠" to { onAppend("\\neq ") },
+                    "<" to { onAppend("<") },
+                    ">" to { onAppend(">") }
+                ))
+                addButtonRow(context, container, listOf(
+                    "≤" to { onAppend("\\leq ") },
+                    "≥" to { onAppend("\\geq ") },
+                    "±" to { onAppend("\\pm ") },
+                    "∓" to { onAppend("\\mp ") }
+                ))
             }
         }
-        
-        val btnRow = LinearLayout(context).apply {
-            orientation = LinearLayout.HORIZONTAL
-            addView(clearBtn, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            addView(insertBtn, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+    }
+    
+    private fun showQuickFraction(context: Context, onAppend: (String) -> Unit) {
+        val layout = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(40, 20, 40, 20)
         }
+        val numInput = EditText(context).apply { hint = "Numerator" }
+        val denInput = EditText(context).apply { hint = "Denominator" }
+        layout.addView(numInput)
+        layout.addView(denInput)
         
-        nestedContainer.addView(btnRow)
-        nestedDialog.show()
+        AlertDialog.Builder(context)
+            .setTitle("Fraction")
+            .setView(layout)
+            .setPositiveButton("Add") { _, _ ->
+                val num = numInput.text.toString()
+                val den = denInput.text.toString()
+                if (num.isNotEmpty() && den.isNotEmpty()) {
+                    onAppend("\\frac{$num}{$den}")
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+    
+    private fun showQuickPower(context: Context, onAppend: (String) -> Unit) {
+        val layout = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(40, 20, 40, 20)
+        }
+        val baseInput = EditText(context).apply { hint = "Base" }
+        val expInput = EditText(context).apply { hint = "Exponent" }
+        layout.addView(baseInput)
+        layout.addView(expInput)
+        
+        AlertDialog.Builder(context)
+            .setTitle("Power")
+            .setView(layout)
+            .setPositiveButton("Add") { _, _ ->
+                val base = baseInput.text.toString()
+                val exp = expInput.text.toString()
+                if (base.isNotEmpty() && exp.isNotEmpty()) {
+                    onAppend("$base^{$exp}")
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+    
+    private fun showQuickSubscript(context: Context, onAppend: (String) -> Unit) {
+        val layout = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(40, 20, 40, 20)
+        }
+        val baseInput = EditText(context).apply { hint = "Base" }
+        val subInput = EditText(context).apply { hint = "Subscript" }
+        layout.addView(baseInput)
+        layout.addView(subInput)
+        
+        AlertDialog.Builder(context)
+            .setTitle("Subscript")
+            .setView(layout)
+            .setPositiveButton("Add") { _, _ ->
+                val base = baseInput.text.toString()
+                val sub = subInput.text.toString()
+                if (base.isNotEmpty() && sub.isNotEmpty()) {
+                    onAppend("{$base}_{$sub}")
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+    
+    private fun showQuickRoot(context: Context, onAppend: (String) -> Unit) {
+        val layout = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(40, 20, 40, 20)
+        }
+        val exprInput = EditText(context).apply { hint = "Expression" }
+        val indexInput = EditText(context).apply { hint = "Index (optional, default 2)" }
+        layout.addView(exprInput)
+        layout.addView(indexInput)
+        
+        AlertDialog.Builder(context)
+            .setTitle("Root")
+            .setView(layout)
+            .setPositiveButton("Add") { _, _ ->
+                val expr = exprInput.text.toString()
+                val index = indexInput.text.toString()
+                if (expr.isNotEmpty()) {
+                    if (index.isEmpty() || index == "2") {
+                        onAppend("\\sqrt{$expr}")
+                    } else {
+                        onAppend("\\sqrt[$index]{$expr}")
+                    }
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 }
