@@ -1,0 +1,169 @@
+package com.beeta.nbheditor
+
+/**
+ * EXAMPLE: How to integrate MediaPreviewGenerator in your chat adapter
+ * 
+ * Add this to your existing chat message adapter's onBindViewHolder
+ */
+
+/*
+// In your ChatAdapter class:
+
+class ChatAdapter(
+    private val messages: List<ChatMessage>,
+    private val lifecycleScope: LifecycleCoroutineScope
+) : RecyclerView.Adapter<ChatAdapter.ViewHolder>() {
+
+    inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        val tvMessage: TextView = view.findViewById(R.id.tvMessage)
+        val ivMediaPreview: ImageView = view.findViewById(R.id.ivMediaPreview)
+        val attachmentCard: LinearLayout = view.findViewById(R.id.attachmentCard)
+        val tvAttachmentIcon: TextView = view.findViewById(R.id.tvAttachmentIcon)
+        val tvAttachmentName: TextView = view.findViewById(R.id.tvAttachmentName)
+        val mediaActionBar: LinearLayout = view.findViewById(R.id.mediaActionBar)
+        val btnOpenMedia: TextView = view.findViewById(R.id.btnOpenMedia)
+        val btnDownloadMedia: TextView = view.findViewById(R.id.btnDownloadMedia)
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val message = messages[position]
+        
+        // Set message text
+        holder.tvMessage.text = message.text
+        
+        // Handle media attachments
+        if (!message.mediaUrl.isNullOrEmpty()) {
+            val mimeType = message.mimeType
+            
+            // Check if we should show preview
+            if (ChatMediaHelper.shouldShowPreview(mimeType)) {
+                // Show preview image
+                holder.ivMediaPreview.visibility = View.VISIBLE
+                holder.attachmentCard.visibility = View.GONE
+                
+                // Load preview (handles caching automatically)
+                ChatMediaHelper.loadMediaPreviewFromUrl(
+                    context = holder.itemView.context,
+                    imageView = holder.ivMediaPreview,
+                    mediaUrl = message.mediaUrl,
+                    mimeType = mimeType,
+                    lifecycleScope = lifecycleScope
+                )
+            } else {
+                // Show attachment card for non-previewable files
+                holder.ivMediaPreview.visibility = View.GONE
+                holder.attachmentCard.visibility = View.VISIBLE
+                
+                holder.tvAttachmentIcon.text = ChatMediaHelper.getMediaIcon(mimeType)
+                holder.tvAttachmentName.text = message.fileName ?: ChatMediaHelper.getFileTypeName(mimeType)
+            }
+            
+            // Show media action bar
+            holder.mediaActionBar.visibility = View.VISIBLE
+            
+            // Setup click handlers
+            holder.btnOpenMedia.setOnClickListener {
+                openMedia(message.mediaUrl, mimeType)
+            }
+            
+            holder.btnDownloadMedia.setOnClickListener {
+                downloadMedia(message.mediaUrl, message.fileName)
+            }
+            
+            // Make preview clickable to open full media
+            holder.ivMediaPreview.setOnClickListener {
+                openMedia(message.mediaUrl, mimeType)
+            }
+        } else {
+            // No media
+            holder.ivMediaPreview.visibility = View.GONE
+            holder.attachmentCard.visibility = View.GONE
+            holder.mediaActionBar.visibility = View.GONE
+        }
+    }
+    
+    private fun openMedia(url: String, mimeType: String?) {
+        // Open media in appropriate viewer
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(Uri.parse(url), mimeType)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(intent)
+    }
+    
+    private fun downloadMedia(url: String, fileName: String?) {
+        // Download media to device
+        // Implementation depends on your download manager
+    }
+}
+
+// When sending media message:
+fun sendMediaMessage(uri: Uri) {
+    lifecycleScope.launch {
+        try {
+            // Get mime type
+            val mimeType = contentResolver.getType(uri)
+            
+            // Generate preview immediately for local display
+            val preview = MediaPreviewGenerator.generatePreview(context, uri, mimeType)
+            
+            // Cache the preview
+            if (preview != null) {
+                val cacheKey = uri.toString().hashCode().toString()
+                MediaPreviewGenerator.savePreviewToCache(context, preview, cacheKey)
+            }
+            
+            // Upload to Firebase Storage
+            val storageRef = FirebaseStorage.getInstance().reference
+            val fileName = "media_${System.currentTimeMillis()}.${getExtension(uri)}"
+            val mediaRef = storageRef.child("chat_media/$sessionId/$fileName")
+            
+            val uploadTask = mediaRef.putFile(uri)
+            uploadTask.addOnSuccessListener { taskSnapshot ->
+                mediaRef.downloadUrl.addOnSuccessListener { downloadUri ->
+                    // Send message with media URL
+                    val message = hashMapOf(
+                        "text" to "",
+                        "mediaUrl" to downloadUri.toString(),
+                        "mimeType" to mimeType,
+                        "fileName" to fileName,
+                        "senderId" to currentUserId,
+                        "timestamp" to System.currentTimeMillis()
+                    )
+                    
+                    // Add to Firestore
+                    FirebaseFirestore.getInstance()
+                        .collection("sessions")
+                        .document(sessionId)
+                        .collection("messages")
+                        .add(message)
+                }
+            }.addOnFailureListener { e ->
+                Log.e("Chat", "Upload failed", e)
+                Toast.makeText(context, "Failed to send media", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+            Log.e("Chat", "Error sending media", e)
+        }
+    }
+}
+
+// Clear old cached previews periodically (in Fragment's onResume):
+override fun onResume() {
+    super.onResume()
+    ChatMediaHelper.clearOldCache(requireContext(), lifecycleScope)
+}
+*/
+
+/**
+ * TESTING:
+ * 
+ * To test the media preview system:
+ * 1. Launch MediaPreviewTestActivity
+ * 2. Select an image - should show scaled preview
+ * 3. Select a video - should show first frame with play icon
+ * 4. Select a PDF - should show first page rendered
+ * 5. Select a document - should show icon with file type
+ * 
+ * All previews are automatically cached for performance.
+ */

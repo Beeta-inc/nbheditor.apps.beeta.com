@@ -143,6 +143,12 @@
             android:theme="@style/Theme.Nbheditor.Glass"
             tools:targetApi="24" />
 
+        <activity
+            android:name="com.beeta.nbheditor.MediaPreviewTestActivity"
+            android:exported="false"
+            android:label="Media Preview Test"
+            android:theme="@style/Theme.Nbheditor.NoActionBar" />
+
         <!-- WorkManager initialisation provider (required for background update checks) -->
         <provider
             android:name="androidx.startup.InitializationProvider"
