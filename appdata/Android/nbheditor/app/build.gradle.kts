@@ -112,6 +112,11 @@ dependencies {
     
     // WebRTC for video chat - LiveKit with 16KB page alignment support (fixed in 2.x+)
     implementation("io.livekit:livekit-android:2.25.1")
+    
+    // LaTeX rendering for math formulas
+    implementation("ru.noties:jlatexmath-android:0.2.0")
+    implementation("ru.noties:jlatexmath-android-font-cyrillic:0.2.0")
+    implementation("ru.noties:jlatexmath-android-font-greek:0.2.0")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

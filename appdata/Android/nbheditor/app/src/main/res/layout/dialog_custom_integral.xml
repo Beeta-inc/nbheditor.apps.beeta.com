@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="@color/editor_bg">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Lower Limit (optional):"
+        android:textSize="14sp"
+        android:textColor="@color/editor_text"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/lowerLimit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_glass_card"
+        android:padding="12dp"
+        android:hint="e.g., 0, a, -\\infty"
+        android:textColorHint="@color/editor_hint"
+        android:textColor="@color/editor_text"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Upper Limit (optional):"
+        android:textSize="14sp"
+        android:textColor="@color/editor_text"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/upperLimit"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_glass_card"
+        android:padding="12dp"
+        android:hint="e.g., 1, b, \\infty"
+        android:textColorHint="@color/editor_hint"
+        android:textColor="@color/editor_text"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Integrand:"
+        android:textSize="14sp"
+        android:textColor="@color/editor_text"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/integrand"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_glass_card"
+        android:padding="12dp"
+        android:hint="e.g., x^2, \\sin(x), e^x"
+        android:textColorHint="@color/editor_hint"
+        android:textColor="@color/editor_text"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Variable:"
+        android:textSize="14sp"
+        android:textColor="@color/editor_text"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/variable"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_glass_card"
+        android:padding="12dp"
+        android:hint="x"
+        android:text="x"
+        android:textColorHint="@color/editor_hint"
+        android:textColor="@color/editor_text" />
+
+</LinearLayout>

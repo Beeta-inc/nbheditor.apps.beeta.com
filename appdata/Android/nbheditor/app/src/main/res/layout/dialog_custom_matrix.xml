@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp"
+    android:background="@color/editor_bg">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Number of Rows:"
+        android:textSize="14sp"
+        android:textColor="@color/editor_text"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/matrixRows"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_glass_card"
+        android:padding="12dp"
+        android:hint="2"
+        android:text="2"
+        android:inputType="number"
+        android:textColorHint="@color/editor_hint"
+        android:textColor="@color/editor_text"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Number of Columns:"
+        android:textSize="14sp"
+        android:textColor="@color/editor_text"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/matrixCols"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_glass_card"
+        android:padding="12dp"
+        android:hint="2"
+        android:text="2"
+        android:inputType="number"
+        android:textColorHint="@color/editor_hint"
+        android:textColor="@color/editor_text" />
+
+</LinearLayout>
