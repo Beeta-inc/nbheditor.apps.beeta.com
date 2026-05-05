@@ -175,6 +175,9 @@ class CollabChatFragment : Fragment() {
                             Toast.makeText(requireContext(), "⏰ Reminder set", Toast.LENGTH_SHORT).show()
                         }
                     }.show()
+            },
+            onScrollToMessage = { messageId ->
+                scrollToMessageById(messageId)
             }
         )
         binding.rvChatMessages.layoutManager = LinearLayoutManager(requireContext()).apply { stackFromEnd = true }
@@ -1017,6 +1020,29 @@ class CollabChatFragment : Fragment() {
         requireContext().contentResolver.query(uri, arrayOf(android.provider.OpenableColumns.DISPLAY_NAME), null, null, null)
             ?.use { c -> if (c.moveToFirst()) c.getString(0) else null } ?: uri.lastPathSegment ?: "file"
     } catch (_: Exception) { uri.lastPathSegment ?: "file" }
+    
+    private fun scrollToMessageById(messageId: String) {
+        val messages = adapter.getMessages()
+        val position = messages.indexOfFirst { it.messageId == messageId }
+        if (position >= 0) {
+            binding.rvChatMessages.smoothScrollToPosition(position)
+            // Highlight the message briefly
+            binding.rvChatMessages.postDelayed({
+                binding.rvChatMessages.findViewHolderForAdapterPosition(position)?.itemView?.apply {
+                    val originalAlpha = alpha
+                    animate()
+                        .alpha(0.3f)
+                        .setDuration(200)
+                        .withEndAction {
+                            animate().alpha(originalAlpha).setDuration(200).start()
+                        }
+                        .start()
+                }
+            }, 300)
+        } else {
+            Toast.makeText(requireContext(), "Message not found", Toast.LENGTH_SHORT).show()
+        }
+    }
     
     private fun startVideoCall() {
         lifecycleScope.launch {

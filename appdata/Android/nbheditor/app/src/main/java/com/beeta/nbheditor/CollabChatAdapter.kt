@@ -37,7 +37,8 @@ class CollabChatAdapter(
     private val onMarkImportant: (ChatMessage) -> Unit = {},
     private val onCreateTask: (ChatMessage) -> Unit = {},
     private val onSetReminder: (ChatMessage) -> Unit = {},
-    private val onReply: (ChatMessage) -> Unit = {}
+    private val onReply: (ChatMessage) -> Unit = {},
+    private val onScrollToMessage: (String) -> Unit = {}
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
@@ -152,8 +153,10 @@ class CollabChatAdapter(
             h.replyPreviewBubble.visibility = View.VISIBLE
             h.tvReplySender.text = msg.replyToUserName ?: ""
             h.tvReplyText.text = msg.replyToMessage ?: ""
-            // Add subtle animation
             h.replyPreviewBubble.alpha = 0.9f
+            h.replyPreviewBubble.setOnClickListener {
+                onScrollToMessage(msg.replyToMessageId)
+            }
         } else {
             h.replyPreviewBubble.visibility = View.GONE
         }
@@ -190,8 +193,10 @@ class CollabChatAdapter(
             h.replyPreviewBubble.visibility = View.VISIBLE
             h.tvReplySender.text = msg.replyToUserName ?: ""
             h.tvReplyText.text = msg.replyToMessage ?: ""
-            // Add subtle animation
             h.replyPreviewBubble.alpha = 0.9f
+            h.replyPreviewBubble.setOnClickListener {
+                onScrollToMessage(msg.replyToMessageId)
+            }
         } else {
             h.replyPreviewBubble.visibility = View.GONE
         }
