@@ -1780,31 +1780,44 @@ open class MainActivity : AppCompatActivity() {
         
         val popup = android.widget.PopupMenu(this, editorBinding.textArea, android.view.Gravity.NO_GRAVITY)
         popup.menu.add("MathEQ - Write Math Formula")
-        popup.setOnMenuItemClickListener {
-            SimpleMathHelper.showMathDialog(this) { bitmap ->
-                // Insert the rendered formula as an image
-                val cursor = editorBinding.textArea.selectionStart
-                val text = editorBinding.textArea.text
-                // Remove the @ symbol that triggered this
-                if (cursor > 0 && text?.get(cursor - 1) == '@') {
-                    text?.delete(cursor - 1, cursor)
+        popup.menu.add("Plot Graph - Create Charts & Plots")
+        popup.setOnMenuItemClickListener { item ->
+            when (item.title) {
+                "MathEQ - Write Math Formula" -> {
+                    SimpleMathHelper.showMathDialog(this) { bitmap ->
+                        insertBitmapToEditor(bitmap)
+                        android.widget.Toast.makeText(this, "Formula inserted", android.widget.Toast.LENGTH_SHORT).show()
+                    }
                 }
-                // Create ImageSpan from bitmap
-                val drawable = android.graphics.drawable.BitmapDrawable(resources, bitmap)
-                drawable.setBounds(0, 0, bitmap.width, bitmap.height)
-                val imageSpan = android.text.style.ImageSpan(drawable, android.text.style.ImageSpan.ALIGN_BASELINE)
-                
-                // Insert as spannable
-                val spannableString = android.text.SpannableString(" ")
-                spannableString.setSpan(imageSpan, 0, 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-                text?.insert(editorBinding.textArea.selectionStart, spannableString)
-                
-                android.widget.Toast.makeText(this, "Formula inserted", android.widget.Toast.LENGTH_SHORT).show()
+                "Plot Graph - Create Charts & Plots" -> {
+                    GraphPlotterHelper.showGraphDialog(this) { bitmap ->
+                        insertBitmapToEditor(bitmap)
+                        android.widget.Toast.makeText(this, "Graph inserted", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                }
             }
             true
         }
         
         popup.show()
+    }
+    
+    private fun insertBitmapToEditor(bitmap: android.graphics.Bitmap) {
+        val cursor = editorBinding.textArea.selectionStart
+        val text = editorBinding.textArea.text
+        // Remove the @ symbol that triggered this
+        if (cursor > 0 && text?.get(cursor - 1) == '@') {
+            text?.delete(cursor - 1, cursor)
+        }
+        // Create ImageSpan from bitmap
+        val drawable = android.graphics.drawable.BitmapDrawable(resources, bitmap)
+        drawable.setBounds(0, 0, bitmap.width, bitmap.height)
+        val imageSpan = android.text.style.ImageSpan(drawable, android.text.style.ImageSpan.ALIGN_BASELINE)
+        
+        // Insert as spannable
+        val spannableString = android.text.SpannableString(" ")
+        spannableString.setSpan(imageSpan, 0, 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        text?.insert(editorBinding.textArea.selectionStart, spannableString)
     }
 
     private fun showTextTypeDialog() {

@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Graph Type:"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <Spinner
+            android:id="@+id/graphTypeSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Preview -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Preview:"
+            android:textSize="14sp"
+            android:layout_marginBottom="8dp" />
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="300dp"
+            android:background="#F0F0F0"
+            android:layout_marginBottom="16dp">
+
+            <ImageView
+                android:id="@+id/graphPreview"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:contentDescription="Graph Preview" />
+        </ScrollView>
+
+        <!-- Data Input (for charts) -->
+        <LinearLayout
+            android:id="@+id/dataInputLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="visible">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Data Points:"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <Button
+                android:id="@+id/btnAddDataPoint"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="+ Add Data Point"
+                android:textSize="12sp"
+                android:layout_marginBottom="8dp" />
+
+            <LinearLayout
+                android:id="@+id/dataPointsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+        </LinearLayout>
+
+        <!-- Function Input (for function plots) -->
+        <LinearLayout
+            android:id="@+id/functionInputLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Function (use 'x' as variable):"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp" />
+
+            <EditText
+                android:id="@+id/etFunction"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="e.g., sin(x), x^2, x^3 - 2*x + 1"
+                android:inputType="text"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Supported: sin, cos, tan, sqrt, abs, ln, log, exp, pi, e, ^"
+                android:textSize="11sp"
+                android:textColor="#666666"
+                android:layout_marginBottom="12dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical"
+                    android:layout_marginEnd="8dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="X Min:"
+                        android:textSize="12sp" />
+
+                    <EditText
+                        android:id="@+id/etXMin"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="-10"
+                        android:inputType="numberDecimal|numberSigned" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="X Max:"
+                        android:textSize="12sp" />
+
+                    <EditText
+                        android:id="@+id/etXMax"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="10"
+                        android:inputType="numberDecimal|numberSigned" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <Button
+            android:id="@+id/btnPreview"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Generate Preview"
+            android:layout_marginTop="16dp" />
+
+    </LinearLayout>
+</ScrollView>
