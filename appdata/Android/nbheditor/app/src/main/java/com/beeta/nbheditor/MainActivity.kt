@@ -115,13 +115,15 @@ open class MainActivity : AppCompatActivity() {
     // ── AI Backend ────────────────────────────────────────────────────────────
 
 
+    private val HUGGINGFACE_API_KEY = ""  // Optional: for higher rate limits
+    private val MAXWELL_MODEL = "Xerv-AI/MAXWELL"
     private val OPENROUTER_API_KEY = ""
 
     // Sign-in request code
     private val RC_SIGN_IN = 9001
     private val RC_DRIVE_PERMISSION = 9002
 
-    // 6 free OpenRouter models tried in order
+    // OpenRouter models as fallback (6 free models)
     private val OR_MODELS = listOf(
         "stepfun/step-3.5-flash:free",
         "mistralai/mistral-7b-instruct:free",
@@ -2497,13 +2499,22 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private suspend fun callAI(prompt: String, maxTokens: Int = 512): String? {
-        // Try all 6 OpenRouter free models first
+        // Try MAXWELL (HuggingFace) first as primary model
+        try {
+            val result = callMaxwell(prompt, maxTokens)
+            if (result != null) return result
+        } catch (e: Exception) {
+            Log.w("AI", "MAXWELL failed: ${e.message}")
+        }
+        
+        // Fallback to OpenRouter models
         try {
             val result = callOpenRouter(prompt, maxTokens)
             if (result != null) return result
         } catch (e: Exception) {
             Log.w("AI", "OpenRouter failed: ${e.message}")
         }
+        
         // Final fallback: Google Gemini
         try {
             val result = callGemini(prompt)
@@ -2513,6 +2524,51 @@ open class MainActivity : AppCompatActivity() {
         }
         return null
     }
+
+    private suspend fun callMaxwell(prompt: String, maxTokens: Int = 512): String? =
+        withContext(Dispatchers.IO) {
+            try {
+                Log.d("AI", "Trying MAXWELL model on HuggingFace")
+                val body = gson.toJson(mapOf(
+                    "inputs" to prompt,
+                    "parameters" to mapOf(
+                        "max_new_tokens" to maxTokens,
+                        "temperature" to 0.7,
+                        "top_p" to 0.9,
+                        "return_full_text" to false
+                    )
+                )).toRequestBody("application/json".toMediaType())
+                
+                val requestBuilder = Request.Builder()
+                    .url("https://api-inference.huggingface.co/models/$MAXWELL_MODEL")
+                    .post(body)
+                
+                // Add API key if available (optional, for higher rate limits)
+                if (HUGGINGFACE_API_KEY.isNotEmpty()) {
+                    requestBuilder.addHeader("Authorization", "Bearer $HUGGINGFACE_API_KEY")
+                }
+                
+                val request = requestBuilder.build()
+                
+                client.newCall(request).execute().use { response ->
+                    val rb = response.body?.string()
+                    if (response.isSuccessful && rb != null) {
+                        // HuggingFace returns array of results
+                        val resultsType = object : com.google.gson.reflect.TypeToken<List<Map<String, Any>>>() {}.type
+                        val results: List<Map<String, Any>> = gson.fromJson(rb, resultsType)
+                        val result = results.firstOrNull()?.get("generated_text") as? String
+                        if (result != null) {
+                            Log.d("AI", "✓ Success with MAXWELL")
+                            return@withContext result.trim()
+                        }
+                    }
+                    Log.w("AI", "MAXWELL failed (${response.code}): $rb")
+                }
+            } catch (e: Exception) {
+                Log.w("AI", "MAXWELL error: ${e.message}")
+            }
+            null
+        }
 
     private suspend fun callGemini(prompt: String): String? = withContext(Dispatchers.IO) {
         val body = gson.toJson(GeminiRequest(listOf(GeminiContent(listOf(GeminiPart(prompt))))))
