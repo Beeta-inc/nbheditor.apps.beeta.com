@@ -2540,8 +2540,24 @@ open class MainActivity : AppCompatActivity() {
 
     private suspend fun callMaxwell(prompt: String, maxTokens: Int = 512): String? =
         withContext(Dispatchers.IO) {
+            // Try local model first
+            if (LocalLLMManager.isModelAvailable(this@MainActivity)) {
+                try {
+                    Log.d("AI", "Trying local MAXWELL model")
+                    val result = LocalLLMManager.runInference(prompt, maxTokens)
+                    if (result.isSuccess) {
+                        Log.d("AI", "✓ Success with local MAXWELL")
+                        return@withContext result.getOrNull()
+                    }
+                    Log.w("AI", "Local MAXWELL failed: ${result.exceptionOrNull()?.message}")
+                } catch (e: Exception) {
+                    Log.w("AI", "Local MAXWELL error: ${e.message}")
+                }
+            }
+            
+            // Fallback to HuggingFace API
             try {
-                Log.d("AI", "Trying MAXWELL model on HuggingFace")
+                Log.d("AI", "Trying MAXWELL model on HuggingFace API")
                 val body = gson.toJson(mapOf(
                     "inputs" to prompt,
                     "parameters" to mapOf(
@@ -2571,14 +2587,14 @@ open class MainActivity : AppCompatActivity() {
                         val results: List<Map<String, Any>> = gson.fromJson(rb, resultsType)
                         val result = results.firstOrNull()?.get("generated_text") as? String
                         if (result != null) {
-                            Log.d("AI", "✓ Success with MAXWELL")
+                            Log.d("AI", "✓ Success with MAXWELL API")
                             return@withContext result.trim()
                         }
                     }
-                    Log.w("AI", "MAXWELL failed (${response.code}): $rb")
+                    Log.w("AI", "MAXWELL API failed (${response.code}): $rb")
                 }
             } catch (e: Exception) {
-                Log.w("AI", "MAXWELL error: ${e.message}")
+                Log.w("AI", "MAXWELL API error: ${e.message}")
             }
             null
         }
