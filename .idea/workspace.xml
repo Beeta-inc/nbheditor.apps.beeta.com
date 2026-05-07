@@ -71,7 +71,17 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0de2c8aa-c6b7-419c-b7cd-e9cbf2927e27" name="Changes" comment="frame extractor for media viewer in collab session">
+    <list default="true" id="0de2c8aa-c6b7-419c-b7cd-e9cbf2927e27" name="Changes" comment="add locally running maxwell suport">
+      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/checksums/checksums.lock" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/checksums/md5-checksums.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/checksums/sha1-checksums.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/executionHistory/executionHistory.lock" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileChanges/last-build.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/fileHashes.lock" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/fileHashes/resourceHashesCache.bin" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gradle/9.3.1/gc.properties" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/9.4.1/checksums/checksums.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.4.1/checksums/checksums.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/9.4.1/checksums/md5-checksums.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.4.1/checksums/md5-checksums.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/9.4.1/checksums/sha1-checksums.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.4.1/checksums/sha1-checksums.bin" afterDir="false" />
@@ -82,7 +92,15 @@
       <change beforePath="$PROJECT_DIR$/.gradle/9.4.1/fileHashes/resourceHashesCache.bin" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/9.4.1/fileHashes/resourceHashesCache.bin" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/buildOutputCleanup/buildOutputCleanup.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.gradle/file-system.probe" beforeDir="false" afterPath="$PROJECT_DIR$/.gradle/file-system.probe" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/amazonq.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/amazonq.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/awsToolkit.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/awsToolkit.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/build.gradle.kts" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/build.gradle.kts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/LocalLLMManager.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/LocalLLMManager.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/MainActivity.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/ui/settings/SettingsFragment.kt" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/ui/settings/SettingsFragment.kt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/layout/fragment_settings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/appdata/Android/nbheditor/app/src/main/res/layout/fragment_settings.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/gradle/libs.versions.toml" beforeDir="false" afterPath="$PROJECT_DIR$/gradle/libs.versions.toml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -205,38 +223,38 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Android App.nbheditor.app.executor&quot;: &quot;Debug&quot;,
-    &quot;ApkExportedModule&quot;: &quot;nbheditor.app&quot;,
-    &quot;BundleExportedModule&quot;: &quot;nbheditor.app&quot;,
-    &quot;Gradle.Configure Daemon JVM Criteria.executor&quot;: &quot;Run&quot;,
-    &quot;GradleDaemonJvmCriteriaMigrationNotification.isNotificationDisabled&quot;: &quot;true&quot;,
-    &quot;ResourceManagerPrefKey.ResourceType&quot;: &quot;DRAWABLE&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.readMode.enableVisualFormatting&quot;: &quot;true&quot;,
-    &quot;android-custom-view/home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/RichEditText.kt_SELECTED&quot;: &quot;RichEditText&quot;,
-    &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
-    &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
-    &quot;com.google.services.firebase.aqiPopupShown&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android /nbheditor/app&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
-    &quot;project.structure.proportion&quot;: &quot;0.17&quot;,
-    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;settings.sync&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Android App.nbheditor.app.executor": "Debug",
+    "ApkExportedModule": "nbheditor.app",
+    "BundleExportedModule": "nbheditor.app",
+    "Gradle.Configure Daemon JVM Criteria.executor": "Run",
+    "GradleDaemonJvmCriteriaMigrationNotification.isNotificationDisabled": "true",
+    "ResourceManagerPrefKey.ResourceType": "DRAWABLE",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.readMode.enableVisualFormatting": "true",
+    "android-custom-view/home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/RichEditText.kt_SELECTED": "RichEditText",
+    "cf.first.check.clang-format": "false",
+    "cidr.known.project.marker": "true",
+    "com.google.services.firebase.aqiPopupShown": "true",
+    "git-widget-placeholder": "main",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "/home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android /nbheditor/app",
+    "project.structure.last.edited": "Modules",
+    "project.structure.proportion": "0.17",
+    "project.structure.side.proportion": "0.2",
+    "settings.editor.selected.configurable": "amazonq"
   },
-  &quot;keyToStringList&quot;: {
-    &quot;android-custom-view/home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/RichEditText.kt_RichEditText_DIMENSIONS&quot;: [
-      &quot;1080&quot;,
-      &quot;1920&quot;
+  "keyToStringList": {
+    "android-custom-view/home/noywrit/AndroidStudioProjects/nbheditor.apps.beeta.com/appdata/Android/nbheditor/app/src/main/java/com/beeta/nbheditor/RichEditText.kt_RichEditText_DIMENSIONS": [
+      "1080",
+      "1920"
     ]
   }
-}</component>
+}]]></component>
   <component name="RunManager" selected="Android App.nbheditor.app">
     <configuration name="app" type="AndroidRunConfigurationType" factoryName="Android App" activateToolWindowBeforeRun="false">
       <option name="ANDROID_RUN_CONFIGURATION_SCHEMA_VERSION" value="1" />
@@ -381,102 +399,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1774176942839</updated>
-    </task>
-    <task id="LOCAL-00176" summary="version update">
-      <option name="closed" value="true" />
-      <created>1777622417441</created>
-      <option name="number" value="00176" />
-      <option name="presentableId" value="LOCAL-00176" />
-      <option name="project" value="LOCAL" />
-      <updated>1777622417443</updated>
-    </task>
-    <task id="LOCAL-00177" summary="version update">
-      <option name="closed" value="true" />
-      <created>1777622430897</created>
-      <option name="number" value="00177" />
-      <option name="presentableId" value="LOCAL-00177" />
-      <option name="project" value="LOCAL" />
-      <updated>1777622430897</updated>
-    </task>
-    <task id="LOCAL-00178" summary="more fonts">
-      <option name="closed" value="true" />
-      <created>1777623281728</created>
-      <option name="number" value="00178" />
-      <option name="presentableId" value="LOCAL-00178" />
-      <option name="project" value="LOCAL" />
-      <updated>1777623281728</updated>
-    </task>
-    <task id="LOCAL-00179" summary="more fonts">
-      <option name="closed" value="true" />
-      <created>1777623282804</created>
-      <option name="number" value="00179" />
-      <option name="presentableId" value="LOCAL-00179" />
-      <option name="project" value="LOCAL" />
-      <updated>1777623282804</updated>
-    </task>
-    <task id="LOCAL-00180" summary="more fonts">
-      <option name="closed" value="true" />
-      <created>1777623283860</created>
-      <option name="number" value="00180" />
-      <option name="presentableId" value="LOCAL-00180" />
-      <option name="project" value="LOCAL" />
-      <updated>1777623283861</updated>
-    </task>
-    <task id="LOCAL-00181" summary="more fonts">
-      <option name="closed" value="true" />
-      <created>1777623284205</created>
-      <option name="number" value="00181" />
-      <option name="presentableId" value="LOCAL-00181" />
-      <option name="project" value="LOCAL" />
-      <updated>1777623284206</updated>
-    </task>
-    <task id="LOCAL-00182" summary="more fonts">
-      <option name="closed" value="true" />
-      <created>1777623284392</created>
-      <option name="number" value="00182" />
-      <option name="presentableId" value="LOCAL-00182" />
-      <option name="project" value="LOCAL" />
-      <updated>1777623284392</updated>
-    </task>
-    <task id="LOCAL-00183" summary="more fonts">
-      <option name="closed" value="true" />
-      <created>1777623284573</created>
-      <option name="number" value="00183" />
-      <option name="presentableId" value="LOCAL-00183" />
-      <option name="project" value="LOCAL" />
-      <updated>1777623284573</updated>
-    </task>
-    <task id="LOCAL-00184" summary="more fonts">
-      <option name="closed" value="true" />
-      <created>1777623284732</created>
-      <option name="number" value="00184" />
-      <option name="presentableId" value="LOCAL-00184" />
-      <option name="project" value="LOCAL" />
-      <updated>1777623284732</updated>
-    </task>
-    <task id="LOCAL-00185" summary="more fonts">
-      <option name="closed" value="true" />
-      <created>1777623286376</created>
-      <option name="number" value="00185" />
-      <option name="presentableId" value="LOCAL-00185" />
-      <option name="project" value="LOCAL" />
-      <updated>1777623286376</updated>
-    </task>
-    <task id="LOCAL-00186" summary="more fonts">
-      <option name="closed" value="true" />
-      <created>1777623289994</created>
-      <option name="number" value="00186" />
-      <option name="presentableId" value="LOCAL-00186" />
-      <option name="project" value="LOCAL" />
-      <updated>1777623289994</updated>
-    </task>
-    <task id="LOCAL-00187" summary="more fonts">
-      <option name="closed" value="true" />
-      <created>1777623300659</created>
-      <option name="number" value="00187" />
-      <option name="presentableId" value="LOCAL-00187" />
-      <option name="project" value="LOCAL" />
-      <updated>1777623300659</updated>
     </task>
     <task id="LOCAL-00188" summary="more fonts">
       <option name="closed" value="true" />
@@ -774,7 +696,103 @@
       <option name="project" value="LOCAL" />
       <updated>1777883845152</updated>
     </task>
-    <option name="localTasksCounter" value="225" />
+    <task id="LOCAL-00225" summary="bug fixes">
+      <option name="closed" value="true" />
+      <created>1777883973630</created>
+      <option name="number" value="00225" />
+      <option name="presentableId" value="LOCAL-00225" />
+      <option name="project" value="LOCAL" />
+      <updated>1777883973630</updated>
+    </task>
+    <task id="LOCAL-00226" summary="bug fixes">
+      <option name="closed" value="true" />
+      <created>1777884168178</created>
+      <option name="number" value="00226" />
+      <option name="presentableId" value="LOCAL-00226" />
+      <option name="project" value="LOCAL" />
+      <updated>1777884168195</updated>
+    </task>
+    <task id="LOCAL-00227" summary="math editor improvement">
+      <option name="closed" value="true" />
+      <created>1777885341915</created>
+      <option name="number" value="00227" />
+      <option name="presentableId" value="LOCAL-00227" />
+      <option name="project" value="LOCAL" />
+      <updated>1777885341915</updated>
+    </task>
+    <task id="LOCAL-00228" summary="math editor improvement">
+      <option name="closed" value="true" />
+      <created>1777887408627</created>
+      <option name="number" value="00228" />
+      <option name="presentableId" value="LOCAL-00228" />
+      <option name="project" value="LOCAL" />
+      <updated>1777887408628</updated>
+    </task>
+    <task id="LOCAL-00229" summary="math editor improvement">
+      <option name="closed" value="true" />
+      <created>1777887870098</created>
+      <option name="number" value="00229" />
+      <option name="presentableId" value="LOCAL-00229" />
+      <option name="project" value="LOCAL" />
+      <updated>1777887870098</updated>
+    </task>
+    <task id="LOCAL-00230" summary="math editor improvement">
+      <option name="closed" value="true" />
+      <created>1777888253178</created>
+      <option name="number" value="00230" />
+      <option name="presentableId" value="LOCAL-00230" />
+      <option name="project" value="LOCAL" />
+      <updated>1777888253179</updated>
+    </task>
+    <task id="LOCAL-00231" summary="version update">
+      <option name="closed" value="true" />
+      <created>1777888514109</created>
+      <option name="number" value="00231" />
+      <option name="presentableId" value="LOCAL-00231" />
+      <option name="project" value="LOCAL" />
+      <updated>1777888514110</updated>
+    </task>
+    <task id="LOCAL-00232" summary="version update">
+      <option name="closed" value="true" />
+      <created>1777888760301</created>
+      <option name="number" value="00232" />
+      <option name="presentableId" value="LOCAL-00232" />
+      <option name="project" value="LOCAL" />
+      <updated>1777888760302</updated>
+    </task>
+    <task id="LOCAL-00233" summary="add Xerv ai maxwell as the primary model">
+      <option name="closed" value="true" />
+      <created>1777969186721</created>
+      <option name="number" value="00233" />
+      <option name="presentableId" value="LOCAL-00233" />
+      <option name="project" value="LOCAL" />
+      <updated>1777969186721</updated>
+    </task>
+    <task id="LOCAL-00234" summary="ui imporvement for collaborative chat">
+      <option name="closed" value="true" />
+      <created>1777969726322</created>
+      <option name="number" value="00234" />
+      <option name="presentableId" value="LOCAL-00234" />
+      <option name="project" value="LOCAL" />
+      <updated>1777969726322</updated>
+    </task>
+    <task id="LOCAL-00235" summary="add graph plot support">
+      <option name="closed" value="true" />
+      <created>1777969948256</created>
+      <option name="number" value="00235" />
+      <option name="presentableId" value="LOCAL-00235" />
+      <option name="project" value="LOCAL" />
+      <updated>1777969948256</updated>
+    </task>
+    <task id="LOCAL-00236" summary="add locally running maxwell suport">
+      <option name="closed" value="true" />
+      <created>1777970702019</created>
+      <option name="number" value="00236" />
+      <option name="presentableId" value="LOCAL-00236" />
+      <option name="project" value="LOCAL" />
+      <updated>1777970702021</updated>
+    </task>
+    <option name="localTasksCounter" value="237" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -789,14 +807,8 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="add fonts" />
-    <MESSAGE value="linking the fonts" />
-    <MESSAGE value="adding multiple tab support for editor part" />
-    <MESSAGE value="adding more fonts" />
-    <MESSAGE value="linking more fonts" />
     <MESSAGE value="linking more fonts and tab ui fixes" />
     <MESSAGE value=" tab ui fixes" />
-    <MESSAGE value="version update" />
     <MESSAGE value="more fonts" />
     <MESSAGE value="math fonts" />
     <MESSAGE value="math fonts support" />
@@ -811,22 +823,28 @@
     <MESSAGE value="vidoe chat ui redesign" />
     <MESSAGE value="compilation fixes" />
     <MESSAGE value="video chat mini player feature" />
-    <MESSAGE value="bug fixes" />
     <MESSAGE value="math editor enhancing with latex" />
     <MESSAGE value="frame extractor for media viewer in collab session" />
-    <option name="LAST_COMMIT_MESSAGE" value="frame extractor for media viewer in collab session" />
+    <MESSAGE value="bug fixes" />
+    <MESSAGE value="math editor improvement" />
+    <MESSAGE value="version update" />
+    <MESSAGE value="add Xerv ai maxwell as the primary model" />
+    <MESSAGE value="ui imporvement for collaborative chat" />
+    <MESSAGE value="add graph plot support" />
+    <MESSAGE value="add locally running maxwell suport" />
+    <option name="LAST_COMMIT_MESSAGE" value="add locally running maxwell suport" />
   </component>
   <component name="play_dynamic_filters_status">
     <option name="appIdToCheckInfo">
       <map>
         <entry key="com.beeta.nbheditor">
           <value>
-            <CheckInfo lastCheckTimestamp="1777883504789" />
+            <CheckInfo lastCheckTimestamp="1777969921306" />
           </value>
         </entry>
         <entry key="com.beeta.nbheditor.test">
           <value>
-            <CheckInfo lastCheckTimestamp="1777883504790" />
+            <CheckInfo lastCheckTimestamp="1777969921311" />
           </value>
         </entry>
         <entry key="com.example.nbheditor">
