@@ -296,21 +296,39 @@ class CollabChatAdapter(
         val uri = msg.attachmentUri
         val type = msg.attachmentType
         if (!uri.isNullOrBlank() && !type.isNullOrBlank()) {
+            // Show message text only if present
             tvMessage.visibility = if (msg.message.isNotBlank()) View.VISIBLE else View.GONE
             tvMessage.text = msg.message
-            actionBar.visibility = View.VISIBLE
+
+            // Hide the old action bar with Open/Download buttons – we now use direct taps
+            actionBar.visibility = View.GONE
+
             when (type) {
-                "image" -> { ivPreview.visibility = View.VISIBLE; attachCard.visibility = View.GONE; loadImage(ivPreview, uri) }
-                "video" -> { ivPreview.visibility = View.VISIBLE; attachCard.visibility = View.GONE; loadVideoThumbnail(ivPreview, uri, ctx) }
+                "image" -> {
+                    // Show image preview; tapping opens full view
+                    ivPreview.visibility = View.VISIBLE
+                    attachCard.visibility = View.GONE
+                    loadImage(ivPreview, uri)
+                    ivPreview.setOnClickListener { openMedia(ctx, uri, type) }
+                }
+                "video" -> {
+                    // Show video thumbnail; tapping opens video viewer
+                    ivPreview.visibility = View.VISIBLE
+                    attachCard.visibility = View.GONE
+                    loadVideoThumbnail(ivPreview, uri, ctx)
+                    ivPreview.setOnClickListener { openMedia(ctx, uri, type) }
+                }
                 else -> {
-                    ivPreview.visibility = View.GONE; attachCard.visibility = View.VISIBLE
+                    // For documents/audio etc., show a simple attachment card that opens on tap
+                    ivPreview.visibility = View.GONE
+                    attachCard.visibility = View.VISIBLE
                     tvIcon.text = when (type) { "audio" -> "Mic"; "video" -> "Vid"; else -> docIcon(uri) }
                     tvName.text = uri.substringAfterLast("/")
+                    attachCard.setOnClickListener { openMedia(ctx, uri, type) }
                 }
             }
-            btnOpen.setOnClickListener { openMedia(ctx, uri, type) }
-            btnSave.setOnClickListener { downloadMedia(ctx, uri, type) }
         } else {
+            // No attachment – just show the text message
             tvMessage.visibility = View.VISIBLE
             tvMessage.text = msg.message
             ivPreview.visibility = View.GONE
