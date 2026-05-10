@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     // Add the Google services Gradle plugin
     id("com.google.gms.google-services")
+    // Kotlin Kapt for annotation processing (required by Glide)
+    id("org.jetbrains.kotlin.kapt") version "1.9.0"
 }
 
 android {

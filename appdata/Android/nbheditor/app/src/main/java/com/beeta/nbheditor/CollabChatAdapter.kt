@@ -1,6 +1,7 @@
 package com.beeta.nbheditor
 
 import android.app.DownloadManager
+import com.bumptech.glide.Glide
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
@@ -308,6 +309,8 @@ class CollabChatAdapter(
                     // Show image preview; tapping opens full view
                     ivPreview.visibility = View.VISIBLE
                     attachCard.visibility = View.GONE
+                    // Use a placeholder while loading
+                    ivPreview.setImageResource(android.R.drawable.ic_menu_gallery)
                     loadImage(ivPreview, uri)
                     ivPreview.setOnClickListener { openMedia(ctx, uri, type) }
                 }
@@ -315,16 +318,26 @@ class CollabChatAdapter(
                     // Show video thumbnail; tapping opens video viewer
                     ivPreview.visibility = View.VISIBLE
                     attachCard.visibility = View.GONE
+                    ivPreview.setImageResource(android.R.drawable.ic_media_play)
                     loadVideoThumbnail(ivPreview, uri, ctx)
                     ivPreview.setOnClickListener { openMedia(ctx, uri, type) }
                 }
                 else -> {
-                    // For documents/audio etc., show a simple attachment card that opens on tap
-                    ivPreview.visibility = View.GONE
-                    attachCard.visibility = View.VISIBLE
-                    tvIcon.text = when (type) { "audio" -> "Mic"; "video" -> "Vid"; else -> docIcon(uri) }
-                    tvName.text = uri.substringAfterLast("/")
-                    attachCard.setOnClickListener { openMedia(ctx, uri, type) }
+                    // For PDFs attempt to render a thumbnail, otherwise fall back to an icon card
+                    if (type == "pdf" || uri.endsWith(".pdf", true)) {
+                        ivPreview.visibility = View.VISIBLE
+                        attachCard.visibility = View.GONE
+                        ivPreview.setImageResource(android.R.drawable.ic_menu_report_image)
+                        loadPdfThumbnail(ivPreview, uri, ctx)
+                        ivPreview.setOnClickListener { openMedia(ctx, uri, "pdf") }
+                    } else {
+                        // Non‑previewable attachments (audio, generic docs, etc.)
+                        ivPreview.visibility = View.GONE
+                        attachCard.visibility = View.VISIBLE
+                        tvIcon.text = when (type) { "audio" -> "Mic"; "video" -> "Vid"; else -> docIcon(uri) }
+                        tvName.text = uri.substringAfterLast("/")
+                        attachCard.setOnClickListener { openMedia(ctx, uri, type) }
+                    }
                 }
             }
         } else {
@@ -389,35 +402,87 @@ class CollabChatAdapter(
     // ── Media open/save ───────────────────────────────────────────────────────
 
     private fun loadVideoThumbnail(iv: ImageView, uriStr: String, ctx: Context) {
+        // Show a placeholder until the thumbnail is ready
         iv.setImageResource(android.R.drawable.ic_media_play)
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val retriever = MediaMetadataRetriever()
                 val uri = Uri.parse(uriStr)
+                // Use the appropriate data source based on the URI scheme
                 if (uri.scheme == "content" || uri.scheme == "file") {
                     retriever.setDataSource(ctx, uri)
                 } else {
                     retriever.setDataSource(uriStr, emptyMap())
                 }
-                val frame = retriever.getFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+                // Retrieve a frame a little into the video to avoid black frames at 0ms
+                var frame = retriever.getFrameAtTime(1_000_000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
+                // If a frame at 1s is not available (e.g., very short clips), fall back to the first key frame
+                if (frame == null) {
+                    frame = retriever.getFrameAtTime(0, MediaMetadataRetriever.OPTION_CLOSEST)
+                }
                 retriever.release()
                 if (frame != null) {
+                    // Scale down for chat preview while keeping aspect ratio
                     val thumb = Bitmap.createScaledBitmap(frame, 320, 180, true)
                     withContext(Dispatchers.Main) { iv.setImageBitmap(thumb) }
+                } else {
+                    // Fallback to the default play icon if no frame could be extracted
+                    withContext(Dispatchers.Main) { iv.setImageResource(android.R.drawable.ic_media_play) }
                 }
             } catch (_: Exception) {
+                // On any error keep the placeholder icon
                 withContext(Dispatchers.Main) { iv.setImageResource(android.R.drawable.ic_media_play) }
             }
         }
     }
 
+    // Load the first page of a PDF as a thumbnail for preview in chat
+    private fun loadPdfThumbnail(iv: ImageView, uriStr: String, ctx: Context) {
+        // Show a placeholder while rendering
+        iv.setImageResource(android.R.drawable.ic_menu_report_image)
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val uri = Uri.parse(uriStr)
+                // Obtain a file descriptor for the PDF
+                val pfd: android.os.ParcelFileDescriptor? = when (uri.scheme) {
+                    "content" -> ctx.contentResolver.openFileDescriptor(uri, "r")
+                    "file" -> android.os.ParcelFileDescriptor.open(java.io.File(uri.path!!), android.os.ParcelFileDescriptor.MODE_READ_ONLY)
+                    else -> null
+                }
+                if (pfd == null) throw Exception("Unable to open PDF")
+                val renderer = android.graphics.pdf.PdfRenderer(pfd)
+                if (renderer.pageCount > 0) {
+                    val page = renderer.openPage(0)
+                    // Render at a reasonable size for chat thumbnail
+                    val width = page.width.coerceAtMost(300)
+                    val height = page.height.coerceAtMost(400)
+                    val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                    page.render(bitmap, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                    page.close()
+                    renderer.close()
+                    withContext(Dispatchers.Main) { iv.setImageBitmap(bitmap) }
+                } else {
+                    withContext(Dispatchers.Main) { iv.setImageResource(android.R.drawable.ic_menu_report_image) }
+                }
+            } catch (_: Exception) {
+                withContext(Dispatchers.Main) { iv.setImageResource(android.R.drawable.ic_menu_report_image) }
+            }
+        }
+    }
+
+    // Load image using Glide for better handling of remote URLs and caching
     private fun loadImage(iv: ImageView, uriStr: String) {
         try {
-            val uri = Uri.parse(uriStr)
-            // Max size for chat thumbnail: 800x800
-            val bmp = decodeSampledBitmap(iv.context, uri, uriStr, 800, 800)
-            iv.setImageBitmap(bmp)
-        } catch (_: Exception) { iv.setImageResource(android.R.drawable.ic_menu_gallery) }
+            // Glide will handle both local and remote URIs efficiently
+            Glide.with(iv.context)
+                .load(uriStr)
+                .override(800, 800)
+                .centerCrop()
+                .error(android.R.drawable.ic_menu_gallery)
+                .into(iv)
+        } catch (_: Exception) {
+            iv.setImageResource(android.R.drawable.ic_menu_gallery)
+        }
     }
 
     private fun decodeSampledBitmap(ctx: Context, uri: Uri, uriStr: String, reqW: Int, reqH: Int): android.graphics.Bitmap? {
