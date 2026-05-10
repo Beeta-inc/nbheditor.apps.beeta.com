@@ -2,9 +2,13 @@ plugins {
     alias(libs.plugins.android.application)
     // Add the Google services Gradle plugin
     id("com.google.gms.google-services")
-    // Kotlin Kapt for annotation processing (required by Glide)
-    id("org.jetbrains.kotlin.kapt") version "1.9.0"
+    // Apply Kotlin Android and Kapt plugins
+    id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.kapt")
 }
+
+// Ensure Kotlin compilation targets the same JVM version as Java (11)
+
 
 android {
     namespace = "com.beeta.nbheditor"
@@ -54,11 +58,13 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
         viewBinding = true
+        // Enable Data Binding to generate binding classes without explicit kapt dependency
+        dataBinding = true
     }
     packaging {
         resources {
@@ -120,7 +126,16 @@ dependencies {
     implementation("ru.noties:jlatexmath-android-font-cyrillic:0.2.0")
     implementation("ru.noties:jlatexmath-android-font-greek:0.2.0")
 
+    // Image loading library Glide (updated version)
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    kapt("com.github.bumptech.glide:compiler:4.16.0")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+}
+
+// Set Kotlin JVM target to 17 using the Kotlin DSL
+kotlin {
+    jvmToolchain(17)
 }
