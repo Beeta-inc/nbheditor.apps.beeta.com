@@ -2013,7 +2013,9 @@ open class MainActivity : AppCompatActivity() {
         val imageKeywords = listOf("make image", "generate image", "create image", "draw", "make a picture", "generate a picture", "show image", "make photo", "create photo")
         val isImageRequest = aiChatBinding.imageGenChip.isChecked || imageKeywords.any { query.lowercase().contains(it) }
 
-        val userMsg = ChatMessage("user", query)
+        // Encrypt the outgoing message before adding to the UI
+        val encrypted = ChatEncryptionUtil.encrypt(query)
+        val userMsg = ChatMessage("user", encrypted)
         chatAdapter.addMessage(userMsg)
         if (memoryEnabled) {
             chatHistory.add(userMsg)
@@ -2045,8 +2047,10 @@ open class MainActivity : AppCompatActivity() {
                     val aiResponse = callAIWithHistory(query, maxTokens = 1024)
                     aiChatBinding.typingRow.visibility = View.GONE
                     if (aiResponse != null) {
-                        val aiMsg = ChatMessage("assistant", aiResponse)
-                        chatAdapter.addMessage(aiMsg)
+                // Encrypt AI response as well so the UI always works with encrypted payloads
+                val encryptedAi = ChatEncryptionUtil.encrypt(aiResponse)
+                val aiMsg = ChatMessage("assistant", encryptedAi)
+                chatAdapter.addMessage(aiMsg)
                         if (memoryEnabled) {
                             chatHistory.add(aiMsg)
                             fullChatHistory.add(aiMsg)
