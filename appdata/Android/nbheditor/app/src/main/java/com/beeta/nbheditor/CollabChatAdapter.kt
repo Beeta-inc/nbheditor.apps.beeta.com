@@ -38,7 +38,9 @@ class CollabChatAdapter(
     private val onCreateTask: (ChatMessage) -> Unit = {},
     private val onSetReminder: (ChatMessage) -> Unit = {},
     private val onReply: (ChatMessage) -> Unit = {},
-    private val onScrollToMessage: (String) -> Unit = {}
+    private val onScrollToMessage: (String) -> Unit = {},
+    // Callback invoked when a user edits a message via long‑press dialog
+    private val onEditMessage: (ChatMessage, String) -> Unit = { _, _ -> }
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
@@ -164,14 +166,25 @@ class CollabChatAdapter(
         bindMedia(msg, h.tvMessage, h.ivMediaPreview, h.attachmentCard,
             h.tvAttachmentIcon, h.tvAttachmentName, h.mediaActionBar, h.btnOpenMedia, h.btnDownloadMedia, ctx)
         
-        // Enhanced long click handling with haptic feedback
+        // Long‑press opens edit dialog for outgoing messages
         h.messageContainer.setOnLongClickListener {
-            h.messageActions.visibility = if (h.messageActions.visibility == View.VISIBLE) View.GONE else View.VISIBLE
-            // Add haptic feedback
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                val vibrator = ctx.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? android.os.Vibrator
-                vibrator?.vibrate(android.os.VibrationEffect.createOneShot(50, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+            val editText = android.widget.EditText(ctx).apply {
+                setText(msg.message)
+                setSelection(text?.length ?: 0)
+                setBackgroundResource(android.R.drawable.edit_text)
+                setPadding(24, 24, 24, 24)
             }
+            androidx.appcompat.app.AlertDialog.Builder(ctx)
+                .setTitle("Edit Message")
+                .setView(editText)
+                .setPositiveButton("Save") { _, _ ->
+                    val newMsg = editText.text.toString()
+                    if (newMsg != msg.message) {
+                        onEditMessage(msg, newMsg)
+                    }
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
             true
         }
         
@@ -245,14 +258,25 @@ class CollabChatAdapter(
         bindMedia(msg, h.tvMessage, h.ivMediaPreview, h.attachmentCard,
             h.tvAttachmentIcon, h.tvAttachmentName, h.mediaActionBar, h.btnOpenMedia, h.btnDownloadMedia, ctx)
         
-        // Enhanced long click handling
+        // Long‑press now opens an edit dialog for incoming messages as well
         h.messageContainer.setOnLongClickListener {
-            h.messageActions.visibility = if (h.messageActions.visibility == View.VISIBLE) View.GONE else View.VISIBLE
-            // Add haptic feedback
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                val vibrator = ctx.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? android.os.Vibrator
-                vibrator?.vibrate(android.os.VibrationEffect.createOneShot(50, android.os.VibrationEffect.DEFAULT_AMPLITUDE))
+            val editText = android.widget.EditText(ctx).apply {
+                setText(msg.message)
+                setSelection(text?.length ?: 0)
+                setBackgroundResource(android.R.drawable.edit_text)
+                setPadding(24, 24, 24, 24)
             }
+            androidx.appcompat.app.AlertDialog.Builder(ctx)
+                .setTitle("Edit Message")
+                .setView(editText)
+                .setPositiveButton("Save") { _, _ ->
+                    val newMsg = editText.text.toString()
+                    if (newMsg != msg.message) {
+                        onEditMessage(msg, newMsg)
+                    }
+                }
+                .setNegativeButton("Cancel", null)
+                .show()
             true
         }
         

@@ -46,6 +46,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.beeta.nbheditor.databinding.ActivityMainBinding
 import com.beeta.nbheditor.databinding.FragmentAiChatBinding
 import com.beeta.nbheditor.databinding.FragmentEditorBinding
+import com.beeta.nbheditor.ChatAdapter
 import com.google.android.material.chip.Chip
 import com.google.gson.Gson
 import kotlinx.coroutines.*
@@ -66,6 +67,8 @@ open class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var editorBinding: FragmentEditorBinding
     private lateinit var aiChatBinding: FragmentAiChatBinding
+    // Chat adapter for the AI chat UI. Declared here so it can be accessed throughout the activity.
+    private lateinit var chatAdapter: ChatAdapter
     private lateinit var prefs: SharedPreferences
     private lateinit var tabUI: TabUI
 
@@ -116,27 +119,24 @@ open class MainActivity : AppCompatActivity() {
 
 
     private val HUGGINGFACE_API_KEY = ""  // Optional: for higher rate limits
+    // OpenRouter API key is optional for free models; leave empty to use free tier without authentication
     private val OPENROUTER_API_KEY = ""
 
     // Sign-in request code
     private val RC_SIGN_IN = 9001
     private val RC_DRIVE_PERMISSION = 9002
 
-    // OpenRouter models (6 free models)
+    // OpenRouter models – using the generic free tier model for best usage
+    // The "openrouter/free" model automatically selects the best available free model.
     private val OR_MODELS = listOf(
-        "stepfun/step-3.5-flash:free",
-        "mistralai/mistral-7b-instruct:free",
-        "meta-llama/llama-3.2-3b-instruct:free",
-        "google/gemma-3-4b-it:free",
-        "qwen/qwen3-0.6b:free",
-        "microsoft/phi-3-mini-128k-instruct:free"
+        "openrouter/free"
     )
 
 
     private val GEMINI_API_KEY = "AIzaSyAjO1m3x5uh5oqKt05nPRsS_H4MlgkUqN0"
     private val GEMINI_MODEL = "gemini-2.0-flash"
 
-    private lateinit var chatAdapter: ChatAdapter
+
 
     data class ChatMessage(val role: String, val content: String)
     data class ChatHistoryItem(val type: String, val role: String? = null, val content: String? = null, val prompt: String? = null, val base64: String? = null)
