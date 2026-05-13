@@ -23,6 +23,8 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.RecyclerView
+import com.google.firebase.database.FirebaseDatabase
+import android.util.Base64
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -401,18 +403,91 @@ class CollabChatAdapter(
 
     // ── Media open/save ───────────────────────────────────────────────────────
 
+    /**
+     * Download a file from Firebase to local cache and return the local file path.
+     * Returns null if download fails or URI is not a Firebase reference.
+     */
+    private suspend fun downloadFirebaseToLocal(
+        uriStr: String,
+        ctx: Context
+    ): String? = withContext(Dispatchers.IO) {
+        if (!uriStr.startsWith("firebase://")) return@withContext null
+        
+        try {
+            // Parse firebase://attachments/sessionId/messageId
+            val parts = uriStr.removePrefix("firebase://attachments/").split("/")
+            if (parts.size != 2) return@withContext null
+            
+            val sessionId = parts[0]
+            val messageId = parts[1]
+            
+            val database = FirebaseDatabase.getInstance("https://nbheditior-default-rtdb.firebaseio.com").reference
+            val snapshot = database.child("collaborative_sessions")
+                .child(sessionId)
+                .child("attachments")
+                .child(messageId)
+                .get()
+                .await()
+            
+            // Check if file is chunked
+            val metadata = snapshot.child("metadata")
+            val base64: String
+            val fileName: String
+            
+            if (metadata.exists()) {
+                // Chunked file - reassemble
+                val totalChunks = metadata.child("totalChunks").getValue(Int::class.java) ?: 0
+                fileName = metadata.child("fileName").getValue(String::class.java) ?: "file"
+                
+                val chunks = StringBuilder()
+                for (i in 0 until totalChunks) {
+                    val chunk = snapshot.child("chunk_$i").getValue(String::class.java)
+                        ?: return@withContext null
+                    chunks.append(chunk)
+                }
+                base64 = chunks.toString()
+            } else {
+                // Single file
+                base64 = snapshot.child("base64").getValue(String::class.java)
+                    ?: return@withContext null
+                fileName = snapshot.child("fileName").getValue(String::class.java) ?: "file"
+            }
+            
+            // Decode base64 to bytes
+            val bytes = Base64.decode(base64, Base64.DEFAULT)
+            
+            // Save to cache directory
+            val extension = fileName.substringAfterLast('.', "")
+            val baseName = fileName.substringBeforeLast('.', fileName).replace(Regex("[^a-zA-Z0-9_-]"), "_")
+            val sanitizedName = if (extension.isNotEmpty()) "${baseName}.${extension}" else baseName
+            val cacheFile = java.io.File(ctx.cacheDir, "preview_$sanitizedName")
+            cacheFile.writeBytes(bytes)
+            
+            cacheFile.absolutePath
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     private fun loadVideoThumbnail(iv: ImageView, uriStr: String, ctx: Context) {
         // Show a placeholder until the thumbnail is ready
         iv.setImageResource(android.R.drawable.ic_media_play)
         CoroutineScope(Dispatchers.IO).launch {
             try {
+                // If Firebase URI, download to local first
+                val localUri = if (uriStr.startsWith("firebase://")) {
+                    downloadFirebaseToLocal(uriStr, ctx) ?: uriStr
+                } else {
+                    uriStr
+                }
+                
                 val retriever = MediaMetadataRetriever()
-                val uri = Uri.parse(uriStr)
+                val uri = Uri.parse(localUri)
                 // Use the appropriate data source based on the URI scheme
                 if (uri.scheme == "content" || uri.scheme == "file") {
                     retriever.setDataSource(ctx, uri)
                 } else {
-                    retriever.setDataSource(uriStr, emptyMap())
+                    retriever.setDataSource(localUri, emptyMap())
                 }
                 // Retrieve a frame a little into the video to avoid black frames at 0ms
                 var frame = retriever.getFrameAtTime(1_000_000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)
@@ -442,7 +517,14 @@ class CollabChatAdapter(
         iv.setImageResource(android.R.drawable.ic_menu_report_image)
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val uri = Uri.parse(uriStr)
+                // If Firebase URI, download to local first
+                val localUri = if (uriStr.startsWith("firebase://")) {
+                    downloadFirebaseToLocal(uriStr, ctx) ?: uriStr
+                } else {
+                    uriStr
+                }
+                
+                val uri = Uri.parse(localUri)
                 // Obtain a file descriptor for the PDF
                 val pfd: android.os.ParcelFileDescriptor? = when (uri.scheme) {
                     "content" -> ctx.contentResolver.openFileDescriptor(uri, "r")
@@ -472,16 +554,44 @@ class CollabChatAdapter(
 
     // Load image using Glide for better handling of remote URLs and caching
     private fun loadImage(iv: ImageView, uriStr: String) {
-        try {
-            // Glide will handle both local and remote URIs efficiently
-            Glide.with(iv.context)
-                .load(uriStr)
-                .override(800, 800)
-                .centerCrop()
-                .error(android.R.drawable.ic_menu_gallery)
-                .into(iv)
-        } catch (_: Exception) {
-            iv.setImageResource(android.R.drawable.ic_menu_gallery)
+        // If Firebase URI, download to local first then load
+        if (uriStr.startsWith("firebase://")) {
+            val ctx = iv.context
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val localPath = downloadFirebaseToLocal(uriStr, ctx)
+                    if (localPath != null) {
+                        withContext(Dispatchers.Main) {
+                            Glide.with(ctx)
+                                .load(localPath)
+                                .override(800, 800)
+                                .centerCrop()
+                                .error(android.R.drawable.ic_menu_gallery)
+                                .into(iv)
+                        }
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            iv.setImageResource(android.R.drawable.ic_menu_gallery)
+                        }
+                    }
+                } catch (_: Exception) {
+                    withContext(Dispatchers.Main) {
+                        iv.setImageResource(android.R.drawable.ic_menu_gallery)
+                    }
+                }
+            }
+        } else {
+            try {
+                // Glide will handle both local and remote URIs efficiently
+                Glide.with(iv.context)
+                    .load(uriStr)
+                    .override(800, 800)
+                    .centerCrop()
+                    .error(android.R.drawable.ic_menu_gallery)
+                    .into(iv)
+            } catch (_: Exception) {
+                iv.setImageResource(android.R.drawable.ic_menu_gallery)
+            }
         }
     }
 
