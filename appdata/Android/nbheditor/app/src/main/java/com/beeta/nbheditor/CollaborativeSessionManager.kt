@@ -689,6 +689,8 @@ object CollaborativeSessionManager {
     
     fun getCurrentUserId(): String? = currentUserId
     
+    fun getCurrentCreatorId(): String? = currentCreatorId
+    
     // Get current session data
     suspend fun getCurrentSession(): CollaborativeSession? {
         return try {
@@ -698,6 +700,82 @@ object CollaborativeSessionManager {
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get current session", e)
             null
+        }
+    }
+    
+    /**
+     * Check if the current user is the host/creator of a specific session.
+     * Queries Firebase to verify the session exists and the user is the creator.
+     */
+    suspend fun isUserHostOfSession(sessionId: String, userId: String): Boolean {
+        return try {
+            val sanitizedUserId = sanitizeUserId(userId)
+            val snapshot = database.child(SESSIONS_PATH).child(sessionId).get().await()
+            if (!snapshot.exists()) return false
+            
+            val session = snapshot.getValue(CollaborativeSession::class.java)
+            val isHost = session?.creatorId == sanitizedUserId
+            Log.d(TAG, "isUserHostOfSession: sessionId=$sessionId, userId=$sanitizedUserId, creatorId=${session?.creatorId}, isHost=$isHost")
+            isHost
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to check if user is host", e)
+            false
+        }
+    }
+    
+    /**
+     * Rejoin a session as the host. This bypasses the waiting room.
+     */
+    suspend fun rejoinSessionAsHost(
+        sessionId: String,
+        userId: String,
+        userName: String,
+        email: String,
+        photoUrl: String = ""
+    ): Result<CollaborativeSession> {
+        return try {
+            val sanitizedUserId = sanitizeUserId(userId)
+            val sessionRef = database.child(SESSIONS_PATH).child(sessionId)
+            val snapshot = sessionRef.get().await()
+            
+            if (!snapshot.exists()) {
+                return Result.failure(Exception("Session not found or expired"))
+            }
+            
+            val session = snapshot.getValue(CollaborativeSession::class.java)
+                ?: return Result.failure(Exception("Invalid session data"))
+            
+            // Verify user is the host
+            if (session.creatorId != sanitizedUserId) {
+                return Result.failure(Exception("Only the host can rejoin directly"))
+            }
+            
+            // Update host user data (re-add if needed)
+            val hostUser = SessionUser(
+                userId = sanitizedUserId,
+                userName = userName,
+                email = email,
+                photoUrl = photoUrl,
+                creator = true,
+                lastActive = System.currentTimeMillis(),
+                status = "active"
+            )
+            
+            sessionRef.child("users").child(sanitizedUserId).setValue(hostUser).await()
+            sessionRef.child("lastActivity").setValue(ServerValue.TIMESTAMP).await()
+            
+            currentSessionId = sessionId
+            currentUserId = sanitizedUserId
+            currentCreatorId = sanitizedUserId
+            
+            // Start presence tracking
+            startPresenceTracking(sessionId, sanitizedUserId)
+            
+            Log.d(TAG, "Host rejoined session: $sessionId")
+            Result.success(session)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to rejoin session as host", e)
+            Result.failure(e)
         }
     }
     

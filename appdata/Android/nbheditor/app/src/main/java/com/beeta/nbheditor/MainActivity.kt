@@ -5174,19 +5174,57 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
         val userId = email // Use email as unique user ID
         val photoUrl = GoogleSignInHelper.getUserPhotoUrl(this) ?: ""
         
-        // Send join request instead of directly joining
+        // Show loading dialog while checking host status
+        val loadingDialog = createLoadingDialog(
+            title = "Joining Session...",
+            message = "Checking session status\nConnecting to $sessionId"
+        )
+        loadingDialog.show()
+        
         lifecycleScope.launch {
             try {
-                val result = CollaborativeSessionManager.requestToJoinSession(sessionId, userId, userName, email, photoUrl)
+                // Check if the user is the host/creator of this session
+                val isHost = CollaborativeSessionManager.isUserHostOfSession(sessionId, userId)
                 
-                result.onSuccess { status ->
-                    if (status == "pending") {
-                        showWaitingRoomDialog(sessionId, userId)
+                if (isHost) {
+                    // User is the host - rejoin directly without waiting room
+                    Log.d("MainActivity", "User is host of session $sessionId, rejoining directly")
+                    
+                    val result = CollaborativeSessionManager.rejoinSessionAsHost(
+                        sessionId, userId, userName, email, photoUrl
+                    )
+                    
+                    loadingDialog.dismiss()
+                    
+                    result.onSuccess { session ->
+                        showSuccessToast("✓ Rejoined session as host: $sessionId")
+                        editorBinding.textArea.setText(session.content)
+                        showActiveSessionUI(sessionId, isCreator = true)
+                        // Start observing join requests since user is host
+                        observeJoinRequests(sessionId)
+                    }.onFailure { e ->
+                        showErrorDialog("Failed to rejoin session", e.message ?: "Unknown error")
                     }
-                }.onFailure { e ->
-                    showErrorDialog("Failed to request join", e.message ?: "Unknown error")
+                } else {
+                    // User is not the host - send join request and show waiting room
+                    Log.d("MainActivity", "User is not host of session $sessionId, sending join request")
+                    
+                    val result = CollaborativeSessionManager.requestToJoinSession(
+                        sessionId, userId, userName, email, photoUrl
+                    )
+                    
+                    loadingDialog.dismiss()
+                    
+                    result.onSuccess { status ->
+                        if (status == "pending") {
+                            showWaitingRoomDialog(sessionId, userId)
+                        }
+                    }.onFailure { e ->
+                        showErrorDialog("Failed to request join", e.message ?: "Unknown error")
+                    }
                 }
             } catch (e: Exception) {
+                loadingDialog.dismiss()
                 showErrorDialog("Error", e.message ?: "Unknown error")
             }
         }
