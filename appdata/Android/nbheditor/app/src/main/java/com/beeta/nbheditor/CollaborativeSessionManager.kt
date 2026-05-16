@@ -1455,9 +1455,140 @@ object CollaborativeSessionManager {
     // Clear all session data (call when ending/leaving session)
     fun clearSessionCache(context: Context) {
         clearTempCache(context)
+        clearSessionToken(context)
         currentSessionId = null
         currentUserId = null
         currentCreatorId = null
         Log.d(TAG, "Cleared all session cache")
+    }
+
+    // ── Session Token Cache (for auto-rejoin after accidental close) ────────────
+
+    private const val SESSION_TOKEN_FILE = "collab_session_token.txt"
+    private const val SESSION_META_FILE = "collab_session_meta.json"
+
+    /**
+     * Store session token in cache when user creates or joins a session.
+     * This allows auto-detection of host status on rejoin after accidental close.
+     */
+    fun saveSessionToken(context: Context, sessionId: String, userId: String, isCreator: Boolean) {
+        try {
+            val tokenFile = java.io.File(context.cacheDir, SESSION_TOKEN_FILE)
+            tokenFile.writeText(sessionId)
+            
+            val metaFile = java.io.File(context.cacheDir, SESSION_META_FILE)
+            val meta = mapOf(
+                "sessionId" to sessionId,
+                "userId" to userId,
+                "isCreator" to isCreator,
+                "timestamp" to System.currentTimeMillis()
+            )
+            metaFile.writeText(com.google.gson.Gson().toJson(meta))
+            
+            Log.d(TAG, "Saved session token: $sessionId, isCreator: $isCreator")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to save session token", e)
+        }
+    }
+
+    /**
+     * Get cached session token if exists.
+     * Returns null if no cached session or if user manually left/was kicked.
+     */
+    fun getCachedSessionToken(context: Context): String? {
+        return try {
+            val tokenFile = java.io.File(context.cacheDir, SESSION_TOKEN_FILE)
+            if (tokenFile.exists()) {
+                val sessionId = tokenFile.readText().trim()
+                if (sessionId.isNotEmpty()) sessionId else null
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get session token", e)
+            null
+        }
+    }
+
+    /**
+     * Get cached session metadata.
+     */
+    fun getCachedSessionMeta(context: Context): Map<String, Any?>? {
+        return try {
+            val metaFile = java.io.File(context.cacheDir, SESSION_META_FILE)
+            if (metaFile.exists()) {
+                val json = metaFile.readText()
+                val type = object : com.google.gson.reflect.TypeToken<Map<String, Any?>>() {}.type
+                com.google.gson.Gson().fromJson(json, type)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get session meta", e)
+            null
+        }
+    }
+
+    /**
+     * Check if user was the creator of the cached session.
+     */
+    fun wasCachedSessionCreator(context: Context): Boolean {
+        val meta = getCachedSessionMeta(context) ?: return false
+        return meta["isCreator"] == true
+    }
+
+    /**
+     * Clear session token from cache.
+     * Called when user manually leaves or is kicked.
+     */
+    fun clearSessionToken(context: Context) {
+        try {
+            val tokenFile = java.io.File(context.cacheDir, SESSION_TOKEN_FILE)
+            val metaFile = java.io.File(context.cacheDir, SESSION_META_FILE)
+            if (tokenFile.exists()) tokenFile.delete()
+            if (metaFile.exists()) metaFile.delete()
+            Log.d(TAG, "Cleared session token")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to clear session token", e)
+        }
+    }
+
+    /**
+     * Validate if cached session still exists in Firebase and user is still in it.
+     * Returns true if session exists and user is a member.
+     */
+    suspend fun validateCachedSession(context: Context): Boolean {
+        val sessionId = getCachedSessionToken(context) ?: return false
+        val meta = getCachedSessionMeta(context) ?: return false
+        val userId = meta["userId"] as? String ?: return false
+        
+        return try {
+            val sanitizedUserId = sanitizeUserId(userId)
+            val sessionSnapshot = database.child(SESSIONS_PATH).child(sessionId).get().await()
+            
+            if (!sessionSnapshot.exists()) {
+                Log.d(TAG, "Cached session $sessionId no longer exists in RTDB")
+                return false
+            }
+            
+            val userSnapshot = database.child(SESSIONS_PATH).child(sessionId)
+                .child("users").child(sanitizedUserId).get().await()
+            
+            val exists = userSnapshot.exists()
+            Log.d(TAG, "Cached session validation: session=$sessionId, userExists=$exists")
+            exists
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to validate cached session", e)
+            false
+        }
+    }
+
+    /**
+     * Check if user can auto-rejoin as host.
+     * Returns true if cached session exists, user was creator, and session still in RTDB.
+     */
+    suspend fun canAutoRejoinAsHost(context: Context): Boolean {
+        if (!wasCachedSessionCreator(context)) return false
+        return validateCachedSession(context)
     }
 }

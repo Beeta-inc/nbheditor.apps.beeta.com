@@ -3611,18 +3611,45 @@ open class MainActivity : AppCompatActivity() {
     private fun checkUnexpectedSessionExit() {
         val savedSessionId = CollabSessionService.getActiveSessionId(this)
         if (!savedSessionId.isNullOrBlank() && !CollaborativeSessionManager.isInSession()) {
-            // User was in a session but app was closed unexpectedly
-            androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("🔗 Session Interrupted")
-                .setMessage("You left the collaborative session \"$savedSessionId\" unexpectedly.\n\nWould you like to rejoin?")
-                .setPositiveButton("Rejoin") { _, _ ->
-                    joinCollaborativeSession(savedSessionId)
+            // Check if we have a cached token for this session
+            val cachedSessionId = CollaborativeSessionManager.getCachedSessionToken(this)
+            val wasCreator = CollaborativeSessionManager.wasCachedSessionCreator(this)
+            
+            if (cachedSessionId != null && cachedSessionId == savedSessionId) {
+                // We have a cached token - show smarter dialog
+                val message = if (wasCreator) {
+                    "You were the host of session \"$savedSessionId\".\n\nWould you like to rejoin as host?"
+                } else {
+                    "You left the collaborative session \"$savedSessionId\" unexpectedly.\n\nWould you like to rejoin?"
                 }
-                .setNegativeButton("Leave Session") { _, _ ->
-                    CollabSessionService.stop(this)
-                }
-                .setCancelable(false)
-                .show()
+                
+                androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle("🔗 Session Interrupted")
+                    .setMessage(message)
+                    .setPositiveButton("Rejoin") { _, _ ->
+                        joinCollaborativeSession(savedSessionId)
+                    }
+                    .setNegativeButton("Leave Session") { _, _ ->
+                        // Clear cache since user explicitly left
+                        CollaborativeSessionManager.clearSessionToken(this)
+                        CollabSessionService.stop(this)
+                    }
+                    .setCancelable(false)
+                    .show()
+            } else {
+                // No cached token - show normal dialog
+                androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle("🔗 Session Interrupted")
+                    .setMessage("You left the collaborative session \"$savedSessionId\" unexpectedly.\n\nWould you like to rejoin?")
+                    .setPositiveButton("Rejoin") { _, _ ->
+                        joinCollaborativeSession(savedSessionId)
+                    }
+                    .setNegativeButton("Leave Session") { _, _ ->
+                        CollabSessionService.stop(this)
+                    }
+                    .setCancelable(false)
+                    .show()
+            }
         }
     }
 
@@ -5154,6 +5181,8 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
                 
                 result.onSuccess { sessionId ->
                     showSuccessToast("✓ Session created: $sessionId")
+                    // Save session token in cache for auto-rejoin after accidental close
+                    CollaborativeSessionManager.saveSessionToken(this@MainActivity, sessionId, userId, isCreator = true)
                     showActiveSessionUI(sessionId, isCreator = true)
                     // Show invite dialog after session is created
                     showSessionInviteDialog(sessionId)
@@ -5169,6 +5198,54 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
     }
     
     private fun joinCollaborativeSession(sessionId: String) {
+        val userName = GoogleSignInHelper.getUserName(this) ?: "Unknown"
+        val email = GoogleSignInHelper.getUserEmail(this) ?: ""
+        val userId = email // Use email as unique user ID
+        val photoUrl = GoogleSignInHelper.getUserPhotoUrl(this) ?: ""
+        
+        // Check if user can auto-rejoin as host using cached token
+        lifecycleScope.launch {
+            try {
+                val canAutoRejoin = CollaborativeSessionManager.canAutoRejoinAsHost(this@MainActivity)
+                if (canAutoRejoin) {
+                    // User was the host and session still exists - rejoin directly
+                    Log.d("MainActivity", "Auto-rejoining as host for session $sessionId")
+                    val loadingDialog = createLoadingDialog(
+                        title = "Rejoining Session...",
+                        message = "Reconnecting to $sessionId\nRestoring host privileges"
+                    )
+                    loadingDialog.show()
+                    
+                    val result = CollaborativeSessionManager.rejoinSessionAsHost(
+                        sessionId, userId, userName, email, photoUrl
+                    )
+                    
+                    loadingDialog.dismiss()
+                    
+                    result.onSuccess { session ->
+                        showSuccessToast("✓ Rejoined session as host: $sessionId")
+                        editorBinding.textArea.setText(session.content)
+                        // Re-save token to ensure it's fresh
+                        CollaborativeSessionManager.saveSessionToken(this@MainActivity, sessionId, userId, isCreator = true)
+                        showActiveSessionUI(sessionId, isCreator = true)
+                        observeJoinRequests(sessionId)
+                    }.onFailure { e ->
+                        // Auto-rejoin failed, fall through to normal flow
+                        Log.w("MainActivity", "Auto-rejoin failed, trying normal flow: ${e.message}")
+                        joinCollaborativeSessionNormal(sessionId, userId, userName, email, photoUrl)
+                    }
+                } else {
+                    // Normal join flow
+                    joinCollaborativeSessionNormal(sessionId, userId, userName, email, photoUrl)
+                }
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Error during auto-rejoin check", e)
+                joinCollaborativeSessionNormal(sessionId, userId, userName, email, photoUrl)
+            }
+        }
+    }
+    
+    private fun joinCollaborativeSessionNormal(sessionId: String, userId: String, userName: String, email: String, photoUrl: String) {
         val userName = GoogleSignInHelper.getUserName(this) ?: "Unknown"
         val email = GoogleSignInHelper.getUserEmail(this) ?: ""
         val userId = email // Use email as unique user ID
@@ -5380,6 +5457,11 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
                     editorBinding.textArea.setText(session.content)
                     CollaborativeSessionManager.currentSessionId = sessionId
                     CollaborativeSessionManager.currentUserId = sanitizedUserId
+                    
+                    // Save session token in cache for auto-rejoin after accidental close
+                    // isCreator = false since this is a regular user joining
+                    CollaborativeSessionManager.saveSessionToken(this@MainActivity, sessionId, userId, isCreator = false)
+                    
                     showActiveSessionUI(sessionId, isCreator = false)
                 } else {
                     showErrorDialog("Failed to join session", "Session not found")
