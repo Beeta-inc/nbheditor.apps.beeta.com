@@ -31,6 +31,11 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.view.WindowManager
+import android.print.PrintAttributes
+import android.print.PrintDocumentAdapter
+import android.print.PrintManager
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.ActionBarDrawerToggle
@@ -3537,6 +3542,7 @@ open class MainActivity : AppCompatActivity() {
             }
             R.id.improveMenuItem -> improveWithAI()
             R.id.nav_sign_in -> showAccountDialog()
+            R.id.printMenuItem -> printDocument()
             R.id.nav_about -> showAboutDialog()
             R.id.quitMenuItem -> finish()
             else -> return false
@@ -6703,6 +6709,27 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
         }
         
         dialog.show()
+    }
+
+    private fun printDocument() {
+        val printManager = getSystemService(Context.PRINT_SERVICE) as PrintManager
+        val jobName = if (currentFileUri != null) getFileName(currentFileUri!!) else "NBH Editor Document"
+
+        val webView = WebView(this)
+        val textContent = editorBinding.textArea.text.toString()
+            .replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+            .replace("\"", "&quot;")
+        val html = "<html><body style='font-family: monospace; white-space: pre-wrap; padding: 40px;'>$textContent</body></html>"
+        webView.loadDataWithBaseURL(null, html, "text/HTML", "UTF-8", null)
+
+        webView.webViewClient = object : WebViewClient() {
+            override fun onPageFinished(view: WebView?, url: String?) {
+                val printAdapter = webView.createPrintDocumentAdapter(jobName)
+                printManager.print(jobName, printAdapter, PrintAttributes.Builder().build())
+            }
+        }
     }
 }
 

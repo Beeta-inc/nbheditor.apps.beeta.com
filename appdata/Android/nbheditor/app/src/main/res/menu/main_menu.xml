@@ -15,6 +15,11 @@
         app:showAsAction="ifRoom" />
 
     <item
+        android:id="@+id/printMenuItem"
+        android:title="Print"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/quitMenuItem"
         android:title="Quit"
         app:showAsAction="never" />
