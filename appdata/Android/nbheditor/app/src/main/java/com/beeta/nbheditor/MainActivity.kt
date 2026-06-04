@@ -2912,7 +2912,13 @@ open class MainActivity : AppCompatActivity() {
                     }
                     if (content == null) {
                         progressDialog?.dismiss()
-                        Toast.makeText(this@MainActivity, "Failed to download from cloud", Toast.LENGTH_SHORT).show()
+                        val authException = GoogleSignInHelper.getLastAuthException()
+                        if (authException != null) {
+                            startActivityForResult(authException.intent, RC_DRIVE_PERMISSION)
+                            Toast.makeText(this@MainActivity, "Drive permission required. Please grant access.", Toast.LENGTH_LONG).show()
+                        } else {
+                            Toast.makeText(this@MainActivity, "Failed to download from cloud", Toast.LENGTH_SHORT).show()
+                        }
                         return@launch
                     }
                 } else {

@@ -138,6 +138,16 @@ object GoogleSignInHelper {
             .build()
     }
     
+    private fun ensureDriveService(context: Context): Drive? {
+        if (driveService == null) {
+            val account = GoogleSignIn.getLastSignedInAccount(context)
+            if (account != null) {
+                initializeDriveService(context, account)
+            }
+        }
+        return driveService
+    }
+    
     private suspend fun setupDriveFolders() = withContext(Dispatchers.IO) {
         try {
             val drive = driveService
@@ -304,6 +314,10 @@ object GoogleSignInHelper {
             
             Log.d(TAG, "Chat synced to Drive successfully: $fileName")
             true
+        } catch (e: com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException) {
+            Log.e(TAG, "Drive permission needed during chat sync: $fileName", e)
+            lastAuthException = e
+            false
         } catch (e: Exception) {
             Log.e(TAG, "Failed to sync chat to Drive: $fileName", e)
             e.printStackTrace()
@@ -324,6 +338,10 @@ object GoogleSignInHelper {
                 .execute()
             
             result.files.firstOrNull()?.id
+        } catch (e: com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException) {
+            Log.e(TAG, "Drive permission needed finding file: $fileName", e)
+            lastAuthException = e
+            null
         } catch (e: Exception) {
             Log.e(TAG, "Failed to find file: $fileName", e)
             null
@@ -345,6 +363,10 @@ object GoogleSignInHelper {
                 .execute()
             
             file.id
+        } catch (e: com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException) {
+            Log.e(TAG, "Drive permission needed creating file: $fileName", e)
+            lastAuthException = e
+            null
         } catch (e: Exception) {
             Log.e(TAG, "Failed to create file: $fileName", e)
             null
@@ -359,6 +381,9 @@ object GoogleSignInHelper {
             
             drive.files().update(fileId, null, com.google.api.client.http.InputStreamContent("text/plain", contentStream))
                 .execute()
+        } catch (e: com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException) {
+            Log.e(TAG, "Drive permission needed updating file: $fileId", e)
+            lastAuthException = e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to update file: $fileId", e)
         }
@@ -431,6 +456,10 @@ object GoogleSignInHelper {
             
             Log.d(TAG, "File synced to Drive successfully: $fileName")
             true
+        } catch (e: com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException) {
+            Log.e(TAG, "Drive permission needed during file sync: $fileName", e)
+            lastAuthException = e
+            false
         } catch (e: Exception) {
             Log.e(TAG, "Failed to sync file to Drive: $fileName", e)
             e.printStackTrace()
@@ -440,13 +469,14 @@ object GoogleSignInHelper {
     
     suspend fun getAllCloudChats(context: Context): List<Pair<String, String>> = withContext(Dispatchers.IO) {
         try {
-            val drive = driveService ?: return@withContext emptyList()
+            ensureDriveService(context) ?: return@withContext emptyList()
             
             val rootFolderId = findFolder(ROOT_FOLDER_NAME, null) ?: return@withContext emptyList()
             val chatFolderId = findFolder(CHAT_FOLDER_NAME, rootFolderId) ?: return@withContext emptyList()
             
             val query = "'$chatFolderId' in parents and trashed=false"
             
+            val drive = driveService ?: return@withContext emptyList()
             val result: FileList = drive.files().list()
                 .setQ(query)
                 .setSpaces("drive")
@@ -459,6 +489,10 @@ object GoogleSignInHelper {
                     Pair(file.name, content)
                 } else null
             }
+        } catch (e: com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException) {
+            Log.e(TAG, "Drive permission needed getting cloud chats", e)
+            lastAuthException = e
+            emptyList()
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get cloud chats", e)
             emptyList()
@@ -467,13 +501,14 @@ object GoogleSignInHelper {
     
     suspend fun getAllCloudFiles(context: Context): List<Triple<String, String, Long>> = withContext(Dispatchers.IO) {
         try {
-            val drive = driveService ?: return@withContext emptyList()
+            ensureDriveService(context) ?: return@withContext emptyList()
             
             val rootFolderId = findFolder(ROOT_FOLDER_NAME, null) ?: return@withContext emptyList()
             val fileFolderId = findFolder(FILE_FOLDER_NAME, rootFolderId) ?: return@withContext emptyList()
             
             val query = "'$fileFolderId' in parents and trashed=false"
             
+            val drive = driveService ?: return@withContext emptyList()
             val result: FileList = drive.files().list()
                 .setQ(query)
                 .setSpaces("drive")
@@ -487,6 +522,10 @@ object GoogleSignInHelper {
                     Triple(file.name, content, modifiedTime)
                 } else null
             }
+        } catch (e: com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException) {
+            Log.e(TAG, "Drive permission needed getting cloud files", e)
+            lastAuthException = e
+            emptyList()
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get cloud files", e)
             emptyList()
@@ -495,18 +534,23 @@ object GoogleSignInHelper {
     
     suspend fun getFileModifiedTime(context: Context, fileName: String): Long? = withContext(Dispatchers.IO) {
         try {
-            val drive = driveService ?: return@withContext null
+            ensureDriveService(context) ?: return@withContext null
             
             val rootFolderId = findFolder(ROOT_FOLDER_NAME, null) ?: return@withContext null
             val fileFolderId = findFolder(FILE_FOLDER_NAME, rootFolderId) ?: return@withContext null
             
             val fileId = findFileInFolder(fileName, fileFolderId) ?: return@withContext null
             
+            val drive = driveService ?: return@withContext null
             val file = drive.files().get(fileId)
                 .setFields("modifiedTime")
                 .execute()
             
             file.modifiedTime?.value
+        } catch (e: com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException) {
+            Log.e(TAG, "Drive permission needed getting modified time: $fileName", e)
+            lastAuthException = e
+            null
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get file modified time: $fileName", e)
             null
@@ -515,7 +559,7 @@ object GoogleSignInHelper {
     
     suspend fun downloadCloudFile(context: Context, fileName: String): String? = withContext(Dispatchers.IO) {
         try {
-            val drive = driveService ?: return@withContext null
+            ensureDriveService(context) ?: return@withContext null
             
             val rootFolderId = findFolder(ROOT_FOLDER_NAME, null) ?: return@withContext null
             val fileFolderId = findFolder(FILE_FOLDER_NAME, rootFolderId) ?: return@withContext null
@@ -523,6 +567,10 @@ object GoogleSignInHelper {
             val fileId = findFileInFolder(fileName, fileFolderId) ?: return@withContext null
             
             downloadFileContent(fileId)
+        } catch (e: com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException) {
+            Log.e(TAG, "Drive permission needed downloading cloud file: $fileName", e)
+            lastAuthException = e
+            null
         } catch (e: Exception) {
             Log.e(TAG, "Failed to download cloud file: $fileName", e)
             null
@@ -537,6 +585,10 @@ object GoogleSignInHelper {
             drive.files().get(fileId).executeMediaAndDownloadTo(outputStream)
             
             outputStream.toString("UTF-8")
+        } catch (e: com.google.api.client.googleapis.extensions.android.gms.auth.UserRecoverableAuthIOException) {
+            Log.e(TAG, "Drive permission needed downloading file content: $fileId", e)
+            lastAuthException = e
+            null
         } catch (e: Exception) {
             Log.e(TAG, "Failed to download file content: $fileId", e)
             null
