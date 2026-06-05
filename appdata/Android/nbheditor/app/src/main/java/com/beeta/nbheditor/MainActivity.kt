@@ -803,6 +803,8 @@ open class MainActivity : AppCompatActivity() {
                             list.add(FileCardAdapter.FileEntry(cloudUri, fileName, preview))
                             prefs.edit().putLong("cloud_time_${fileName}", modifiedTime).apply()
                         }
+                    } catch (e: CancellationException) {
+                        // Normal coroutine cancellation when activity is destroyed — don't log as error
                     } catch (e: Exception) {
                         Log.e("HomeFiles", "Failed to load cloud files", e)
                     }
@@ -911,6 +913,8 @@ open class MainActivity : AppCompatActivity() {
                                 }
                             }
                         }
+                    } catch (e: CancellationException) {
+                        // Normal coroutine cancellation when activity is destroyed — don't log as error
                     } catch (e: Exception) {
                         Log.e("CollabSessions", "Failed to load from cloud", e)
                     }

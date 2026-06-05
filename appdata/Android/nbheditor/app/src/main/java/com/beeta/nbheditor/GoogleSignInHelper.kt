@@ -15,6 +15,7 @@ import com.google.api.services.drive.model.File
 import com.google.api.services.drive.model.FileList
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
@@ -493,6 +494,9 @@ object GoogleSignInHelper {
             Log.e(TAG, "Drive permission needed getting cloud chats", e)
             lastAuthException = e
             emptyList()
+        } catch (e: CancellationException) {
+            // Normal coroutine cancellation, don't log as error
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get cloud chats", e)
             emptyList()
@@ -526,6 +530,9 @@ object GoogleSignInHelper {
             Log.e(TAG, "Drive permission needed getting cloud files", e)
             lastAuthException = e
             emptyList()
+        } catch (e: CancellationException) {
+            // Normal coroutine cancellation, don't log as error
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get cloud files", e)
             emptyList()
@@ -551,6 +558,9 @@ object GoogleSignInHelper {
             Log.e(TAG, "Drive permission needed getting modified time: $fileName", e)
             lastAuthException = e
             null
+        } catch (e: CancellationException) {
+            // Normal coroutine cancellation, don't log as error
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get file modified time: $fileName", e)
             null
@@ -571,6 +581,9 @@ object GoogleSignInHelper {
             Log.e(TAG, "Drive permission needed downloading cloud file: $fileName", e)
             lastAuthException = e
             null
+        } catch (e: CancellationException) {
+            // Normal coroutine cancellation, don't log as error
+            throw e
         } catch (e: Exception) {
             Log.e(TAG, "Failed to download cloud file: $fileName", e)
             null
