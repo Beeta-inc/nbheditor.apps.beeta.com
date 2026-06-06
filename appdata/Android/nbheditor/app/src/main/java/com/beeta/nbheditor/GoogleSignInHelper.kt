@@ -65,6 +65,14 @@ object GoogleSignInHelper {
         return signedIn
     }
     
+    /**
+     * Returns true when Firebase says signed in but the Google account is missing (stale token).
+     * This means the user needs to re-sign-in to use Google Drive features.
+     */
+    fun needsGoogleReSignIn(context: Context): Boolean {
+        return auth.currentUser != null && GoogleSignIn.getLastSignedInAccount(context) == null
+    }
+    
     suspend fun saveSignInState(context: Context, account: GoogleSignInAccount) {
         try {
             val credential = GoogleAuthProvider.getCredential(account.idToken, null)
@@ -144,6 +152,12 @@ object GoogleSignInHelper {
             val account = GoogleSignIn.getLastSignedInAccount(context)
             if (account != null) {
                 initializeDriveService(context, account)
+            } else {
+                // Fallback: try to re-authenticate using Firebase user if Google account is stale
+                val firebaseUser = auth.currentUser
+                if (firebaseUser != null) {
+                    Log.w(TAG, "Google account missing but Firebase user exists. Drive service cannot be initialized without re-sign-in.")
+                }
             }
         }
         return driveService
@@ -202,10 +216,12 @@ object GoogleSignInHelper {
         try {
             val drive = driveService ?: return@withContext null
             
+            // Escape single quotes in folder name to prevent query syntax errors
+            val escapedFolderName = folderName.replace("'", "\\'")
             val query = if (parentId != null) {
-                "name='$folderName' and mimeType='application/vnd.google-apps.folder' and '$parentId' in parents and trashed=false"
+                "name='$escapedFolderName' and mimeType='application/vnd.google-apps.folder' and '$parentId' in parents and trashed=false"
             } else {
-                "name='$folderName' and mimeType='application/vnd.google-apps.folder' and trashed=false"
+                "name='$escapedFolderName' and mimeType='application/vnd.google-apps.folder' and trashed=false"
             }
             
             val result: FileList = drive.files().list()
@@ -330,7 +346,9 @@ object GoogleSignInHelper {
         try {
             val drive = driveService ?: return@withContext null
             
-            val query = "name='$fileName' and '$folderId' in parents and trashed=false"
+            // Escape single quotes in file name to prevent query syntax errors in Google Drive API
+            val escapedFileName = fileName.replace("'", "\\'")
+            val query = "name='$escapedFileName' and '$folderId' in parents and trashed=false"
             
             val result: FileList = drive.files().list()
                 .setQ(query)
@@ -571,8 +589,26 @@ object GoogleSignInHelper {
         try {
             ensureDriveService(context) ?: return@withContext null
             
-            val rootFolderId = findFolder(ROOT_FOLDER_NAME, null) ?: return@withContext null
-            val fileFolderId = findFolder(FILE_FOLDER_NAME, rootFolderId) ?: return@withContext null
+            // Auto-create folder structure if missing, in case it was deleted from Drive
+            var rootFolderId = findFolder(ROOT_FOLDER_NAME, null)
+            if (rootFolderId == null) {
+                rootFolderId = createFolder(ROOT_FOLDER_NAME, null)
+                Log.d(TAG, "Created root folder on download: $rootFolderId")
+            }
+            if (rootFolderId == null) {
+                Log.e(TAG, "Download: root folder missing and could not be created")
+                return@withContext null
+            }
+            
+            var fileFolderId = findFolder(FILE_FOLDER_NAME, rootFolderId)
+            if (fileFolderId == null) {
+                fileFolderId = createFolder(FILE_FOLDER_NAME, rootFolderId)
+                Log.d(TAG, "Created file folder on download: $fileFolderId")
+            }
+            if (fileFolderId == null) {
+                Log.e(TAG, "Download: file folder missing and could not be created")
+                return@withContext null
+            }
             
             val fileId = findFileInFolder(fileName, fileFolderId) ?: return@withContext null
             

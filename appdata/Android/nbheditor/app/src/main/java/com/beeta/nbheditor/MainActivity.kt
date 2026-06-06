@@ -799,7 +799,9 @@ open class MainActivity : AppCompatActivity() {
                                 .replace(Regex("\\[img:[^\\]]+\\]"), "[image]")
                                 .take(150).trim()
                             
-                            val cloudUri = android.net.Uri.parse("cloud://$fileName")
+                            // Use path-based URI so lastPathSegment correctly extracts the file name
+                            val encodedFileName = android.net.Uri.encode(fileName)
+                            val cloudUri = android.net.Uri.parse("cloud:///$encodedFileName")
                             list.add(FileCardAdapter.FileEntry(cloudUri, fileName, preview))
                             prefs.edit().putLong("cloud_time_${fileName}", modifiedTime).apply()
                         }
@@ -2840,9 +2842,16 @@ open class MainActivity : AppCompatActivity() {
                 }
             }
         } catch (_: Exception) {}
-        // Fallback: last path segment, strip everything before the last '/' or ':'
-        // but only keep it if it looks like a filename (contains a dot or is non-numeric)
-        val raw = android.net.Uri.decode(uri.lastPathSegment) ?: return "untitled"
+        // Fallback: for cloud URIs use host if path is empty (old format), else lastPathSegment (new format)
+        val raw = when {
+            uri.scheme == "cloud" -> {
+                // New format: cloud:///encodedFileName -> lastPathSegment works
+                // Old format: cloud://fileName -> host contains fileName, path is null
+                val segment = uri.lastPathSegment ?: uri.host
+                android.net.Uri.decode(segment)
+            }
+            else -> android.net.Uri.decode(uri.lastPathSegment)
+        } ?: return "untitled"
         val candidate = raw.substringAfterLast('/').substringAfterLast(':')
         return if (candidate.isNotBlank() && (candidate.contains('.') || !candidate.all { it.isDigit() }))
             candidate else "untitled"
@@ -2920,8 +2929,13 @@ open class MainActivity : AppCompatActivity() {
                         if (authException != null) {
                             startActivityForResult(authException.intent, RC_DRIVE_PERMISSION)
                             Toast.makeText(this@MainActivity, "Drive permission required. Please grant access.", Toast.LENGTH_LONG).show()
+                        } else if (GoogleSignInHelper.needsGoogleReSignIn(this@MainActivity)) {
+                            // Google account token expired, need fresh sign-in
+                            Toast.makeText(this@MainActivity, "Google sign-in expired. Please sign in again to access cloud files.", Toast.LENGTH_LONG).show()
+                            // Kick user back to sign-in flow so they can re-authenticate
+                            startGoogleSignIn()
                         } else {
-                            Toast.makeText(this@MainActivity, "Failed to download from cloud", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@MainActivity, "File not found in cloud. It may have been deleted or renamed.", Toast.LENGTH_LONG).show()
                         }
                         return@launch
                     }
