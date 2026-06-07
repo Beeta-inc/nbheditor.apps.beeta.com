@@ -421,25 +421,31 @@ class ChatAdapter(
 
         private fun addTextBlock(text: String) {
             val tv = TextView(ctx).apply {
-                this.text = buildRichText(text)
-                textSize = 15f
-                setTextColor(colorText)
-                setLineSpacing(4f, 1.8f)
-                setPadding(28, 22, 28, 22)
+                // Use a condensed text block view
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
-                )
-                // Use a readable font for better text experience
-                typeface = Typeface.DEFAULT
-                // Add subtle background for text blocks
-                setBackgroundColor(adjustAlpha(colorSurface, 0.15f))
-                // Add rounded corners
-                 val bgDrawable = GradientDrawable().apply {
-                     setColor(adjustAlpha(colorSurface, 0.15f))
-                     setCornerRadius(14f)
-                 }
-                background = bgDrawable
+                ).apply {
+                    setMargins(0, 8, 0, 8)
+                }
+                setTextIsSelectable(true)
+                this.text = buildRichText(text)
+                textSize = 14.5f
+                setTextColor(colorText)
+                setLineSpacing(4f, 1.7f)
+                setPadding(20, 20, 20, 20)
+                typeface = Typeface.create("sans-serif", Typeface.NORMAL)
+                breakStrategy = android.text.Layout.BREAK_STRATEGY_HIGH_QUALITY
+                hyphenationFrequency = android.text.Layout.HYPHENATION_FREQUENCY_NORMAL
+                // Better visual separation for multi-paragraph text
+                if (text.contains("\n\n")) {
+                    setPadding(24, 24, 24, 24)
+                    val bgDrawable = GradientDrawable().apply {
+                        setColor(adjustAlpha(colorSurface, 0.12f))
+                        setCornerRadius(16f)
+                    }
+                    background = bgDrawable
+                }
             }
             codeBlockContainer?.addView(tv)
         }
@@ -452,43 +458,75 @@ class ChatAdapter(
                 val line = lines[i]
                 when {
                     line.matches(Regex("^[-*_]{3,}\\s*$")) -> {
-                        sb.append("\n──────────────────────────────────────────────\n")
-                        val start = sb.length - 66
-                        sb.setSpan(ForegroundColorSpan(colorDivider), start, sb.length - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        sb.append(" ")
+                        val sepStart = sb.length
+                        sb.append("─".repeat(46))
+                        sb.setSpan(ForegroundColorSpan(adjustAlpha(colorDivider, 0.6f)), sepStart, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        sb.setSpan(StrikethroughSpan(), sepStart, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                     }
                     line.trim().startsWith("\$\$") && line.trim().endsWith("\$\$") && line.trim().length > 4 ->
                         appendMath(sb, line.trim().removeSurrounding("\$\$").trim(), block = true)
-                    line.startsWith("#### ") -> appendHeading(sb, line.removePrefix("#### "), 14f, colorPurple)
-                    line.startsWith("### ")  -> appendHeading(sb, line.removePrefix("### "),  15f, colorAccent)
-                    line.startsWith("## ")   -> appendHeading(sb, line.removePrefix("## "),   17f, colorAccent)
-                    line.startsWith("# ")    -> appendHeading(sb, line.removePrefix("# "),    20f, colorAccent)
-                    line.startsWith("|") && line.endsWith("|") -> {
-                        if (!line.matches(Regex("^[|\\-: ]+$"))) appendTableRow(sb, line)
-                    }
+                    line.startsWith("#### ") -> appendHeading(sb, line.removePrefix("#### "), 16f, colorPurple, 0.9f)
+                    line.startsWith("### ")  -> appendHeading(sb, line.removePrefix("### "),  18f, colorAccent, 0.88f)
+                    line.startsWith("## ")   -> appendHeading(sb, line.removePrefix("## "),   20f, colorAccent, 0.85f)
+                    line.startsWith("# ")    -> appendHeading(sb, line.removePrefix("# "),    24f, colorAccent, 0.82f)
                     line.startsWith("> ") -> {
                         val content = line.removePrefix("> ")
                         val start = sb.length
-                        sb.append("  ")
+                        // More advanced blockquote rendering
+                        sb.append(" ▎ ")
+                        val stripeStart = start + 1
+                        val stripeEnd = stripeStart + 1
+                        sb.setSpan(BackgroundColorSpan(adjustAlpha(colorAccent, 0.5f)), stripeStart, stripeEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        sb.setSpan(StyleSpan(Typeface.BOLD), stripeStart, stripeEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        val afterStart = sb.length
                         appendInline(sb, content)
-                        sb.setSpan(QuoteSpan(colorAccent), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-                        sb.setSpan(StyleSpan(Typeface.ITALIC), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-                        sb.setSpan(ForegroundColorSpan(colorPurple), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        sb.setSpan(StyleSpan(Typeface.ITALIC), afterStart, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        sb.setSpan(ForegroundColorSpan(colorPurple), afterStart, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        sb.setSpan(leadingMarginSpan(32), afterStart, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
+                    line.matches(Regex("^(?:\\s*)[-*+] (?:\\[ ?\\]|\\[[xX]\\]) .*")) -> {
+                        // Task list items support
+                        val raw = line.trimStart()
+                        val checked = raw.length > 3 && raw[3].equals('x', true)
+                        val start = sb.length
+                        sb.append(if (checked) " ✓ " else " ○ ")
+                        sb.setSpan(ForegroundColorSpan(if (checked) colorSecond else colorDivider), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        sb.setSpan(StyleSpan(if (checked) Typeface.BOLD else Typeface.NORMAL), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        appendInline(sb, raw.substringAfter("] "))
+                        if (checked) {
+                            val checkStart = start + 1
+                            sb.setSpan(StrikethroughSpan(), sb.length - raw.substringAfter("] ").length, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        }
                     }
                     line.matches(Regex("^(\\s*)[-*+] .*")) -> {
                         val indent = line.length - line.trimStart().length
-                        val bullet = if (indent >= 4) "      ◦ " else "  • "
+                        val level = (indent / 2).coerceAtMost(3)
+                        val bullets = arrayOf("  • ", "    ◦ ", "      ▪ ", "      ▫ ")
                         val start = sb.length
-                        sb.append(bullet)
+                        sb.append(bullets[level])
                         sb.setSpan(ForegroundColorSpan(colorAccent), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                         appendInline(sb, line.trimStart().drop(2))
                     }
                     line.matches(Regex("^\\d+\\.\\s.*")) -> {
                         val dot = line.indexOf(". ")
                         val start = sb.length
-                        sb.append("  ${line.substring(0, dot + 1)} ")
-                        sb.setSpan(StyleSpan(Typeface.BOLD), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-                        sb.setSpan(ForegroundColorSpan(colorAccent), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        sb.append(" ${line.substring(0, dot + 1)} ")
+                        val numEnd = sb.length
+                        sb.setSpan(StyleSpan(Typeface.BOLD), start, numEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        sb.setSpan(RelativeSizeSpan(0.92f), start, numEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        sb.setSpan(ForegroundColorSpan(colorAccent), start, numEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                         appendInline(sb, line.substring(dot + 2))
+                    }
+                    line.startsWith("|") && line.endsWith("|") -> {
+                        if (!line.matches(Regex("^[|\\-: ]+$"))) appendTableRow(sb, line)
+                        else if (line.contains(":")) {
+                            // Table separator line with padding
+                            val alignStr = line.split("|")
+                                .filter { it.isNotEmpty() }
+                                .joinToString(" │  │ ", " │  │ ", " │  │ ") { "───" }
+                            sb.append("\n$alignStr\n")
+                        }
                     }
                     line.contains(Regex("\\$[^$]+\\$")) -> appendLineWithInlineMath(sb, line)
                     line.isBlank() -> sb.append("\n")
@@ -500,20 +538,34 @@ class ChatAdapter(
             return sb
         }
 
-        private fun appendHeading(sb: SpannableStringBuilder, text: String, size: Float, color: Int) {
+        private fun appendHeading(sb: SpannableStringBuilder, text: String, size: Float, color: Int, lineHeight: Float = 1.0f) {
             val start = sb.length
             sb.append(text)
             sb.setSpan(StyleSpan(Typeface.BOLD), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             sb.setSpan(AbsoluteSizeSpan(size.toInt(), true), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             sb.setSpan(ForegroundColorSpan(color), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            // Reduced opacity heading background strip for visual flair
+            val bgSpanStart = start
+            val bgSpanEnd = sb.length
+            sb.setSpan(BackgroundColorSpan(adjustAlpha(colorSurface, 0.15f)), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
         }
 
         private fun appendTableRow(sb: SpannableStringBuilder, line: String) {
             val cells = line.split("|").map { it.trim() }.filter { it.isNotEmpty() }
             val start = sb.length
-            sb.append(cells.joinToString("  │  "))
+            sb.append(cells.joinToString("  │  ", "  ", "  "))
             sb.setSpan(TypefaceSpan("monospace"), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            sb.setSpan(ForegroundColorSpan(colorSecond), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            sb.setSpan(ForegroundColorSpan(colorText), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            // Alternate cell coloring for better readability
+            val cellSize = "  │  ".length
+            var cellStart = start + 2
+            for (j in cells.indices) {
+                val cellEnd = cellStart + cells[j].length
+                if (j % 2 == 0) {
+                    sb.setSpan(BackgroundColorSpan(adjustAlpha(colorSurface, 0.1f)), cellStart, cellEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+                cellStart = cellEnd + cellSize
+            }
         }
 
         private fun appendMath(sb: SpannableStringBuilder, expr: String, block: Boolean) {
@@ -523,11 +575,14 @@ class ChatAdapter(
             sb.setSpan(TypefaceSpan("monospace"), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             sb.setSpan(ForegroundColorSpan(colorPeach), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             sb.setSpan(StyleSpan(Typeface.BOLD), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-            if (block) sb.setSpan(AbsoluteSizeSpan(15, true), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            if (block) {
+                sb.setSpan(RelativeSizeSpan(1.15f), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                sb.setSpan(BackgroundColorSpan(adjustAlpha(colorCodeBg, 0.4f)), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
         }
 
         private fun appendLineWithInlineMath(sb: SpannableStringBuilder, line: String) {
-            val mathRegex = Regex("\\$([^$]+)\\$")
+            val mathRegex = Regex("\\$([^$]+?)\\$")
             var last = 0
             for (match in mathRegex.findAll(line)) {
                 if (match.range.first > last) appendInline(sb, line.substring(last, match.range.first))
@@ -537,8 +592,11 @@ class ChatAdapter(
             if (last < line.length) appendInline(sb, line.substring(last))
         }
 
+        /**
+         * More advanced inline formatter supporting nested formatting
+         */
         private fun appendInline(sb: SpannableStringBuilder, text: String) {
-            val regex = Regex("(\\*\\*(.+?)\\*\\*|\\*(.+?)\\*|~~(.+?)~~|`(.+?)`|\\$([^$]+)\\$)")
+            val regex = Regex("""(\*\*(.+?)\*\*|\*(.+?)\*|~~(.+?)~~|`(.+?)`|\$([^$]+?)\$|__(.+?)__)""")
             var last = 0
             for (match in regex.findAll(text)) {
                 if (match.range.first > last) sb.append(text.substring(last, match.range.first))
@@ -549,6 +607,11 @@ class ChatAdapter(
                         sb.setSpan(StyleSpan(Typeface.BOLD), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                         sb.setSpan(ForegroundColorSpan(colorAccent), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                     }
+                    match.value.startsWith("__") -> {
+                        sb.append(match.groupValues[7])
+                        sb.setSpan(StyleSpan(Typeface.BOLD), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        sb.setSpan(UnderlineSpan(), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                    }
                     match.value.startsWith("~~") -> {
                         sb.append(match.groupValues[4])
                         sb.setSpan(StrikethroughSpan(), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
@@ -557,13 +620,15 @@ class ChatAdapter(
                     match.value.startsWith("*") -> {
                         sb.append(match.groupValues[3])
                         sb.setSpan(StyleSpan(Typeface.ITALIC), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        sb.setSpan(ForegroundColorSpan(adjustAlpha(colorText, 0.85f)), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                     }
                     match.value.startsWith("`") -> {
                         sb.append(match.groupValues[5])
                         sb.setSpan(TypefaceSpan("monospace"), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                         sb.setSpan(ForegroundColorSpan(colorSecond), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-                        sb.setSpan(BackgroundColorSpan(colorSurface), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-                        sb.setSpan(AbsoluteSizeSpan(13, true), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        sb.setSpan(BackgroundColorSpan(adjustAlpha(colorSurface, 0.4f)), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        sb.setSpan(RelativeSizeSpan(0.92f), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        sb.setSpan(leadingMarginSpan(2), start, sb.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                     }
                     match.value.startsWith("\$") -> appendMath(sb, match.groupValues[6], block = false)
                 }
@@ -571,6 +636,9 @@ class ChatAdapter(
             }
             if (last < text.length) sb.append(text.substring(last))
         }
+
+        private fun leadingMarginSpan(px: Int) =
+            LeadingMarginSpan.Standard(px)
 
         private fun adjustAlpha(color: Int, factor: Float): Int {
             val alpha = (Color.alpha(color) * factor).toInt().coerceIn(0, 255)
