@@ -175,22 +175,25 @@ class ChatAdapter(
         }
 
         private fun addCodeBlock(code: String, lang: String) {
-            val wrapper = LinearLayout(ctx).apply {
+            // Main container for the code block with terminal-like appearance
+            val mainContainer = LinearLayout(ctx).apply {
                 orientation = LinearLayout.VERTICAL
                 setBackgroundColor(colorCodeBg)
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 ).apply { setMargins(0, 10, 0, 10) }
+                setPadding(12, 12, 12, 12)
             }
 
-            // Header: language label + copy button
+            // Header: language label + copy button with terminal styling
             val header = LinearLayout(ctx).apply {
                 orientation = LinearLayout.HORIZONTAL
                 setBackgroundColor(adjustAlpha(colorDivider, 0.8f))
-                setPadding(20, 8, 12, 8)
+                setPadding(16, 10, 16, 10)
                 gravity = android.view.Gravity.CENTER_VERTICAL
             }
+            
             val langLabel = TextView(ctx).apply {
                 text = if (lang.isNotEmpty()) lang.uppercase() else "CODE"
                 textSize = 10f
@@ -199,6 +202,7 @@ class ChatAdapter(
                 letterSpacing = 0.1f
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             }
+            
             val copyCodeBtn = TextView(ctx).apply {
                 text = "⎘ Copy"
                 textSize = 11f
@@ -210,21 +214,47 @@ class ChatAdapter(
                     Toast.makeText(ctx, "Code copied", Toast.LENGTH_SHORT).show()
                 }
             }
+            
             header.addView(langLabel)
             header.addView(copyCodeBtn)
-            wrapper.addView(header)
+            mainContainer.addView(header)
 
-            // Code body with syntax highlighting
-            val tv = TextView(ctx).apply {
+            // Code container with line numbers
+            val codeContainer = LinearLayout(ctx).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, 8, 0, 8)
+            }
+
+            // Line numbers view
+            val lineNumbersView = TextView(ctx).apply {
+                val lines = code.split("\n").size
+                val lineNumbers = (1..lines).joinToString("\n") { "%2d".format(it) }
+                text = lineNumbers
+                typeface = Typeface.MONOSPACE
+                textSize = 13f
+                setTextColor(adjustAlpha(colorText, 0.6f))
+                setPadding(0, 14, 16, 14)
+                setLineSpacing(2f, 1.6f)
+                setIncludeFontPadding(false)
+            }
+            
+            // Code view with syntax highlighting
+            val codeView = TextView(ctx).apply {
                 text = syntaxHighlight(code, lang)
                 typeface = Typeface.MONOSPACE
                 textSize = 13f
                 setPadding(20, 14, 20, 14)
                 setLineSpacing(2f, 1.6f)
                 setHorizontallyScrolling(true)
+                setIncludeFontPadding(false)
+                setTextColor(synDefault) // Ensure default text color is set
             }
-            wrapper.addView(tv)
-            codeBlockContainer?.addView(wrapper)
+
+            codeContainer.addView(lineNumbersView)
+            codeContainer.addView(codeView)
+            mainContainer.addView(codeContainer)
+            
+            codeBlockContainer?.addView(mainContainer)
         }
 
         /** Token-based syntax highlighter for common languages. */
@@ -322,6 +352,8 @@ class ChatAdapter(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 )
+                // Use monospace font for better editor-like feel
+                typeface = Typeface.MONOSPACE
             }
             codeBlockContainer?.addView(tv)
         }
