@@ -84,7 +84,7 @@ class ChatAdapter(
 
     class UserViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val messageText: TextView = itemView.findViewById(R.id.messageText)
-        fun bind(msg: MainActivity.ChatMessage) { messageText.text = msg.content }
+        fun bind(msg: MainActivity.ChatMessage) { messageText.text = ChatEncryptionUtil.decrypt(msg.content) }
     }
 
     // ── Image ViewHolder ──────────────────────────────────────────────────────
@@ -142,11 +142,12 @@ class ChatAdapter(
         private val synBuiltIn  get() = ContextCompat.getColor(ctx, R.color.accent_peach)     // orange
 
         fun bind(message: MainActivity.ChatMessage) {
-            renderFormattedText(message.content)
-            insertBtn?.setOnClickListener { onInsert(message.content) }
+            val decrypted = ChatEncryptionUtil.decrypt(message.content)
+            renderFormattedText(decrypted)
+            insertBtn?.setOnClickListener { onInsert(decrypted) }
             copyBtn?.setOnClickListener {
                 val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                cm.setPrimaryClip(ClipData.newPlainText("AI response", message.content))
+                cm.setPrimaryClip(ClipData.newPlainText("AI response", decrypted))
                 // Visual feedback for copy
                 copyBtn.alpha = 0.7f
                 copyBtn.postDelayed({ copyBtn.alpha = 1f }, 100)

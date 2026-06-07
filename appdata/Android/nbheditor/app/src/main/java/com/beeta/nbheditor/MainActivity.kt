@@ -2519,7 +2519,7 @@ open class MainActivity : AppCompatActivity() {
         if (!memoryEnabled || chatHistory.size <= 1) return callAI(prompt, maxTokens)
         // Use last 10 turns max to avoid token overflow
         val context = chatHistory.takeLast(10).joinToString("\n") {
-            "${if (it.role == "user") "User" else "Assistant"}: ${it.content}"
+            "${if (it.role == "user") "User" else "Assistant"}: ${ChatEncryptionUtil.decrypt(it.content)}"
         }
         val fullPrompt = "Previous conversation:\n$context\n\nUser: $prompt"
         return callAI(fullPrompt, maxTokens)
