@@ -7,6 +7,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.style.*
@@ -126,14 +127,19 @@ class ChatAdapter(
         private val colorSurface  get() = ContextCompat.getColor(ctx, R.color.editor_line_numbers_bg)
         private val colorDivider  get() = ContextCompat.getColor(ctx, R.color.divider)
         private val colorCodeBg   get() = ContextCompat.getColor(ctx, R.color.editor_surface)
+        private val colorCodeBorder get() = ContextCompat.getColor(ctx, R.color.accent_primary)
+        private val colorLineNumberActive get() = ContextCompat.getColor(ctx, R.color.accent_primary)
+        private val colorLineNumberInactive get() = ContextCompat.getColor(ctx, R.color.editor_hint)
 
-        // Syntax highlight palette (dark-friendly)
+        // Syntax highlight palette (dark-friendly, enhanced)
         private val synKeyword  get() = ContextCompat.getColor(ctx, R.color.accent_purple)   // purple
         private val synString   get() = ContextCompat.getColor(ctx, R.color.accent_secondary) // green
         private val synComment  get() = ContextCompat.getColor(ctx, R.color.editor_hint)      // muted
         private val synNumber   get() = ContextCompat.getColor(ctx, R.color.accent_peach)     // orange
         private val synType     get() = ContextCompat.getColor(ctx, R.color.accent_primary)   // blue
         private val synDefault  get() = ContextCompat.getColor(ctx, R.color.editor_text)
+        private val synSymbol   get() = ContextCompat.getColor(ctx, R.color.accent_secondary) // green
+        private val synBuiltIn  get() = ContextCompat.getColor(ctx, R.color.accent_peach)     // orange
 
         fun bind(message: MainActivity.ChatMessage) {
             renderFormattedText(message.content)
@@ -141,7 +147,10 @@ class ChatAdapter(
             copyBtn?.setOnClickListener {
                 val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                 cm.setPrimaryClip(ClipData.newPlainText("AI response", message.content))
-                Toast.makeText(ctx, "Copied", Toast.LENGTH_SHORT).show()
+                // Visual feedback for copy
+                copyBtn.alpha = 0.7f
+                copyBtn.postDelayed({ copyBtn.alpha = 1f }, 100)
+                Toast.makeText(ctx, "Copied to clipboard", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -175,79 +184,104 @@ class ChatAdapter(
         }
 
         private fun addCodeBlock(code: String, lang: String) {
-            // Main container for the code block with terminal-like appearance
+            // Main container for the code block with enhanced terminal-like appearance
             val mainContainer = LinearLayout(ctx).apply {
                 orientation = LinearLayout.VERTICAL
                 setBackgroundColor(colorCodeBg)
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply { setMargins(0, 10, 0, 10) }
-                setPadding(12, 12, 12, 12)
+                ).apply { setMargins(0, 16, 0, 16) }
+                setPadding(20, 20, 20, 20)
+                
+                 // Add subtle border with rounded corners
+                 val border = GradientDrawable().apply {
+                     setColor(colorCodeBg)
+                     setStroke(2, colorCodeBorder)
+                     setCornerRadius(12f)
+                 }
+                 background = border
             }
 
-            // Header: language label + copy button with terminal styling
-            val header = LinearLayout(ctx).apply {
-                orientation = LinearLayout.HORIZONTAL
-                setBackgroundColor(adjustAlpha(colorDivider, 0.8f))
-                setPadding(16, 10, 16, 10)
-                gravity = android.view.Gravity.CENTER_VERTICAL
-            }
-            
-            val langLabel = TextView(ctx).apply {
-                text = if (lang.isNotEmpty()) lang.uppercase() else "CODE"
-                textSize = 10f
-                typeface = Typeface.MONOSPACE
-                setTextColor(colorAccent)
-                letterSpacing = 0.1f
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            }
-            
-            val copyCodeBtn = TextView(ctx).apply {
-                text = "⎘ Copy"
-                textSize = 11f
-                setTextColor(colorSecond)
-                setPadding(16, 6, 16, 6)
-                setOnClickListener {
-                    val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    cm.setPrimaryClip(ClipData.newPlainText("code", code))
-                    Toast.makeText(ctx, "Code copied", Toast.LENGTH_SHORT).show()
-                }
-            }
+             // Header: language label + copy button with enhanced terminal styling
+             val header = LinearLayout(ctx).apply {
+                 orientation = LinearLayout.HORIZONTAL
+                 setBackgroundColor(adjustAlpha(colorDivider, 0.95f))
+                 setPadding(24, 16, 24, 16)
+                 gravity = android.view.Gravity.CENTER_VERTICAL
+             }
+             
+             val langLabel = TextView(ctx).apply {
+                 text = if (lang.isNotEmpty()) lang.uppercase() else "TERMINAL"
+                 textSize = 12f
+                 typeface = Typeface.MONOSPACE
+                 setTextColor(colorAccent)
+                 letterSpacing = 0.2f
+                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+             }
+             
+             val copyCodeBtn = TextView(ctx).apply {
+                 text = "⎘ Copy Code"
+                 textSize = 13f
+                 setTextColor(colorSecond)
+                 setPadding(24, 12, 24, 12)
+                 // Add subtle background for button
+                 val btnBg = GradientDrawable().apply {
+                     setColor(adjustAlpha(colorSurface, 0.2f))
+                     setCornerRadius(6f)
+                 }
+                 background = btnBg
+             }
+             
+             // Set up the click listener for copyCodeBtn
+             copyCodeBtn.setOnClickListener {
+                 val cm = ctx.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                 cm.setPrimaryClip(ClipData.newPlainText("code", code))
+                 // Visual feedback
+                 copyCodeBtn.alpha = 0.7f
+                 copyCodeBtn.postDelayed({ copyCodeBtn.alpha = 1f }, 150)
+                 Toast.makeText(ctx, "Code copied to clipboard", Toast.LENGTH_SHORT).show()
+             }
             
             header.addView(langLabel)
             header.addView(copyCodeBtn)
             mainContainer.addView(header)
 
-            // Code container with line numbers
+            // Code container with enhanced line numbers
             val codeContainer = LinearLayout(ctx).apply {
                 orientation = LinearLayout.HORIZONTAL
-                setPadding(0, 8, 0, 8)
+                setPadding(0, 16, 0, 16)
             }
 
-            // Line numbers view
+            // Enhanced line numbers view with alternating background
             val lineNumbersView = TextView(ctx).apply {
                 val lines = code.split("\n").size
-                val lineNumbers = (1..lines).joinToString("\n") { "%2d".format(it) }
+                val lineNumbers = buildLineNumbers(lines)
                 text = lineNumbers
                 typeface = Typeface.MONOSPACE
                 textSize = 13f
-                setTextColor(adjustAlpha(colorText, 0.6f))
-                setPadding(0, 14, 16, 14)
-                setLineSpacing(2f, 1.6f)
+                setTextColor(colorLineNumberInactive)
+                setPadding(0, 20, 16, 20)
+                setLineSpacing(2.2f, 1.8f)
                 setIncludeFontPadding(false)
+                setBackgroundColor(adjustAlpha(colorCodeBg, 0.85f))
+                // Add subtle right border to separate from code
+                setBackground(createLineNumberBackground())
             }
             
-            // Code view with syntax highlighting
+            // Enhanced code view with syntax highlighting
             val codeView = TextView(ctx).apply {
                 text = syntaxHighlight(code, lang)
                 typeface = Typeface.MONOSPACE
                 textSize = 13f
-                setPadding(20, 14, 20, 14)
-                setLineSpacing(2f, 1.6f)
+                setPadding(28, 20, 28, 20)
+                setLineSpacing(2.2f, 1.8f)
                 setHorizontallyScrolling(true)
                 setIncludeFontPadding(false)
-                setTextColor(synDefault) // Ensure default text color is set
+                setTextColor(synDefault)
+                setBackgroundColor(colorCodeBg)
+                // Add subtle inner shadow effect
+                setLayerType(android.view.View.LAYER_TYPE_SOFTWARE, null)
             }
 
             codeContainer.addView(lineNumbersView)
@@ -257,7 +291,20 @@ class ChatAdapter(
             codeBlockContainer?.addView(mainContainer)
         }
 
-        /** Token-based syntax highlighter for common languages. */
+        private fun buildLineNumbers(count: Int): String {
+            return (1..count).joinToString("\n") { "%3d".format(it) }
+        }
+
+        private fun createLineNumberBackground(): GradientDrawable {
+            return GradientDrawable().apply {
+                setColor(adjustAlpha(colorCodeBg, 0.85f))
+                setGradientType(GradientDrawable.LINEAR_GRADIENT)
+                setGradientCenter(0.8f, 0.5f) // More color on the left
+                setGradientRadius(120f)
+            }
+        }
+
+        /** Enhanced token-based syntax highlighter for common languages. */
         private fun syntaxHighlight(code: String, lang: String): SpannableStringBuilder {
             val sb = SpannableStringBuilder(code)
 
@@ -295,6 +342,23 @@ class ChatAdapter(
                     "case", "esac", "function", "return", "export", "local", "echo",
                     "exit", "source", "in", "true", "false"
                 )
+                "html", "xml" -> setOf(
+                    "div", "span", "p", "h1", "h2", "h3", "h4", "h5", "h6", "a", "img",
+                    "ul", "ol", "li", "table", "tr", "td", "th", "form", "input", "button"
+                )
+                "css" -> setOf(
+                    "color", "background", "margin", "padding", "border", "width", "height",
+                    "display", "position", "float", "clear", "overflow", "z-index", "font",
+                    "text", "line", "letter", "vertical", "align"
+                )
+                else -> emptySet()
+            }
+
+            val builtIns = when (lang.lowercase()) {
+                "kotlin" -> setOf("println", "print", "readLine", "arrayListOf", "hashMapOf", "listOf", "mapOf", "setOf")
+                "java" -> setOf("System", "out", "println", "ArrayList", "HashMap", "List", "Map", "Set")
+                "python" -> setOf("print", "input", "len", "range", "list", "dict", "set", "str", "int", "float")
+                "js", "javascript" -> setOf("console", "log", "document", "window", "Array", "Object", "String", "Number", "Boolean", "Function")
                 else -> emptySet()
             }
 
@@ -332,10 +396,24 @@ class ChatAdapter(
                 }
             }
 
-            // 5. Type names (PascalCase identifiers)
+            // 5. Built-in functions
+            if (builtIns.isNotEmpty()) {
+                val builtInPat = Regex("\\b(${builtIns.joinToString("|")})\\b")
+                for (m in builtInPat.findAll(code)) {
+                    sb.setSpan(ForegroundColorSpan(synBuiltIn), m.range.first, m.range.last + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+                }
+            }
+
+            // 6. Type names (PascalCase identifiers)
             val typePat = Regex("\\b[A-Z][a-zA-Z0-9_]+\\b")
             for (m in typePat.findAll(code)) {
                 sb.setSpan(ForegroundColorSpan(synType), m.range.first, m.range.last + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+            }
+
+            // 7. Symbols (operators, brackets, etc.)
+            val symbolPat = Regex("[{}()\\[\\];,.]")
+            for (m in symbolPat.findAll(code)) {
+                sb.setSpan(ForegroundColorSpan(synSymbol), m.range.first, m.range.last + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
             }
 
             return sb
@@ -347,13 +425,21 @@ class ChatAdapter(
                 textSize = 14f
                 setTextColor(colorText)
                 setLineSpacing(3f, 1.65f)
-                setPadding(16, 8, 16, 8)
+                setPadding(24, 18, 24, 18)
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 )
                 // Use monospace font for better editor-like feel
                 typeface = Typeface.MONOSPACE
+                // Add subtle background for text blocks
+                setBackgroundColor(adjustAlpha(colorSurface, 0.25f))
+                // Add rounded corners
+                 val bgDrawable = GradientDrawable().apply {
+                     setColor(adjustAlpha(colorSurface, 0.25f))
+                     setCornerRadius(10f)
+                 }
+                background = bgDrawable
             }
             codeBlockContainer?.addView(tv)
         }
@@ -366,8 +452,8 @@ class ChatAdapter(
                 val line = lines[i]
                 when {
                     line.matches(Regex("^[-*_]{3,}\\s*$")) -> {
-                        sb.append("\n─────────────────────────\n")
-                        val start = sb.length - 27
+                        sb.append("\n──────────────────────────────────────────────\n")
+                        val start = sb.length - 66
                         sb.setSpan(ForegroundColorSpan(colorDivider), start, sb.length - 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
                     }
                     line.trim().startsWith("\$\$") && line.trim().endsWith("\$\$") && line.trim().length > 4 ->
