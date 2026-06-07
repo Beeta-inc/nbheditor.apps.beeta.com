@@ -422,22 +422,22 @@ class ChatAdapter(
         private fun addTextBlock(text: String) {
             val tv = TextView(ctx).apply {
                 this.text = buildRichText(text)
-                textSize = 14f
+                textSize = 15f
                 setTextColor(colorText)
-                setLineSpacing(3f, 1.65f)
-                setPadding(24, 18, 24, 18)
+                setLineSpacing(4f, 1.8f)
+                setPadding(28, 22, 28, 22)
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 )
-                // Use monospace font for better editor-like feel
-                typeface = Typeface.MONOSPACE
+                // Use a readable font for better text experience
+                typeface = Typeface.DEFAULT
                 // Add subtle background for text blocks
-                setBackgroundColor(adjustAlpha(colorSurface, 0.25f))
+                setBackgroundColor(adjustAlpha(colorSurface, 0.15f))
                 // Add rounded corners
                  val bgDrawable = GradientDrawable().apply {
-                     setColor(adjustAlpha(colorSurface, 0.25f))
-                     setCornerRadius(10f)
+                     setColor(adjustAlpha(colorSurface, 0.15f))
+                     setCornerRadius(14f)
                  }
                 background = bgDrawable
             }
