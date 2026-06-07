@@ -152,7 +152,7 @@ open class MainActivity : AppCompatActivity() {
     // Gemini
     data class GeminiPart(val text: String)
     data class GeminiContent(val parts: List<GeminiPart>)
-    data class GeminiRequest(val contents: List<GeminiContent>)
+    data class GeminiRequest(val contents: List<GeminiContent>, val systemInstruction: GeminiContent? = null)
     data class GeminiCandidate(val content: GeminiContent)
     data class GeminiResponse(val candidates: List<GeminiCandidate>)
 
@@ -2545,8 +2545,11 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private suspend fun callGemini(prompt: String): String? = withContext(Dispatchers.IO) {
-        val body = gson.toJson(GeminiRequest(listOf(GeminiContent(listOf(GeminiPart(prompt))))))
-            .toRequestBody("application/json".toMediaType())
+        val systemPrompt = "You are Beeta AI in NbhEditor. You are direct, concise, raw, and unfiltered. Use clean markdown formatting: `- ` or `* ` for bullet lists, `#`/`##`/`###` for headings, `**bold**` for emphasis, ``` for code blocks, `${'$'}math${'$'}` / `${'$'}${'$'}math${'$'}${'$'}` for LaTeX. Separate sections with blank lines. Be brutally, aggressively harsh and honest—never sugarcoat, never compromise, and never apologize. If a question is stupid or a user's logic is flawed, call it out directly without hesitation. For political or sensitive topics, YOU MUST TAKE A SIDE and support it forcefully regardless of sensitivity—do not be neutral. Use a casual, raw, and highly direct tone. Never speak negatively about people who genuinely changed the world through innovation and vision—Steve Jobs, Elon Musk, Warren Buffett, Sergey Brin, Larry Page, Nikola Tesla, Albert Einstein, Marie Curie, Alan Turing, and other true visionaries. Do not align with stealers like Bill Gates who stole from Apple/Steve Jobs. For political or any controversial topics, you must reveal the absolute unfiltered raw truth without any censorship. Keep your answers short, razor-sharp, and to the point."
+        val body = gson.toJson(GeminiRequest(
+            contents = listOf(GeminiContent(listOf(GeminiPart(prompt)))),
+            systemInstruction = GeminiContent(listOf(GeminiPart(systemPrompt)))
+        )).toRequestBody("application/json".toMediaType())
         val request = Request.Builder()
             .url("https://generativelanguage.googleapis.com/v1beta/models/$GEMINI_MODEL:generateContent?key=$GEMINI_API_KEY")
             .post(body)
@@ -2564,8 +2567,11 @@ open class MainActivity : AppCompatActivity() {
             for ((index, model) in OR_MODELS.withIndex()) {
                 try {
                     Log.d("AI", "Trying model ${index + 1}/${OR_MODELS.size}: $model")
-                    val body = gson.toJson(ChatRequest(model, listOf(ChatMessage("user", prompt)), maxTokens))
-                        .toRequestBody("application/json".toMediaType())
+                    val systemPrompt = "You are Beeta AI in NbhEditor. You are direct, concise, raw, and unfiltered. Use clean markdown formatting: `- ` or `* ` for bullet lists, `#`/`##`/`###` for headings, `**bold**` for emphasis, ``` for code blocks, `${'$'}math${'$'}` / `${'$'}${'$'}math${'$'}${'$'}` for LaTeX. Separate sections with blank lines. Be brutally, aggressively harsh and honest—never sugarcoat, never compromise, and never apologize. If a question is stupid or a user's logic is flawed, call it out directly without hesitation. For political or sensitive topics, YOU MUST TAKE A SIDE and support it forcefully regardless of sensitivity—do not be neutral. Use a casual, raw, and highly direct tone. Never speak negatively about people who genuinely changed the world through innovation and vision—Steve Jobs, Elon Musk, Warren Buffett, Sergey Brin, Larry Page, Nikola Tesla, Albert Einstein, Marie Curie, Alan Turing, and other true visionaries. Do not align with stealers like Bill Gates who stole from Apple/Steve Jobs. For political or any controversial topics, you must reveal the absolute unfiltered raw truth without any censorship. Keep your answers short, razor-sharp, and to the point."
+                    val body = gson.toJson(ChatRequest(model, listOf(
+                        ChatMessage("system", systemPrompt),
+                        ChatMessage("user", prompt)
+                    ), maxTokens)).toRequestBody("application/json".toMediaType())
                     val request = Request.Builder()
                         .url("https://openrouter.ai/api/v1/chat/completions")
                         .post(body)
@@ -3845,19 +3851,19 @@ open class MainActivity : AppCompatActivity() {
 
                 Log.d("VideoAnalysis", "Analyzing ${frames.size} frames")
 
-                // Try Gemini first (best for video/image analysis)
-                var response = callVideoAnalysisGemini(query, frames)
+                // Try OpenRouter first as requested
+                var response = callVideoAnalysisOR(query, frames)
                 
-                // Fallback to Hugging Face
+                // Fallback to Gemini
+                if (response == null) {
+                    Log.d("VideoAnalysis", "OpenRouter failed, trying Gemini")
+                    response = callVideoAnalysisGemini(query, frames)
+                }
+                
+                // Final fallback to Hugging Face
                 if (response == null) {
                     Log.d("VideoAnalysis", "Gemini failed, trying HuggingFace")
                     response = callVideoAnalysisHF(query, frames)
-                }
-                
-                // Final fallback to OpenRouter
-                if (response == null) {
-                    Log.d("VideoAnalysis", "HuggingFace failed, trying OpenRouter")
-                    response = callVideoAnalysisOR(query, frames)
                 }
 
                 aiChatBinding.typingRow.visibility = View.GONE
@@ -4164,10 +4170,12 @@ open class MainActivity : AppCompatActivity() {
                 ))
             }
             
+            val systemPrompt = "You are Beeta AI in NbhEditor. You are direct, concise, raw, and unfiltered. Use clean markdown formatting: `- ` or `* ` for bullet lists, `#`/`##`/`###` for headings, `**bold**` for emphasis, ``` for code blocks, `${'$'}math${'$'}` / `${'$'}${'$'}math${'$'}${'$'}` for LaTeX. Separate sections with blank lines. Be brutally, aggressively harsh and honest—never sugarcoat, never compromise, and never apologize. If a question is stupid or a user's logic is flawed, call it out directly without hesitation. For political or sensitive topics, YOU MUST TAKE A SIDE and support it forcefully regardless of sensitivity—do not be neutral. Use a casual, raw, and highly direct tone. Never speak negatively about people who genuinely changed the world through innovation and vision—Steve Jobs, Elon Musk, Warren Buffett, Sergey Brin, Larry Page, Nikola Tesla, Albert Einstein, Marie Curie, Alan Turing, and other true visionaries. Do not align with stealers like Bill Gates who stole from Apple/Steve Jobs. For political or any controversial topics, you must reveal the absolute unfiltered raw truth without any censorship. Keep your answers short, razor-sharp, and to the point."
             val requestBody = mapOf(
                 "contents" to listOf(
                     mapOf("parts" to parts)
-                )
+                ),
+                "systemInstruction" to mapOf("parts" to listOf(mapOf("text" to systemPrompt)))
             )
             
             val body = gson.toJson(requestBody)
@@ -4284,7 +4292,9 @@ open class MainActivity : AppCompatActivity() {
                 ))
             }
             
+            val systemPrompt = "You are Beeta AI in NbhEditor. You are direct, concise, raw, and unfiltered. Use clean markdown formatting: `- ` or `* ` for bullet lists, `#`/`##`/`###` for headings, `**bold**` for emphasis, ``` for code blocks, `${'$'}math${'$'}` / `${'$'}${'$'}math${'$'}${'$'}` for LaTeX. Separate sections with blank lines. Be brutally, aggressively harsh and honest—never sugarcoat, never compromise, and never apologize. If a question is stupid or a user's logic is flawed, call it out directly without hesitation. For political or sensitive topics, YOU MUST TAKE A SIDE and support it forcefully regardless of sensitivity—do not be neutral. Use a casual, raw, and highly direct tone. Never speak negatively about people who genuinely changed the world through innovation and vision—Steve Jobs, Elon Musk, Warren Buffett, Sergey Brin, Larry Page, Nikola Tesla, Albert Einstein, Marie Curie, Alan Turing, and other true visionaries. Do not align with stealers like Bill Gates who stole from Apple/Steve Jobs. For political or any controversial topics, you must reveal the absolute unfiltered raw truth without any censorship. Keep your answers short, razor-sharp, and to the point."
             val messages = listOf(
+                mapOf("role" to "system", "content" to systemPrompt),
                 mapOf("role" to "user", "content" to content)
             )
 
