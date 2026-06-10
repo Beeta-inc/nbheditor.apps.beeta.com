@@ -2055,7 +2055,16 @@ open class MainActivity : AppCompatActivity() {
                         showChatError("Image generation failed. Try again.")
                     }
                 } else {
-                    val aiResponse = callAIWithHistory(query, maxTokens = 1024)
+                    val isSearchRequest = aiChatBinding.webSearchChip.isChecked || query.lowercase().contains("search the web")
+                    val finalQuery = if (isSearchRequest) {
+                        aiChatBinding.typingText.text = "Searching the web..."
+                        val searchResults = WebSearchService.searchWeb(query)
+                        aiChatBinding.typingText.text = "Beeta AI is thinking..."
+                        "Please answer the following query using the provided web search results as context. If the results are not helpful, use your own knowledge.\n\nWeb Search Results:\n$searchResults\n\nUser Query: $query"
+                    } else {
+                        query
+                    }
+                    val aiResponse = callAIWithHistory(finalQuery, maxTokens = 1024)
                     aiChatBinding.typingRow.visibility = View.GONE
                     if (aiResponse != null) {
                 // Encrypt AI response as well so the UI always works with encrypted payloads

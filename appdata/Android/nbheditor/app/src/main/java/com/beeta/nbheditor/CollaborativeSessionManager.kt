@@ -1368,7 +1368,16 @@ object CollaborativeSessionManager {
     // Ask AI in chat context - integrated with existing AI system
     suspend fun askAIInChat(question: String, context: String, aiCallback: suspend (String) -> String?): Result<String> {
         return try {
-            val aiResponse = aiCallback(question) ?: "Sorry, I couldn't process that request."
+            val isSearchRequest = question.lowercase().startsWith("/search ") || question.lowercase().startsWith("@web ")
+            val finalQuestion = if (isSearchRequest) {
+                val cleanQuery = question.substringAfter(" ").trim()
+                val searchResults = WebSearchService.searchWeb(cleanQuery)
+                "Please answer the following query using the provided web search results as context. If the results are not helpful, use your own knowledge.\n\nWeb Search Results:\n$searchResults\n\nUser Query: $cleanQuery"
+            } else {
+                question
+            }
+            
+            val aiResponse = aiCallback(finalQuestion) ?: "Sorry, I couldn't process that request."
             // Use fixed AI userId so it never matches any real user
             val sessionId = currentSessionId ?: return Result.failure(Exception("Not in a session"))
             val messageId = database.child(SESSIONS_PATH).child(sessionId)

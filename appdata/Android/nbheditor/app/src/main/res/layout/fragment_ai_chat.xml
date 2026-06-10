@@ -94,6 +94,21 @@
                 android:textColor="@color/accent_secondary" />
 
             <com.google.android.material.chip.Chip
+                android:id="@+id/webSearchChip"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:text="🌐 Web"
+                android:textSize="11sp"
+                app:chipBackgroundColor="@color/suggestion_bg"
+                app:chipStrokeColor="@color/accent_secondary"
+                app:chipStrokeWidth="1.5dp"
+                android:checkable="true"
+                android:checked="false"
+                app:chipCornerRadius="16dp"
+                app:chipMinHeight="32dp"
+                android:layout_marginEnd="6dp" />
+
+            <com.google.android.material.chip.Chip
                 android:id="@+id/imageGenChip"
                 android:layout_width="wrap_content"
                 android:layout_height="32dp"
@@ -284,6 +299,7 @@
             android:indeterminateTint="@color/accent_primary" />
 
         <TextView
+            android:id="@+id/typingText"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Beeta AI is thinking..."
