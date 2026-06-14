@@ -27,6 +27,18 @@
             android:id="@+id/nav_collaborative_session"
             android:icon="@android:drawable/ic_menu_share"
             android:title="Collaborative Session" />
+        <item
+            android:id="@+id/nav_export_social"
+            android:icon="@android:drawable/ic_menu_send"
+            android:title="Export to Social Media" />
+        <item
+            android:id="@+id/nav_themeet"
+            android:icon="@android:drawable/ic_menu_camera"
+            android:title="TheMeet Video & Transcripts" />
+        <item
+            android:id="@+id/nav_netuark"
+            android:icon="@android:drawable/ic_menu_send"
+            android:title="NeTuArk Integration" />
     </group>
 
     <group android:id="@+id/group_settings">

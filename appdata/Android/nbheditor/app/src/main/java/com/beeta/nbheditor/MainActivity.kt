@@ -3571,6 +3571,9 @@ open class MainActivity : AppCompatActivity() {
             R.id.nav_theme_light -> applyThemeMode(AppCompatDelegate.MODE_NIGHT_NO)
             R.id.nav_theme_glass -> applyGlassMode()
             R.id.nav_collaborative_session -> showCollaborativeSessionDialog()
+            R.id.nav_export_social -> showSocialMediaExportDialog()
+            R.id.nav_themeet -> showTheMeetIntegrationDialog()
+            R.id.nav_netuark -> showNeTuArkIntegrationDialog()
             R.id.nav_toggle_ai -> {
                 aiEnabled = !aiEnabled
                 prefs.edit().putBoolean("ai_enabled", aiEnabled).apply()
@@ -5162,6 +5165,733 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
         }
     }
     
+    private fun showSocialMediaExportDialog() {
+        val themedContext = androidx.appcompat.view.ContextThemeWrapper(this, R.style.Theme_Nbheditor)
+        val builder = androidx.appcompat.app.AlertDialog.Builder(themedContext)
+        builder.setTitle("Export Draft to Social Media")
+
+        val container = android.widget.ScrollView(themedContext)
+        val linearLayout = android.widget.LinearLayout(themedContext).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            val padding = (16 * resources.displayMetrics.density).toInt()
+            setPadding(padding, padding, padding, padding)
+        }
+        container.addView(linearLayout)
+
+        // API Key Field
+        val apiKeyLabel = android.widget.TextView(themedContext).apply { text = "Developer API Key" }
+        linearLayout.addView(apiKeyLabel)
+        val apiKeyInput = android.widget.EditText(themedContext).apply {
+            setText("nbh_key_test_dev_123")
+            hint = "Enter developer API Key"
+        }
+        linearLayout.addView(apiKeyInput)
+
+        // Backend URL Field
+        val backendUrlLabel = android.widget.TextView(themedContext).apply { text = "Backend Server URL" }
+        linearLayout.addView(backendUrlLabel)
+        val backendUrlInput = android.widget.EditText(themedContext).apply {
+            setText("http://10.0.2.2:3000")
+            hint = "http://10.0.2.2:3000"
+        }
+        linearLayout.addView(backendUrlInput)
+
+        // Radio group for export target
+        val targetLabel = android.widget.TextView(themedContext).apply { 
+            text = "Select Export Target"
+            setPadding(0, 10, 0, 0)
+        }
+        linearLayout.addView(targetLabel)
+        
+        val radioGroup = android.widget.RadioGroup(themedContext)
+        val rbFeed = android.widget.RadioButton(themedContext).apply {
+            id = android.view.View.generateViewId()
+            text = "Post to Social Media Feed"
+            isChecked = true
+        }
+        val rbChat = android.widget.RadioButton(themedContext).apply {
+            id = android.view.View.generateViewId()
+            text = "Send to Chat DM / Group"
+        }
+        radioGroup.addView(rbFeed)
+        radioGroup.addView(rbChat)
+        linearLayout.addView(radioGroup)
+
+        // Feed inputs container
+        val feedContainer = android.widget.LinearLayout(themedContext).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+        }
+        val captionLabel = android.widget.TextView(themedContext).apply { text = "Post Caption" }
+        feedContainer.addView(captionLabel)
+        val captionInput = android.widget.EditText(themedContext).apply {
+            setText("Check out this new draft I created! #nbheditor")
+            hint = "Enter caption text..."
+        }
+        feedContainer.addView(captionInput)
+        linearLayout.addView(feedContainer)
+
+        // Chat inputs container (initially hidden)
+        val chatContainer = android.widget.LinearLayout(themedContext).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            visibility = android.view.View.GONE
+        }
+        
+        val chatIdLabel = android.widget.TextView(themedContext).apply { text = "Recipient ID (User or Group ID)" }
+        chatContainer.addView(chatIdLabel)
+        val chatIdInput = android.widget.EditText(themedContext).apply {
+            setText("social_group_chat_456")
+            hint = "e.g. social_group_chat_456"
+        }
+        chatContainer.addView(chatIdInput)
+
+        val chatTypeLabel = android.widget.TextView(themedContext).apply { text = "Chat Type" }
+        chatContainer.addView(chatTypeLabel)
+        val chatTypeSpinner = android.widget.Spinner(themedContext)
+        val chatTypes = arrayOf("group", "dm")
+        val spinnerAdapter = android.widget.ArrayAdapter(themedContext, android.R.layout.simple_spinner_item, chatTypes).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        chatTypeSpinner.adapter = spinnerAdapter
+        chatContainer.addView(chatTypeSpinner)
+
+        val messageLabel = android.widget.TextView(themedContext).apply { text = "Message text" }
+        chatContainer.addView(messageLabel)
+        val messageInput = android.widget.EditText(themedContext).apply {
+            setText("Here is the latest session document draft.")
+            hint = "Enter message text..."
+        }
+        chatContainer.addView(messageInput)
+        linearLayout.addView(chatContainer)
+
+        // Toggle container visibility based on radio buttons
+        radioGroup.setOnCheckedChangeListener { _, checkedId ->
+            if (checkedId == rbFeed.id) {
+                feedContainer.visibility = android.view.View.VISIBLE
+                chatContainer.visibility = android.view.View.GONE
+            } else {
+                feedContainer.visibility = android.view.View.GONE
+                chatContainer.visibility = android.view.View.VISIBLE
+            }
+        }
+
+        builder.setView(container)
+        builder.setPositiveButton("Export") { dialog, _ ->
+            val apiKey = apiKeyInput.text.toString().trim()
+            val backendUrl = backendUrlInput.text.toString().trim()
+            val isFeed = radioGroup.checkedRadioButtonId == rbFeed.id
+            val title = "Draft_${System.currentTimeMillis()}"
+            val content = editorBinding.textArea.text.toString()
+
+            // Values
+            val caption = captionInput.text.toString().trim()
+            val chatId = chatIdInput.text.toString().trim()
+            val chatType = chatTypeSpinner.selectedItem.toString()
+            val messageText = messageInput.text.toString().trim()
+
+            if (apiKey.isEmpty() || backendUrl.isEmpty()) {
+                android.widget.Toast.makeText(this, "API Key and Server URL are required.", android.widget.Toast.LENGTH_SHORT).show()
+                return@setPositiveButton
+            }
+
+            dialog.dismiss()
+            performSocialMediaExport(apiKey, backendUrl, isFeed, title, content, caption, chatId, chatType, messageText)
+        }
+        builder.setNegativeButton("Cancel", null)
+        builder.show()
+    }
+
+    private fun performSocialMediaExport(
+        apiKey: String,
+        backendUrl: String,
+        isFeed: Boolean,
+        title: String,
+        content: String,
+        caption: String,
+        chatId: String,
+        chatType: String,
+        messageText: String
+    ) {
+        val progressDialog = createLoadingDialog("Exporting Draft...", "Creating document on server\nBroadcasting to social media network")
+        progressDialog.show()
+
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                // Step 1: Create Document on Server
+                val docPayload = mapOf("title" to title, "content" to content)
+                val docBody = okhttp3.RequestBody.create(
+                    okhttp3.MediaType.parse("application/json; charset=utf-8"),
+                    gson.toJson(docPayload)
+                )
+                val docRequest = okhttp3.Request.Builder()
+                    .url("$backendUrl/api/v1/documents")
+                    .header("x-api-key", apiKey)
+                    .post(docBody)
+                    .build()
+
+                val docResponse = client.newCall(docRequest).execute()
+                if (!docResponse.isSuccessful) {
+                    val errorMsg = docResponse.body()?.string() ?: "Unknown error"
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        progressDialog.dismiss()
+                        androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                            .setTitle("Export Failed")
+                            .setMessage("Failed to create document on server:\n$errorMsg")
+                            .setPositiveButton("OK", null)
+                            .show()
+                    }
+                    return@launch
+                }
+
+                val docJson = gson.fromJson(docResponse.body()?.string(), Map::class.java)
+                val documentId = docJson["id"] as String
+
+                // Step 2: Call Export Endpoint
+                val exportUrl = if (isFeed) "$backendUrl/api/v1/export/feed" else "$backendUrl/api/v1/export/chat"
+                val exportPayload = if (isFeed) {
+                    mapOf("documentId" to documentId, "postText" to caption)
+                } else {
+                    mapOf("documentId" to documentId, "chatId" to chatId, "chatType" to chatType, "messageText" to messageText)
+                }
+
+                val exportBody = okhttp3.RequestBody.create(
+                    okhttp3.MediaType.parse("application/json; charset=utf-8"),
+                    gson.toJson(exportPayload)
+                )
+                val exportRequest = okhttp3.Request.Builder()
+                    .url(exportUrl)
+                    .header("x-api-key", apiKey)
+                    .post(exportBody)
+                    .build()
+
+                val exportResponse = client.newCall(exportRequest).execute()
+                val responseString = exportResponse.body()?.string() ?: ""
+                
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    progressDialog.dismiss()
+                    if (exportResponse.isSuccessful) {
+                        android.widget.Toast.makeText(this@MainActivity, "Export successful!", android.widget.Toast.LENGTH_LONG).show()
+                        androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                            .setTitle("Export Success")
+                            .setMessage("Draft successfully exported!\n\nResponse:\n$responseString")
+                            .setPositiveButton("OK", null)
+                            .show()
+                    } else {
+                        androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                            .setTitle("Export Failed")
+                            .setMessage("Server rejected export request:\n$responseString")
+                            .setPositiveButton("OK", null)
+                            .show()
+                    }
+                }
+            } catch (e: Exception) {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    progressDialog.dismiss()
+                    android.util.Log.e("SocialExport", "Export exception", e)
+                    androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                        .setTitle("Export Error")
+                        .setMessage("An exception occurred during network request:\n${e.message}")
+                        .setPositiveButton("OK", null)
+                        .show()
+                }
+            }
+        }
+    }
+
+    private fun showTheMeetIntegrationDialog() {
+        val themedContext = androidx.appcompat.view.ContextThemeWrapper(this, R.style.Theme_Nbheditor)
+        val builder = androidx.appcompat.app.AlertDialog.Builder(themedContext)
+        builder.setTitle("TheMeet Video & Transcripts")
+
+        val container = android.widget.ScrollView(themedContext)
+        val linearLayout = android.widget.LinearLayout(themedContext).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            val padding = (16 * resources.displayMetrics.density).toInt()
+            setPadding(padding, padding, padding, padding)
+        }
+        container.addView(linearLayout)
+
+        // Description
+        val descText = android.widget.TextView(themedContext).apply {
+            text = "Integrate your workflow with TheMeet ecosystem. Join/Start real-time meetings or import audio transcripts directly into NbhEditor."
+            setTextColor(android.graphics.Color.GRAY)
+            setPadding(0, 0, 0, 15)
+        }
+        linearLayout.addView(descText)
+
+        // Radio group for mode selection
+        val radioGroup = android.widget.RadioGroup(themedContext).apply {
+            setPadding(0, 10, 0, 15)
+        }
+        val rbStart = android.widget.RadioButton(themedContext).apply {
+            id = android.view.View.generateViewId()
+            text = "Start a New Meeting"
+            isChecked = true
+        }
+        val rbJoin = android.widget.RadioButton(themedContext).apply {
+            id = android.view.View.generateViewId()
+            text = "Join an Existing Meeting"
+        }
+        val rbImport = android.widget.RadioButton(themedContext).apply {
+            id = android.view.View.generateViewId()
+            text = "Import Transcript from Meeting"
+        }
+        radioGroup.addView(rbStart)
+        radioGroup.addView(rbJoin)
+        radioGroup.addView(rbImport)
+        linearLayout.addView(radioGroup)
+
+        // Dynamic Containers
+        
+        // 1. Start Meeting Container
+        val startContainer = android.widget.LinearLayout(themedContext).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+        }
+        val startNameLabel = android.widget.TextView(themedContext).apply { text = "Meeting Name" }
+        startContainer.addView(startNameLabel)
+        val startNameInput = android.widget.EditText(themedContext).apply {
+            setText("NbhEditor Sync Session")
+            hint = "e.g. Daily Standup"
+        }
+        startContainer.addView(startNameInput)
+        linearLayout.addView(startContainer)
+
+        // 2. Join Meeting Container (hidden initially)
+        val joinContainer = android.widget.LinearLayout(themedContext).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            visibility = android.view.View.GONE
+        }
+        val joinIdLabel = android.widget.TextView(themedContext).apply { text = "Meeting ID" }
+        joinContainer.addView(joinIdLabel)
+        val joinIdInput = android.widget.EditText(themedContext).apply {
+            hint = "e.g. meet_987654"
+        }
+        joinContainer.addView(joinIdInput)
+        linearLayout.addView(joinContainer)
+
+        // 3. Import Transcript Container (hidden initially)
+        val importContainer = android.widget.LinearLayout(themedContext).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            visibility = android.view.View.GONE
+        }
+        val importIdLabel = android.widget.TextView(themedContext).apply { text = "Meeting ID" }
+        importContainer.addView(importIdLabel)
+        val importIdInput = android.widget.EditText(themedContext).apply {
+            hint = "e.g. meet_987654"
+        }
+        importContainer.addView(importIdInput)
+        linearLayout.addView(importContainer)
+
+        // Toggle visibility
+        radioGroup.setOnCheckedChangeListener { _, checkedId ->
+            when (checkedId) {
+                rbStart.id -> {
+                    startContainer.visibility = android.view.View.VISIBLE
+                    joinContainer.visibility = android.view.View.GONE
+                    importContainer.visibility = android.view.View.GONE
+                }
+                rbJoin.id -> {
+                    startContainer.visibility = android.view.View.GONE
+                    joinContainer.visibility = android.view.View.VISIBLE
+                    importContainer.visibility = android.view.View.GONE
+                }
+                rbImport.id -> {
+                    startContainer.visibility = android.view.View.GONE
+                    joinContainer.visibility = android.view.View.GONE
+                    importContainer.visibility = android.view.View.VISIBLE
+                }
+            }
+        }
+
+        builder.setView(container)
+        builder.setPositiveButton("Proceed") { dialog, _ ->
+            dialog.dismiss()
+            val checkedId = radioGroup.checkedRadioButtonId
+            
+            if (checkedId == rbStart.id) {
+                // Start meeting: generate a random meeting ID and open browser
+                val chars = "abcdefghijklmnopqrstuvwxyz0123456789"
+                val meetId = "meet_" + (1..6).map { chars[(Math.random() * chars.length).toInt()] }.joinToString("")
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://themeet.pages.dev/meeting/$meetId"))
+                startActivity(intent)
+                android.widget.Toast.makeText(this, "Opening TheMeet to start meeting: $meetId", android.widget.Toast.LENGTH_SHORT).show()
+            } else if (checkedId == rbJoin.id) {
+                // Join meeting: open browser to meeting ID
+                val meetId = joinIdInput.text.toString().trim()
+                if (meetId.isEmpty()) {
+                    android.widget.Toast.makeText(this, "Meeting ID is required.", android.widget.Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://themeet.pages.dev/meeting/$meetId"))
+                startActivity(intent)
+            } else if (checkedId == rbImport.id) {
+                // Import transcript
+                val meetId = importIdInput.text.toString().trim()
+                if (meetId.isEmpty()) {
+                    android.widget.Toast.makeText(this, "Meeting ID is required.", android.widget.Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                importTheMeetTranscript(meetId)
+            }
+        }
+        builder.setNegativeButton("Cancel", null)
+        builder.show()
+    }
+
+    private fun showNeTuArkIntegrationDialog() {
+        val themedContext = androidx.appcompat.view.ContextThemeWrapper(this, R.style.Theme_Nbheditor)
+        val builder = androidx.appcompat.app.AlertDialog.Builder(themedContext)
+        builder.setTitle("NeTuArk Bridge Integration")
+
+        val container = android.widget.ScrollView(themedContext)
+        val linearLayout = android.widget.LinearLayout(themedContext).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            val padding = (16 * resources.displayMetrics.density).toInt()
+            setPadding(padding, padding, padding, padding)
+        }
+        container.addView(linearLayout)
+
+        // API Key Field (NbhEditor authentication)
+        val apiKeyLabel = android.widget.TextView(themedContext).apply { text = "Developer API Key (NbhEditor)" }
+        linearLayout.addView(apiKeyLabel)
+        val apiKeyInput = android.widget.EditText(themedContext).apply {
+            setText("nbh_key_test_dev_123")
+            hint = "Enter developer API Key"
+        }
+        linearLayout.addView(apiKeyInput)
+
+        // Backend URL Field
+        val backendUrlLabel = android.widget.TextView(themedContext).apply { text = "Backend Server URL" }
+        linearLayout.addView(backendUrlLabel)
+        val backendUrlInput = android.widget.EditText(themedContext).apply {
+            setText("http://10.0.2.2:3000")
+            hint = "http://10.0.2.2:3000"
+        }
+        linearLayout.addView(backendUrlInput)
+
+        // NeTuArk User Email (Sender Email)
+        val senderEmailLabel = android.widget.TextView(themedContext).apply { text = "NeTuArk Sender Email" }
+        linearLayout.addView(senderEmailLabel)
+        val senderEmailInput = android.widget.EditText(themedContext).apply {
+            setText("botmaker583@gmail.com")
+            hint = "Registered NeTuArk email"
+        }
+        linearLayout.addView(senderEmailInput)
+
+        // NeTuArk Sender Name (Display Name)
+        val senderNameLabel = android.widget.TextView(themedContext).apply { text = "NeTuArk Sender Display Name (Optional)" }
+        linearLayout.addView(senderNameLabel)
+        val senderNameInput = android.widget.EditText(themedContext).apply {
+            setText("Soham")
+            hint = "Display Name"
+        }
+        linearLayout.addView(senderNameInput)
+
+        // Mode: Feed vs Chat
+        val modeLabel = android.widget.TextView(themedContext).apply { 
+            text = "Select Sharing Mode"
+            setPadding(0, 10, 0, 0)
+        }
+        linearLayout.addView(modeLabel)
+
+        val radioGroup = android.widget.RadioGroup(themedContext)
+        val rbFeed = android.widget.RadioButton(themedContext).apply {
+            id = android.view.View.generateViewId()
+            text = "Publish to NeTuArk Feed"
+            isChecked = true
+        }
+        val rbChat = android.widget.RadioButton(themedContext).apply {
+            id = android.view.View.generateViewId()
+            text = "Send to NeTuArk Chat"
+        }
+        radioGroup.addView(rbFeed)
+        radioGroup.addView(rbChat)
+        linearLayout.addView(radioGroup)
+
+        // Sharing Format (Text vs File)
+        val formatLabel = android.widget.TextView(themedContext).apply {
+            text = "Select Content Format"
+            setPadding(0, 10, 0, 0)
+        }
+        linearLayout.addView(formatLabel)
+        val formatGroup = android.widget.RadioGroup(themedContext)
+        val rbFormatText = android.widget.RadioButton(themedContext).apply {
+            id = android.view.View.generateViewId()
+            text = "Send as inline message/post text"
+            isChecked = true
+        }
+        val rbFormatFile = android.widget.RadioButton(themedContext).apply {
+            id = android.view.View.generateViewId()
+            text = "Upload as raw .txt file attachment"
+        }
+        formatGroup.addView(rbFormatText)
+        formatGroup.addView(rbFormatFile)
+        linearLayout.addView(formatGroup)
+
+        // Feed Inputs Container
+        val feedContainer = android.widget.LinearLayout(themedContext).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+        }
+        val captionLabel = android.widget.TextView(themedContext).apply { text = "Post Caption" }
+        feedContainer.addView(captionLabel)
+        val captionInput = android.widget.EditText(themedContext).apply {
+            setText("Shared directly from NbhEditor Android App! 🚀")
+            hint = "Enter caption text..."
+        }
+        feedContainer.addView(captionInput)
+        linearLayout.addView(feedContainer)
+
+        // Chat Inputs Container (initially hidden)
+        val chatContainer = android.widget.LinearLayout(themedContext).apply {
+            orientation = android.widget.LinearLayout.VERTICAL
+            visibility = android.view.View.GONE
+        }
+        val targetLabel = android.widget.TextView(themedContext).apply { text = "Recipient ID (User Email or Group ID)" }
+        chatContainer.addView(targetLabel)
+        val targetInput = android.widget.EditText(themedContext).apply {
+            setText("paxelux24@gmail.com")
+            hint = "e.g. friend@example.com or group_id"
+        }
+        chatContainer.addView(targetInput)
+
+        val targetTypeLabel = android.widget.TextView(themedContext).apply { text = "Recipient Type" }
+        chatContainer.addView(targetTypeLabel)
+        val targetTypeSpinner = android.widget.Spinner(themedContext)
+        val targetTypes = arrayOf("dm", "group")
+        val spinnerAdapter = android.widget.ArrayAdapter(themedContext, android.R.layout.simple_spinner_item, targetTypes).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        targetTypeSpinner.adapter = spinnerAdapter
+        chatContainer.addView(targetTypeSpinner)
+        linearLayout.addView(chatContainer)
+
+        // Toggle container visibility
+        radioGroup.setOnCheckedChangeListener { _, checkedId ->
+            if (checkedId == rbFeed.id) {
+                feedContainer.visibility = android.view.View.VISIBLE
+                chatContainer.visibility = android.view.View.GONE
+            } else {
+                feedContainer.visibility = android.view.View.GONE
+                chatContainer.visibility = android.view.View.VISIBLE
+            }
+        }
+
+        builder.setView(container)
+        builder.setPositiveButton("Share") { dialog, _ ->
+            val apiKey = apiKeyInput.text.toString().trim()
+            val backendUrl = backendUrlInput.text.toString().trim()
+            val senderEmail = senderEmailInput.text.toString().trim()
+            val senderName = senderNameInput.text.toString().trim()
+            val isFeed = radioGroup.checkedRadioButtonId == rbFeed.id
+            val sendAsFile = formatGroup.checkedRadioButtonId == rbFormatFile.id
+
+            val docTitle = "Android_Draft_${System.currentTimeMillis()}"
+            val docContent = editorBinding.textArea.text.toString()
+
+            val caption = captionInput.text.toString().trim()
+            val targetId = targetInput.text.toString().trim()
+            val targetType = targetTypeSpinner.selectedItem.toString()
+
+            if (apiKey.isEmpty() || backendUrl.isEmpty() || senderEmail.isEmpty()) {
+                android.widget.Toast.makeText(this, "API Key, Server URL, and Sender Email are required.", android.widget.Toast.LENGTH_SHORT).show()
+                return@setPositiveButton
+            }
+
+            if (!isFeed && targetId.isEmpty()) {
+                android.widget.Toast.makeText(this, "Recipient ID is required.", android.widget.Toast.LENGTH_SHORT).show()
+                return@setPositiveButton
+            }
+
+            dialog.dismiss()
+            performNeTuArkShare(
+                apiKey = apiKey,
+                backendUrl = backendUrl,
+                senderEmail = senderEmail,
+                senderName = senderName,
+                isFeed = isFeed,
+                sendAsFile = sendAsFile,
+                docTitle = docTitle,
+                docContent = docContent,
+                caption = caption,
+                targetId = targetId,
+                targetType = targetType
+            )
+        }
+        builder.setNegativeButton("Cancel", null)
+        builder.show()
+    }
+
+    private fun performNeTuArkShare(
+        apiKey: String,
+        backendUrl: String,
+        senderEmail: String,
+        senderName: String,
+        isFeed: Boolean,
+        sendAsFile: Boolean,
+        docTitle: String,
+        docContent: String,
+        caption: String,
+        targetId: String,
+        targetType: String
+    ) {
+        val progressDialog = createLoadingDialog("Connecting to NeTuArk...", "Exporting draft to NbhEditor server\nFulfilling secure Firestore handshake")
+        progressDialog.show()
+
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                // Step 1: Create Document on NbhEditor Server
+                val docPayload = mapOf("title" to docTitle, "content" to docContent)
+                val docBody = okhttp3.RequestBody.create(
+                    okhttp3.MediaType.parse("application/json; charset=utf-8"),
+                    gson.toJson(docPayload)
+                )
+                val docRequest = okhttp3.Request.Builder()
+                    .url("$backendUrl/api/v1/documents")
+                    .header("x-api-key", apiKey)
+                    .post(docBody)
+                    .build()
+
+                val docResponse = client.newCall(docRequest).execute()
+                if (!docResponse.isSuccessful) {
+                    val errorMsg = docResponse.body()?.string() ?: "Unknown error"
+                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        progressDialog.dismiss()
+                        androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                            .setTitle("NbhEditor Upload Failed")
+                            .setMessage("Failed to save draft on NbhEditor server:\n$errorMsg")
+                            .setPositiveButton("OK", null)
+                            .show()
+                    }
+                    return@launch
+                }
+
+                val docJson = gson.fromJson(docResponse.body()?.string(), Map::class.java)
+                val documentId = docJson["id"] as String
+
+                // Step 2: Forward to NeTuArk Bridge Proxy Endpoint
+                val proxyUrl = if (isFeed) "$backendUrl/api/v1/netuark/feed" else "$backendUrl/api/v1/netuark/message"
+                val proxyPayload = if (isFeed) {
+                    mapOf(
+                        "senderEmail" to senderEmail,
+                        "documentId" to documentId,
+                        "postCaption" to caption,
+                        "sendAsFile" to sendAsFile
+                    )
+                } else {
+                    mapOf(
+                        "senderEmail" to senderEmail,
+                        "senderName" to senderName,
+                        "targetId" to targetId,
+                        "targetType" to targetType,
+                        "documentId" to documentId,
+                        "sendAsFile" to sendAsFile
+                    )
+                }
+
+                val proxyBody = okhttp3.RequestBody.create(
+                    okhttp3.MediaType.parse("application/json; charset=utf-8"),
+                    gson.toJson(proxyPayload)
+                )
+                val proxyRequest = okhttp3.Request.Builder()
+                    .url(proxyUrl)
+                    .header("x-api-key", apiKey)
+                    .post(proxyBody)
+                    .build()
+
+                val proxyResponse = client.newCall(proxyRequest).execute()
+                val responseBody = proxyResponse.body()?.string() ?: "Empty response"
+
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    progressDialog.dismiss()
+                    if (proxyResponse.isSuccessful) {
+                        val resultJson = gson.fromJson(responseBody, Map::class.java)
+                        val idKey = if (isFeed) "postId" else "messageId"
+                        val idVal = resultJson[idKey] as? String ?: "N/A"
+                        
+                        androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                            .setTitle("Share Successful!")
+                            .setMessage("Document shared successfully to NeTuArk ${if (isFeed) "Feed" else "Chat"}!\n\nID: $idVal")
+                            .setPositiveButton("OK", null)
+                            .show()
+                    } else {
+                        val errorJson = try {
+                            gson.fromJson(responseBody, Map::class.java)["error"] as? String ?: responseBody
+                        } catch (e: Exception) {
+                            responseBody
+                        }
+                        androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                            .setTitle("NeTuArk Integration Error")
+                            .setMessage("NeTuArk Bridge returned error:\n\n$errorJson")
+                            .setPositiveButton("OK", null)
+                            .show()
+                    }
+                }
+            } catch (e: Exception) {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    progressDialog.dismiss()
+                    androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                        .setTitle("Connection Error")
+                        .setMessage("Failed to reach server: ${e.message}")
+                        .setPositiveButton("OK", null)
+                        .show()
+                }
+            }
+        }
+    }
+
+    private fun importTheMeetTranscript(meetingId: String) {
+        val progressDialog = createLoadingDialog("Fetching Transcript...", "Querying TheMeet developer API\nRetrieving meeting speech logs")
+        progressDialog.show()
+
+        lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                // Call TheMeet REST API with Netuark credentials
+                val url = "https://themeet.pages.dev/api/developer/meetings/$meetingId/transcript?format=markdown"
+                val request = okhttp3.Request.Builder()
+                    .url(url)
+                    .header("x-api-key", "FcQOosY7lFNknR3")
+                    .header("x-app-name", "netuark")
+                    .get()
+                    .build()
+
+                val response = client.newCall(request).execute()
+                val responseBody = response.body()?.string() ?: ""
+
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    progressDialog.dismiss()
+                    if (response.isSuccessful && responseBody.isNotEmpty()) {
+                        // Append the transcript to the active text editor area
+                        val currentText = editorBinding.textArea.text.toString()
+                        val header = "\n\n--- 📹 TheMeet Transcript (Meeting: $meetingId) ---\n"
+                        val newText = currentText + header + responseBody + "\n--------------------------------------------\n"
+                        editorBinding.textArea.setText(newText)
+                        
+                        // Scroll to the end of the text
+                        editorBinding.textArea.setSelection(newText.length)
+                        
+                        android.widget.Toast.makeText(this@MainActivity, "Transcript successfully imported!", android.widget.Toast.LENGTH_LONG).show()
+                    } else {
+                        val errorDetail = if (responseBody.isNotEmpty()) responseBody else "Meeting not found or has no transcripts."
+                        androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                            .setTitle("Transcript Import Failed")
+                            .setMessage("TheMeet API returned error:\n\n$errorDetail")
+                            .setPositiveButton("OK", null)
+                            .show()
+                    }
+                }
+            } catch (e: Exception) {
+                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                    progressDialog.dismiss()
+                    android.util.Log.e("TheMeetImport", "Fetch exception", e)
+                    androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
+                        .setTitle("Import Error")
+                        .setMessage("An exception occurred during network request:\n${e.message}")
+                        .setPositiveButton("OK", null)
+                        .show()
+                }
+            }
+        }
+    }
+
     private fun showCollaborativeSessionDialog() {
         // Check if user is signed in
         if (!GoogleSignInHelper.isSignedIn(this)) {

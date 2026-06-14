@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NbhEditor SDK & API Interactive Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #00e676;
+      --primary-glow: rgba(0, 230, 118, 0.25);
+      --accent: #00b0ff;
+      --accent-glow: rgba(0, 176, 255, 0.25);
+      --bg: #090a0f;
+      --card-bg: rgba(20, 22, 35, 0.65);
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #e0e6ed;
+      --text-muted: #8892b0;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg);
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(0, 230, 118, 0.06) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(0, 176, 255, 0.06) 0%, transparent 40%);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    header h1 {
+      font-size: 2.8rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 30px;
+    }
+
+    @media (max-width: 1024px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+      margin-bottom: 30px;
+      transition: border-color 0.3s;
+    }
+
+    .card:hover {
+      border-color: rgba(0, 230, 118, 0.15);
+    }
+
+    .card h2 {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--text-muted);
+    }
+
+    input, select, textarea {
+      width: 100%;
+      background: rgba(10, 12, 22, 0.85);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.95rem;
+      transition: all 0.3s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 10px var(--primary-glow);
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      background: linear-gradient(135deg, var(--primary), #00c853);
+      color: #05060a;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 10px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px var(--primary-glow);
+    }
+
+    button.btn-accent {
+      background: linear-gradient(135deg, var(--accent), #0091ea);
+      color: #fff;
+    }
+
+    button.btn-accent:hover {
+      box-shadow: 0 6px 20px var(--accent-glow);
+    }
+
+    button.btn-danger {
+      background: linear-gradient(135deg, #ff1744, #d50000);
+      color: #fff;
+    }
+
+    button.btn-danger:hover {
+      box-shadow: 0 6px 20px rgba(255, 23, 68, 0.25);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+      box-shadow: none !important;
+    }
+
+    .editor-container {
+      position: relative;
+    }
+
+    textarea.editor-area {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1rem;
+      min-height: 300px;
+      resize: vertical;
+      line-height: 1.5;
+    }
+
+    .room-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      background: rgba(255, 23, 68, 0.15);
+      color: #ff1744;
+      margin-bottom: 15px;
+      border: 1px solid rgba(255, 23, 68, 0.25);
+    }
+
+    .room-badge.connected {
+      background: rgba(0, 230, 118, 0.15);
+      color: var(--primary);
+      border-color: rgba(0, 230, 118, 0.25);
+    }
+
+    .user-list {
+      margin-top: 15px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .user-tag {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      border-radius: 50px;
+      padding: 4px 12px;
+      font-size: 0.85rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .user-tag.typing {
+      border-color: var(--primary);
+      color: var(--primary);
+      animation: pulse 1.5s infinite alternate;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 2px var(--primary-glow); }
+      100% { box-shadow: 0 0 10px var(--primary-glow); }
+    }
+
+    .console-card {
+      background: #050609;
+      border: 1px solid var(--border);
+      border-radius: 15px;
+      padding: 20px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .console-line {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      margin-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+      padding-bottom: 4px;
+      word-break: break-all;
+    }
+
+    .console-line .timestamp {
+      color: var(--text-muted);
+      margin-right: 8px;
+    }
+
+    .console-line .tag {
+      color: var(--accent);
+      font-weight: 600;
+      margin-right: 8px;
+    }
+
+    .console-line .success {
+      color: var(--primary);
+    }
+
+    .console-line .error {
+      color: #ff1744;
+    }
+
+    .document-list-container {
+      max-height: 250px;
+      overflow-y: auto;
+      margin-top: 15px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .doc-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .doc-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: var(--primary);
+    }
+
+    .doc-item .doc-title {
+      font-weight: 500;
+    }
+
+    .doc-item .doc-actions {
+      display: flex;
+      gap: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>NbhEditor Integration Hub</h1>
+      <p>Interactive playground to verify SDK bindings, REST endpoints, and Live Collaboration</p>
+    </header>
+
+    <div class="dashboard-grid">
+      <!-- LEFT COLUMN: Configurations & CRUD Controls -->
+      <div class="column">
+        <!-- 1. Dev Onboarding & API Authentication -->
+        <div class="card">
+          <h2>🔑 Developer Key & Setup</h2>
+          <div class="form-group">
+            <label for="devName">Developer / Application Name</label>
+            <input type="text" id="devName" value="My Social Media Network" placeholder="e.g. Beeta Social App">
+          </div>
+          <div class="btn-row" style="margin-bottom: 20px;">
+            <button onclick="generateApiKey()">Generate API Key</button>
+          </div>
+          <div class="form-group">
+            <label for="apiKey">Active Developer API Key (x-api-key)</label>
+            <input type="text" id="apiKey" placeholder="Generate key or paste existing here...">
+          </div>
+          <div class="form-group">
+            <label for="sessionToken">Temporary Client Session Token</label>
+            <input type="text" id="sessionToken" placeholder="Generate server-to-server below...">
+          </div>
+          <div class="btn-row">
+            <button class="btn-accent" onclick="generateSessionToken()">Generate Client Session Token</button>
+          </div>
+        </div>
+
+        <!-- 2. Headless Document CRUD -->
+        <div class="card">
+          <h2>📄 Document Operations</h2>
+          <div class="form-group">
+            <label for="docTitleInput">Document Title</label>
+            <input type="text" id="docTitleInput" value="Showcase Post Draft">
+          </div>
+          <div class="btn-row">
+            <button onclick="createDocument()">Create Doc</button>
+            <button class="btn-accent" onclick="loadDocuments()">List Docs</button>
+          </div>
+          <div class="document-list-container" id="docList">
+            <div style="color: var(--text-muted); text-align: center; padding: 20px;">No documents loaded. Click "List Docs" to fetch.</div>
+          </div>
+        </div>
+
+        <!-- 3. Export Webhooks -->
+        <div class="card">
+          <h2>🚀 Social Media Integrations</h2>
+          <div class="form-group">
+            <label for="targetDocId">Target Document ID</label>
+            <input type="text" id="targetDocId" placeholder="Active document ID...">
+          </div>
+          
+          <div style="border-top: 1px solid var(--border); padding-top: 15px; margin-top: 15px;">
+            <h3>📤 Export to Social Media Feed</h3>
+            <div class="form-group">
+              <label for="feedCaption">Caption / Post Text</label>
+              <textarea id="feedCaption" rows="2">Check out my new collaborative note! Created with NbhEditor engine. 🚀</textarea>
+            </div>
+            <button onclick="exportToFeed()">Post to Feed</button>
+          </div>
+
+          <div style="border-top: 1px solid var(--border); padding-top: 15px; margin-top: 15px;">
+            <h3>💬 Send to Chat (DM/Group)</h3>
+            <div class="form-group">
+              <label for="chatId">Recipient ID (User / Group ID)</label>
+              <input type="text" id="chatId" value="social_group_chat_456">
+            </div>
+            <div class="form-group">
+              <label for="chatType">Chat Type</label>
+              <select id="chatType">
+                <option value="group">Group Chat</option>
+                <option value="dm">Direct Message (DM)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="chatMessage">Message Text</label>
+              <textarea id="chatMessage" rows="2">Sharing the latest draft session document with you guys.</textarea>
+            </div>
+            <button class="btn-accent" onclick="exportToChat()">Send to Chat</button>
+          </div>
+        </div>
+
+        <!-- 4. NeTuArk Integration Dashboard -->
+        <div class="card" style="border-color: rgba(0, 176, 255, 0.25);">
+          <h2 style="color: var(--accent);">🔗 NeTuArk Bridge Integration</h2>
+          
+          <div class="form-group">
+            <label for="netuarkApiKey">NeTuArk API Key (ntk_...)</label>
+            <input type="text" id="netuarkApiKey" value="ntk_391038c39e95280e271faa6c3af3e721e3b2b8711e6029ebfa6cf6d59350b52a" placeholder="Enter NeTuArk API key...">
+          </div>
+
+          <div class="btn-row" style="margin-bottom: 20px;">
+            <button class="btn-accent" onclick="initNeTuArk()">Initialize SDK</button>
+          </div>
+
+          <div id="netuarkUserSection" style="display: none; border-top: 1px solid var(--border); padding-top: 15px; margin-top: 15px;">
+            <h3>👤 Connect User Session</h3>
+            <div class="form-group">
+              <label for="netuarkEmail">User Email (Registered on NeTuArk)</label>
+              <input type="text" id="netuarkEmail" value="botmaker583@gmail.com" placeholder="e.g. user@example.com">
+            </div>
+            <div class="btn-row" style="margin-bottom: 20px;">
+              <button onclick="connectNeTuArkUser()">Request & Verify Account</button>
+            </div>
+          </div>
+
+          <div id="netuarkActionsSection" style="display: none; border-top: 1px solid var(--border); padding-top: 15px; margin-top: 15px;">
+            <h3>🛠️ Bridge Share Operations</h3>
+            <div class="form-group">
+              <label for="netuarkTargetDocId">Target Document ID</label>
+              <input type="text" id="netuarkTargetDocId" placeholder="Active document ID...">
+            </div>
+
+            <!-- Contacts List -->
+            <div style="margin-bottom: 15px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-size: 0.95rem; font-weight: 500; color: var(--text-muted);">Select NeTuArk Contact:</span>
+                <button class="btn-accent" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 6px;" onclick="loadNeTuArkContacts()">Refresh</button>
+              </div>
+              <div id="netuarkContactsList" class="document-list-container" style="max-height: 150px;">
+                <div style="color: var(--text-muted); text-align: center; padding: 15px; font-size: 0.85rem;">Click "Refresh" to load contacts.</div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>Sharing Content Mode</label>
+              <div style="display: flex; gap: 15px; margin-bottom: 10px;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text);">
+                  <input type="radio" name="netuarkShareMode" value="text" checked style="width: auto; margin: 0;"> Send as Text Message
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text);">
+                  <input type="radio" name="netuarkShareMode" value="file" style="width: auto; margin: 0;"> Send as .txt File Attachment
+                </label>
+              </div>
+            </div>
+
+            <div class="btn-row" style="margin-top: 15px; border-top: 1px solid var(--border); padding-top: 15px; gap: 8px;">
+              <button onclick="shareWithContact()">💬 Send Document to Selected Chat</button>
+              <button class="btn-accent" onclick="shareToFeed()">✨ Post Document to Feed</button>
+            </div>
+
+            <!-- Create Shared Room section -->
+            <div style="border-top: 1px solid var(--border); padding-top: 15px; margin-top: 15px;">
+              <h4>📢 Spawn Collaborative NbhEditor Document in NeTuArk</h4>
+              <div class="form-group">
+                <label for="netuarkNewDocTitle">New Document Title</label>
+                <input type="text" id="netuarkNewDocTitle" value="NeTuArk Collaborative Project">
+              </div>
+              <button onclick="spawnCollaborativeRoom()">🚀 Create Room & Send invite to selected chat</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: Headless Real-Time Editor & Logger -->
+      <div class="column">
+        <!-- Live Editor & Room Connection -->
+        <div class="card">
+          <h2>✍️ Headless Collaboration Editor</h2>
+          
+          <div class="form-group">
+            <label for="activeRoomId">Active Room ID</label>
+            <input type="text" id="activeRoomId" placeholder="Enter Room ID to join...">
+          </div>
+          
+          <div class="btn-row" style="margin-bottom: 20px;">
+            <button onclick="createRoom()">Create Room</button>
+            <button class="btn-accent" onclick="joinRoom()">Join Room</button>
+            <button class="btn-danger" id="leaveRoomBtn" onclick="leaveRoom()" disabled>Leave Room</button>
+          </div>
+
+          <div class="room-badge" id="roomStatusBadge">
+            🔴 Disconnected from Collaboration
+          </div>
+
+          <!-- Active Participants -->
+          <div style="margin-bottom: 15px;">
+            <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-muted);">Active Room Participants:</span>
+            <div class="user-list" id="activeUsers">
+              <span style="font-size: 0.85rem; color: var(--text-muted);">No active users.</span>
+            </div>
+          </div>
+
+          <!-- Web Headless Bindings Simulator -->
+          <div class="editor-container">
+            <label for="editorTextArea">Live Headless Document TextArea</label>
+            <textarea id="editorTextArea" class="editor-area" placeholder="Write document contents here... If connected to a room, modifications sync instantly." oninput="onEditorInput()"></textarea>
+          </div>
+        </div>
+
+        <!-- Diagnostics Output Console -->
+        <div class="card">
+          <h2>💻 Diagnostics Logs</h2>
+          <div class="console-card" id="consoleLog">
+            <div class="console-line"><span class="timestamp">08:00:00</span><span class="tag">System</span>Console log ready. Generate an API key to begin.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load SDK -->
+  <script src="./nbheditor-sdk.js"></script>
+  <script>
+    let sdkClient = null;
+    let isConnected = false;
+    let activeDocId = null;
+    let localUser = {
+      id: 'web_dev_' + Math.random().toString(36).substr(2, 5),
+      name: 'Dev Participant'
+    };
+    let syncSession = null;
+    let preventInputLoop = false; // Debounce remote/local change conflicts
+    let typingTimer = null;
+
+    // Helper to log in console card
+    function log(tag, message, type = 'normal') {
+      const consoleLog = document.getElementById('consoleLog');
+      const time = new Date().toLocaleTimeString();
+      const cssClass = type === 'success' ? 'success' : (type === 'error' ? 'error' : '');
+      
+      const line = document.createElement('div');
+      line.className = 'console-line';
+      line.innerHTML = `<span class="timestamp">${time}</span><span class="tag">${tag}</span><span class="${cssClass}">${message}</span>`;
+      consoleLog.appendChild(line);
+      consoleLog.scrollTop = consoleLog.scrollHeight;
+    }
+
+    // Initialize SDK Client
+    function getClient() {
+      const key = document.getElementById('apiKey').value;
+      const token = document.getElementById('sessionToken').value;
+      
+      sdkClient = new NbhEditorClient({
+        apiKey: key || undefined,
+        sessionToken: token || undefined,
+        apiUrl: 'http://localhost:3000'
+      });
+      return sdkClient;
+    }
+
+    // Generate Developer API Key
+    async function generateApiKey() {
+      const devName = document.getElementById('devName').value;
+      try {
+        const response = await fetch('http://localhost:3000/api/v1/dev/keys', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ developerName: devName })
+        });
+        const data = await response.json();
+        if (response.ok) {
+          document.getElementById('apiKey').value = data.apiKey;
+          log('KeyGen', `API Key generated for "${data.developerName}"`, 'success');
+        } else {
+          log('KeyGen', `Error: ${data.error}`, 'error');
+        }
+      } catch (err) {
+        log('KeyGen', `Network failure. Is the server running?`, 'error');
+      }
+    }
+
+    // Generate Client Session Token
+    async function generateSessionToken() {
+      const client = getClient();
+      const roomId = document.getElementById('activeRoomId').value;
+      if (!roomId) {
+        log('Auth', 'Cannot generate token: Enter an active Room ID first.', 'error');
+        return;
+      }
+      try {
+        log('Auth', 'Requesting temporary session token from developer server...');
+        const tokenData = await client._request('/api/v1/auth/session', {
+          method: 'POST',
+          body: JSON.stringify({
+            userId: localUser.id,
+            userName: localUser.name,
+            roomId: roomId
+          })
+        });
+        document.getElementById('sessionToken').value = tokenData.sessionToken;
+        log('Auth', `Temporary session token generated! Token is: ${tokenData.sessionToken.substring(0, 20)}...`, 'success');
+      } catch (err) {
+        log('Auth', `Failed to generate session token: ${err.message}`, 'error');
+      }
+    }
+
+    // Create Document via SDK
+    async function createDocument() {
+      const title = document.getElementById('docTitleInput').value;
+      const content = document.getElementById('editorTextArea').value;
+      const client = getClient();
+      try {
+        log('SDK', `Creating document "${title}"...`);
+        const doc = await client.createDocument({ title, content });
+        activeDocId = doc.id;
+        document.getElementById('targetDocId').value = doc.id;
+        log('SDK', `Document created successfully! ID: ${doc.id}`, 'success');
+        loadDocuments();
+      } catch (err) {
+        log('SDK', `Failed to create document: ${err.message}`, 'error');
+      }
+    }
+
+    // Load Documents via SDK
+    async function loadDocuments() {
+      const client = getClient();
+      const docList = document.getElementById('docList');
+      try {
+        log('SDK', 'Listing documents...');
+        const docs = await client.listDocuments();
+        docList.innerHTML = '';
+        if (docs.length === 0) {
+          docList.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 20px;">No documents found.</div>';
+          return;
+        }
+        docs.forEach(doc => {
+          const item = document.createElement('div');
+          item.className = 'doc-item';
+          item.onclick = () => selectDocument(doc);
+          item.innerHTML = `
+            <span class="doc-title">${doc.title}</span>
+            <span style="font-size:0.8rem; color:var(--text-muted);">${doc.id}</span>
+          `;
+          docList.appendChild(item);
+        });
+        log('SDK', `Loaded ${docs.length} documents.`, 'success');
+      } catch (err) {
+        log('SDK', `Failed to list documents: ${err.message}`, 'error');
+        docList.innerHTML = `<div style="color: #ff1744; text-align: center; padding: 20px;">Error loading docs: ${err.message}</div>`;
+      }
+    }
+
+    function selectDocument(doc) {
+      activeDocId = doc.id;
+      document.getElementById('targetDocId').value = doc.id;
+      document.getElementById('docTitleInput').value = doc.title;
+      document.getElementById('editorTextArea').value = doc.content;
+      log('UI', `Selected document: ${doc.id}`);
+    }
+
+    // Create Room via SDK
+    async function createRoom() {
+      if (!activeDocId) {
+        log('SDK', 'Please create or select a document first.', 'error');
+        return;
+      }
+      const client = getClient();
+      try {
+        log('SDK', `Creating collaborative room for document ${activeDocId}...`);
+        const room = await client.createRoom(activeDocId);
+        document.getElementById('activeRoomId').value = room.id;
+        log('SDK', `Room created successfully! Room ID: ${room.id}, Session ID: ${room.sessionId}`, 'success');
+      } catch (err) {
+        log('SDK', `Failed to create room: ${err.message}`, 'error');
+      }
+    }
+
+    // Join Room via SDK
+    async function joinRoom() {
+      const roomId = document.getElementById('activeRoomId').value;
+      if (!roomId) {
+        log('SDK', 'Enter a Room ID to join.', 'error');
+        return;
+      }
+      const client = getClient();
+      try {
+        log('SDK', `Joining room ${roomId}...`);
+        
+        syncSession = await client.joinCollaborativeRoom(roomId, localUser, {
+          onContentChange: (content) => {
+            if (preventInputLoop) return;
+            preventInputLoop = true;
+            document.getElementById('editorTextArea').value = content;
+            preventInputLoop = false;
+            log('Sync', `Content updated from remote`, 'success');
+          },
+          onUsersChange: (users) => {
+            updateUsersList(users);
+          }
+        });
+
+        // Set initial content
+        preventInputLoop = true;
+        document.getElementById('editorTextArea').value = syncSession.initialContent;
+        preventInputLoop = false;
+
+        isConnected = true;
+        document.getElementById('roomStatusBadge').className = 'room-badge connected';
+        document.getElementById('roomStatusBadge').textContent = `🟢 Connected: Room ID ${roomId} (Session ID ${syncSession.sessionId})`;
+        document.getElementById('leaveRoomBtn').disabled = false;
+        log('SDK', `Room joined! Live synchronization active.`, 'success');
+
+      } catch (err) {
+        log('SDK', `Failed to join room: ${err.message}`, 'error');
+      }
+    }
+
+    // Broadcast input changes to other clients
+    function onEditorInput() {
+      if (!isConnected || !syncSession) return;
+      
+      const content = document.getElementById('editorTextArea').value;
+      preventInputLoop = true;
+      sdkClient.updateLiveContent(content);
+      preventInputLoop = false;
+
+      // Handle typing status indicators
+      sdkClient.updateLiveCursor(document.getElementById('editorTextArea').selectionStart, true);
+      
+      clearTimeout(typingTimer);
+      typingTimer = setTimeout(() => {
+        if (isConnected) {
+          sdkClient.updateLiveCursor(document.getElementById('editorTextArea').selectionStart, false);
+        }
+      }, 1500);
+    }
+
+    // Update participants display list
+    function updateUsersList(users) {
+      const activeUsersContainer = document.getElementById('activeUsers');
+      activeUsersContainer.innerHTML = '';
+      
+      const list = Object.values(users);
+      if (list.length === 0) {
+        activeUsersContainer.innerHTML = '<span style="font-size: 0.85rem; color: var(--text-muted);">No active users.</span>';
+        return;
+      }
+
+      list.forEach(user => {
+        const tag = document.createElement('span');
+        tag.className = `user-tag ${user.typing ? 'typing' : ''}`;
+        tag.innerHTML = `👤 ${user.userName} ${user.typing ? '✍️' : ''} (Pos: ${user.cursorPosition})`;
+        activeUsersContainer.appendChild(tag);
+      });
+    }
+
+    // Leave room
+    async function leaveRoom() {
+      if (syncSession) {
+        await syncSession.disconnect();
+        syncSession = null;
+        isConnected = false;
+        document.getElementById('roomStatusBadge').className = 'room-badge';
+        document.getElementById('roomStatusBadge').textContent = '🔴 Disconnected from Collaboration';
+        document.getElementById('leaveRoomBtn').disabled = true;
+        document.getElementById('activeUsers').innerHTML = '<span style="font-size: 0.85rem; color: var(--text-muted);">No active users.</span>';
+        log('SDK', 'Left room. Real-time synchronization ended.');
+      }
+    }
+
+    // Export to Social Media Feed Post
+    async function exportToFeed() {
+      const docId = document.getElementById('targetDocId').value;
+      const caption = document.getElementById('feedCaption').value;
+      if (!docId) {
+        log('Export', 'Select/Enter a Document ID to export.', 'error');
+        return;
+      }
+      const client = getClient();
+      try {
+        log('Export', `Exporting document ${docId} to Feed...`);
+        const result = await client.exportToFeed(docId, { postText: caption });
+        log('Export', `Success! Export ID: ${result.exportId}`, 'success');
+        log('Mock Social Media', `Feed post published! Content payload: ${JSON.stringify(result.payload)}`, 'success');
+      } catch (err) {
+        log('Export', `Export failed: ${err.message}`, 'error');
+      }
+    }
+
+    // Export to Social Media Chat Message
+    async function exportToChat() {
+      const docId = document.getElementById('targetDocId').value;
+      const chatId = document.getElementById('chatId').value;
+      const chatType = document.getElementById('chatType').value;
+      const msg = document.getElementById('chatMessage').value;
+      
+      if (!docId) {
+        log('Export', 'Select/Enter a Document ID to send.', 'error');
+        return;
+      }
+      const client = getClient();
+      try {
+        log('Export', `Sending document ${docId} to ${chatType} chat...`);
+        const result = await client.exportToChat(docId, {
+          chatId: chatId,
+          chatType: chatType,
+          messageText: msg
+        });
+        log('Export', `Success! Chat message sent! ID: ${result.exportId}`, 'success');
+        log('Mock Social Media', `Chat payload dispatched: ${JSON.stringify(result.payload)}`, 'success');
+      } catch (err) {
+        log('Export', `Chat export failed: ${err.message}`, 'error');
+      }
+    }
+
+    // --- NeTuArk Integration Handlers ---
+    let netuarkInitialized = false;
+    let netuarkConnectedUser = null;
+    let netuarkContacts = [];
+    let selectedContactEmail = null;
+
+    async function initNeTuArk() {
+      const apiKey = document.getElementById('netuarkApiKey').value.trim();
+      if (!apiKey) {
+        log('NeTuArk', 'API Key is required.', 'error');
+        return;
+      }
+      
+      const client = getClient();
+      try {
+        log('NeTuArk', 'Loading and initializing NeTuArk Bridge SDK...');
+        const result = await client.initNeTuArk(apiKey);
+        netuarkInitialized = true;
+        log('NeTuArk', `SDK initialized successfully! Version: ${result.sdkVersion}`, 'success');
+        document.getElementById('netuarkUserSection').style.display = 'block';
+      } catch (err) {
+        log('NeTuArk', `Initialization failed: ${err.message}`, 'error');
+      }
+    }
+
+    async function connectNeTuArkUser() {
+      const email = document.getElementById('netuarkEmail').value.trim();
+      if (!email) {
+        log('NeTuArk', 'User email is required.', 'error');
+        return;
+      }
+      
+      const client = getClient();
+      try {
+        log('NeTuArk', `Requesting permission and verifying user "${email}"...`);
+        const result = await client.connectNeTuArkUser(email);
+        netuarkConnectedUser = result.account;
+        log('NeTuArk', `Connected as: ${result.account.displayName} (@${result.account.username || 'none'})`, 'success');
+        
+        document.getElementById('netuarkActionsSection').style.display = 'block';
+        
+        // Pre-fill target doc ID if active
+        if (activeDocId) {
+          document.getElementById('netuarkTargetDocId').value = activeDocId;
+        }
+
+        // Auto load contacts
+        await loadNeTuArkContacts();
+      } catch (err) {
+        log('NeTuArk', `Connection failed: ${err.message}`, 'error');
+      }
+    }
+
+    async function loadNeTuArkContacts() {
+      const client = getClient();
+      const listContainer = document.getElementById('netuarkContactsList');
+      try {
+        log('NeTuArk', 'Fetching chat contacts...');
+        netuarkContacts = await client.getNeTuArkContacts();
+        listContainer.innerHTML = '';
+        
+        if (netuarkContacts.length === 0) {
+          listContainer.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding: 15px; font-size: 0.85rem;">No contacts found.</div>';
+          selectedContactEmail = null;
+          return;
+        }
+
+        netuarkContacts.forEach(contact => {
+          const div = document.createElement('div');
+          div.className = 'doc-item';
+          div.id = 'contact_' + contact.userId.replace(/[@.]/g, '_');
+          div.onclick = () => selectContact(contact);
+          div.innerHTML = `
+            <div style="display: flex; flex-direction: column;">
+              <span class="doc-title">${contact.displayName} ${contact.online ? '<span style="color: var(--primary); font-size:0.75rem;">● online</span>' : ''}</span>
+              <span style="font-size:0.8rem; color:var(--text-muted);">${contact.userId}</span>
+            </div>
+          `;
+          listContainer.appendChild(div);
+        });
+
+        // Auto select first contact
+        selectContact(netuarkContacts[0]);
+        log('NeTuArk', `Loaded ${netuarkContacts.length} chat contacts.`, 'success');
+      } catch (err) {
+        log('NeTuArk', `Failed to load contacts: ${err.message}`, 'error');
+      }
+    }
+
+    function selectContact(contact) {
+      selectedContactEmail = contact.userId;
+      
+      // Highlight selected contact
+      const items = document.querySelectorAll('#netuarkContactsList .doc-item');
+      items.forEach(el => el.style.borderColor = 'transparent');
+      
+      const activeEl = document.getElementById('contact_' + contact.userId.replace(/[@.]/g, '_'));
+      if (activeEl) {
+        activeEl.style.borderColor = 'var(--accent)';
+      }
+      log('UI', `Selected contact recipient: ${contact.userId}`);
+    }
+
+    async function shareWithContact() {
+      const docId = document.getElementById('netuarkTargetDocId').value.trim();
+      if (!docId) {
+        log('NeTuArk', 'Please specify a Document ID to share.', 'error');
+        return;
+      }
+      if (!selectedContactEmail) {
+        log('NeTuArk', 'Please select a contact from the list.', 'error');
+        return;
+      }
+      
+      const sendAsFile = document.querySelector('input[name="netuarkShareMode"]:checked').value === 'file';
+      const client = getClient();
+      try {
+        log('NeTuArk', `Sharing document ${docId} with ${selectedContactEmail} (${sendAsFile ? 'file' : 'text'} mode)...`);
+        const result = await client.sendDocumentToNeTuArkChat(selectedContactEmail, docId, sendAsFile);
+        log('NeTuArk', `Document successfully sent! Message ID: ${result.messageId}`, 'success');
+      } catch (err) {
+        log('NeTuArk', `Failed to send document: ${err.message}`, 'error');
+      }
+    }
+
+    async function shareToFeed() {
+      const docId = document.getElementById('netuarkTargetDocId').value.trim();
+      if (!docId) {
+        log('NeTuArk', 'Please specify a Document ID to share.', 'error');
+        return;
+      }
+      
+      const sendAsFile = document.querySelector('input[name="netuarkShareMode"]:checked').value === 'file';
+      const caption = document.getElementById('feedCaption').value; // Reuse caption input
+      const client = getClient();
+      try {
+        log('NeTuArk', `Publishing document ${docId} to Feed...`);
+        const result = await client.postDocumentToNeTuArkFeed(docId, caption, sendAsFile);
+        log('NeTuArk', `Successfully posted to feed! Post ID: ${result.postId}`, 'success');
+      } catch (err) {
+        log('NeTuArk', `Failed to publish post: ${err.message}`, 'error');
+      }
+    }
+
+    async function spawnCollaborativeRoom() {
+      const title = document.getElementById('netuarkNewDocTitle').value.trim();
+      if (!title) {
+        log('NeTuArk', 'Please specify a title for the new collaborative document.', 'error');
+        return;
+      }
+      if (!selectedContactEmail) {
+        log('NeTuArk', 'Please select a contact to invite.', 'error');
+        return;
+      }
+
+      const client = getClient();
+      try {
+        log('NeTuArk', `Spawning collaborative session for "${title}" and sending invite to ${selectedContactEmail}...`);
+        const result = await client.createSharedCollaborationRoom(title, selectedContactEmail);
+        log('NeTuArk', `Collaborative session spawned! Room ID: ${result.roomId}, Session ID: ${result.sessionId}`, 'success');
+        log('NeTuArk', `Invite link sent! URL: ${result.redirectUrl}`, 'success');
+        
+        // Auto load the new doc
+        activeDocId = result.documentId;
+        document.getElementById('targetDocId').value = activeDocId;
+        document.getElementById('netuarkTargetDocId').value = activeDocId;
+        document.getElementById('activeRoomId').value = result.roomId;
+        loadDocuments();
+      } catch (err) {
+        log('NeTuArk', `Failed to spawn collaborative room: ${err.message}`, 'error');
+      }
+    }
+  </script>
+</body>
+</html>

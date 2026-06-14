@@ -1,0 +1,70 @@
+{
+  "apiKeys": {
+    "nbh_key_test_dev_123": {
+      "key": "nbh_key_test_dev_123",
+      "developerName": "Seeded Test Developer",
+      "createdAt": 1781425094417,
+      "status": "active"
+    },
+    "nbh_key_625d19462e6041a7a9bf3de936e74352": {
+      "key": "nbh_key_625d19462e6041a7a9bf3de936e74352",
+      "developerName": "SocialMediaNetworkApp",
+      "createdAt": 1781425094421,
+      "status": "active"
+    },
+    "nbh_key_80eabb1918554e67b16df544fd12b8dd": {
+      "key": "nbh_key_80eabb1918554e67b16df544fd12b8dd",
+      "developerName": "SocialMediaNetworkApp",
+      "createdAt": 1781425107524,
+      "status": "active"
+    }
+  },
+  "documents": {
+    "doc_9f212bafdd8c49c2add40ae8933350a5": {
+      "id": "doc_9f212bafdd8c49c2add40ae8933350a5",
+      "title": "Project Roadmap Final Draft",
+      "content": "## NbhEditor Features\n- Rich Text\n- Live Collaboration\n- Developer Web APIs!",
+      "ownerApiKey": "nbh_key_625d19462e6041a7a9bf3de936e74352",
+      "createdAt": 1781425094445,
+      "updatedAt": 1781425094462
+    }
+  },
+  "rooms": {
+    "room_b03ae657fdd8448c84fc92c03d2134af": {
+      "id": "room_b03ae657fdd8448c84fc92c03d2134af",
+      "documentId": "doc_9f212bafdd8c49c2add40ae8933350a5",
+      "ownerApiKey": "nbh_key_625d19462e6041a7a9bf3de936e74352",
+      "sessionId": "NEOD6OE",
+      "firebasePath": "collaborative_sessions/NEOD6OE",
+      "createdAt": 1781425094468,
+      "status": "active"
+    },
+    "room_6bc308a35d5a4b99aa1463464c568bff": {
+      "id": "room_6bc308a35d5a4b99aa1463464c568bff",
+      "documentId": "doc_0d756c1e21514049b1ea9deba2bb66d4",
+      "ownerApiKey": "nbh_key_80eabb1918554e67b16df544fd12b8dd",
+      "sessionId": "NE7M14H",
+      "firebasePath": "collaborative_sessions/NE7M14H",
+      "createdAt": 1781425107567,
+      "status": "active"
+    }
+  },
+  "sessionTokens": {
+    "nbh_tok_f45360655c93420aaf0f3a497764595c": {
+      "token": "nbh_tok_f45360655c93420aaf0f3a497764595c",
+      "apiKey": "nbh_key_625d19462e6041a7a9bf3de936e74352",
+      "userId": "social_user_alice_77",
+      "userName": "Alice Smith",
+      "roomId": "room_b03ae657fdd8448c84fc92c03d2134af",
+      "expiresAt": 1781428694476
+    },
+    "nbh_tok_67f3e420766b460d84a953b70283085f": {
+      "token": "nbh_tok_67f3e420766b460d84a953b70283085f",
+      "apiKey": "nbh_key_80eabb1918554e67b16df544fd12b8dd",
+      "userId": "social_user_alice_77",
+      "userName": "Alice Smith",
+      "roomId": "room_6bc308a35d5a4b99aa1463464c568bff",
+      "expiresAt": 1781428707574
+    }
+  }
+}
