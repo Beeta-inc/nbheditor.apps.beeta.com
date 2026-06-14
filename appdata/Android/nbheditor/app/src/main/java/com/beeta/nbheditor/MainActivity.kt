@@ -5318,10 +5318,7 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
             try {
                 // Step 1: Create Document on Server
                 val docPayload = mapOf("title" to title, "content" to content)
-                val docBody = okhttp3.RequestBody.create(
-                    okhttp3.MediaType.parse("application/json; charset=utf-8"),
-                    gson.toJson(docPayload)
-                )
+                val docBody = gson.toJson(docPayload).toRequestBody("application/json; charset=utf-8".toMediaType())
                 val docRequest = okhttp3.Request.Builder()
                     .url("$backendUrl/api/v1/documents")
                     .header("x-api-key", apiKey)
@@ -5330,7 +5327,7 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
 
                 val docResponse = client.newCall(docRequest).execute()
                 if (!docResponse.isSuccessful) {
-                    val errorMsg = docResponse.body()?.string() ?: "Unknown error"
+                    val errorMsg = docResponse.body?.string() ?: "Unknown error"
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                         progressDialog.dismiss()
                         androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
@@ -5342,7 +5339,7 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
                     return@launch
                 }
 
-                val docJson = gson.fromJson(docResponse.body()?.string(), Map::class.java)
+                val docJson = gson.fromJson(docResponse.body?.string(), Map::class.java)
                 val documentId = docJson["id"] as String
 
                 // Step 2: Call Export Endpoint
@@ -5353,10 +5350,7 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
                     mapOf("documentId" to documentId, "chatId" to chatId, "chatType" to chatType, "messageText" to messageText)
                 }
 
-                val exportBody = okhttp3.RequestBody.create(
-                    okhttp3.MediaType.parse("application/json; charset=utf-8"),
-                    gson.toJson(exportPayload)
-                )
+                val exportBody = gson.toJson(exportPayload).toRequestBody("application/json; charset=utf-8".toMediaType())
                 val exportRequest = okhttp3.Request.Builder()
                     .url(exportUrl)
                     .header("x-api-key", apiKey)
@@ -5364,7 +5358,7 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
                     .build()
 
                 val exportResponse = client.newCall(exportRequest).execute()
-                val responseString = exportResponse.body()?.string() ?: ""
+                val responseString = exportResponse.body?.string() ?: ""
                 
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                     progressDialog.dismiss()
@@ -5740,10 +5734,7 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
             try {
                 // Step 1: Create Document on NbhEditor Server
                 val docPayload = mapOf("title" to docTitle, "content" to docContent)
-                val docBody = okhttp3.RequestBody.create(
-                    okhttp3.MediaType.parse("application/json; charset=utf-8"),
-                    gson.toJson(docPayload)
-                )
+                val docBody = gson.toJson(docPayload).toRequestBody("application/json; charset=utf-8".toMediaType())
                 val docRequest = okhttp3.Request.Builder()
                     .url("$backendUrl/api/v1/documents")
                     .header("x-api-key", apiKey)
@@ -5752,7 +5743,7 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
 
                 val docResponse = client.newCall(docRequest).execute()
                 if (!docResponse.isSuccessful) {
-                    val errorMsg = docResponse.body()?.string() ?: "Unknown error"
+                    val errorMsg = docResponse.body?.string() ?: "Unknown error"
                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                         progressDialog.dismiss()
                         androidx.appcompat.app.AlertDialog.Builder(this@MainActivity)
@@ -5764,7 +5755,7 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
                     return@launch
                 }
 
-                val docJson = gson.fromJson(docResponse.body()?.string(), Map::class.java)
+                val docJson = gson.fromJson(docResponse.body?.string(), Map::class.java)
                 val documentId = docJson["id"] as String
 
                 // Step 2: Forward to NeTuArk Bridge Proxy Endpoint
@@ -5787,10 +5778,7 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
                     )
                 }
 
-                val proxyBody = okhttp3.RequestBody.create(
-                    okhttp3.MediaType.parse("application/json; charset=utf-8"),
-                    gson.toJson(proxyPayload)
-                )
+                val proxyBody = gson.toJson(proxyPayload).toRequestBody("application/json; charset=utf-8".toMediaType())
                 val proxyRequest = okhttp3.Request.Builder()
                     .url(proxyUrl)
                     .header("x-api-key", apiKey)
@@ -5798,7 +5786,7 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
                     .build()
 
                 val proxyResponse = client.newCall(proxyRequest).execute()
-                val responseBody = proxyResponse.body()?.string() ?: "Empty response"
+                val responseBody = proxyResponse.body?.string() ?: "Empty response"
 
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                     progressDialog.dismiss()
@@ -5854,7 +5842,7 @@ Open NbhEditor → Menu → Collaborative Session → Join Session"""
                     .build()
 
                 val response = client.newCall(request).execute()
-                val responseBody = response.body()?.string() ?: ""
+                val responseBody = response.body?.string() ?: ""
 
                 kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                     progressDialog.dismiss()
