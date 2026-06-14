@@ -34,7 +34,7 @@
         <item
             android:id="@+id/nav_themeet"
             android:icon="@android:drawable/ic_menu_camera"
-            android:title="TheMeet Video & Transcripts" />
+            android:title="TheMeet Video &amp; Transcripts" />
         <item
             android:id="@+id/nav_netuark"
             android:icon="@android:drawable/ic_menu_send"
