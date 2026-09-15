@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Selected state: right side rounded pill shape -->
+    <item android:state_selected="true">
+        <shape android:shape="rectangle">
+            <corners
+                android:topLeftRadius="0dp"
+                android:topRightRadius="9999dp"
+                android:bottomRightRadius="9999dp"
+                android:bottomLeftRadius="0dp" />
+            <solid android:color="#28292A" />
+        </shape>
+    </item>
+
+    <!-- Pressed state -->
+    <item android:state_pressed="true">
+        <shape android:shape="rectangle">
+            <corners
+                android:topLeftRadius="0dp"
+                android:topRightRadius="9999dp"
+                android:bottomRightRadius="9999dp"
+                android:bottomLeftRadius="0dp" />
+            <solid android:color="#1A1A1A" />
+        </shape>
+    </item>
+
+    <!-- Focused state -->
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <corners
+                android:topLeftRadius="0dp"
+                android:topRightRadius="9999dp"
+                android:bottomRightRadius="9999dp"
+                android:bottomLeftRadius="0dp" />
+            <solid android:color="#202124" />
+        </shape>
+    </item>
+
+    <!-- Default: transparent -->
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="#00000000" />
+        </shape>
+    </item>
+
+</selector>

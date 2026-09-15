@@ -4,8 +4,8 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="24dp"
-    android:background="@android:color/transparent">
+    android:background="#111111"
+    android:padding="24dp">
 
     <!-- Header with animated pulse -->
     <com.google.android.material.card.MaterialCardView
@@ -13,8 +13,10 @@
         android:layout_height="wrap_content"
         android:layout_marginBottom="20dp"
         app:cardCornerRadius="16dp"
-        app:cardElevation="4dp"
-        app:cardBackgroundColor="#E3F2FD">
+        app:cardElevation="0dp"
+        app:cardBackgroundColor="#111111"
+        app:strokeColor="#3C4043"
+        app:strokeWidth="1dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -29,7 +31,7 @@
                 android:layout_height="20dp"
                 android:src="@android:drawable/presence_online"
                 android:layout_marginEnd="14dp"
-                android:tint="#1976D2" />
+                app:tint="#4CAF50" />
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -43,14 +45,14 @@
                     android:text="🔗 Live Session"
                     android:textSize="20sp"
                     android:textStyle="bold"
-                    android:textColor="#1976D2" />
+                    android:textColor="#FFFFFF" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Real-time collaboration active"
                     android:textSize="13sp"
-                    android:textColor="#757575"
+                    android:textColor="#9AA0A6"
                     android:layout_marginTop="3dp" />
 
             </LinearLayout>
@@ -64,8 +66,8 @@
                 android:textStyle="bold"
                 android:fontFamily="monospace"
                 android:padding="14dp"
-                android:background="#1976D2"
-                android:textColor="@android:color/white"
+                android:background="#1F2937"
+                android:textColor="#FFFFFF"
                 android:letterSpacing="0.15" />
 
         </LinearLayout>
@@ -96,12 +98,14 @@
                 android:textAllCaps="false"
                 android:textSize="15sp"
                 android:textStyle="bold"
+                android:textColor="#FFFFFF"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 app:icon="@android:drawable/ic_menu_myplaces"
+                app:iconTint="#FFFFFF"
                 app:iconGravity="textStart"
                 app:iconSize="22dp"
-                app:strokeColor="#1976D2"
-                app:strokeWidth="2dp"
+                app:strokeColor="#3C4043"
+                app:strokeWidth="1dp"
                 app:cornerRadius="14dp" />
 
             <com.google.android.material.button.MaterialButton
@@ -114,8 +118,10 @@
                 android:textAllCaps="false"
                 android:textSize="15sp"
                 android:textStyle="bold"
+                android:textColor="#FFFFFF"
                 android:backgroundTint="#D32F2F"
                 app:icon="@android:drawable/ic_menu_close_clear_cancel"
+                app:iconTint="#FFFFFF"
                 app:iconGravity="textStart"
                 app:iconSize="22dp"
                 app:cornerRadius="14dp" />
@@ -138,10 +144,14 @@
                 android:textAllCaps="false"
                 android:textSize="15sp"
                 android:textStyle="bold"
-                android:backgroundTint="#1976D2"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#1F2937"
                 app:icon="@android:drawable/ic_menu_send"
+                app:iconTint="#FFFFFF"
                 app:iconGravity="textStart"
                 app:iconSize="22dp"
+                app:strokeColor="#3C4043"
+                app:strokeWidth="1dp"
                 app:cornerRadius="14dp" />
 
             <com.google.android.material.button.MaterialButton
@@ -154,10 +164,14 @@
                 android:textAllCaps="false"
                 android:textSize="15sp"
                 android:textStyle="bold"
-                android:backgroundTint="#4CAF50"
+                android:textColor="#FFFFFF"
+                android:backgroundTint="#1F2937"
                 app:icon="@android:drawable/presence_video_online"
+                app:iconTint="#FFFFFF"
                 app:iconGravity="textStart"
                 app:iconSize="22dp"
+                app:strokeColor="#3C4043"
+                app:strokeWidth="1dp"
                 app:cornerRadius="14dp" />
 
         </LinearLayout>
@@ -170,7 +184,9 @@
         android:layout_height="wrap_content"
         app:cardCornerRadius="14dp"
         app:cardElevation="0dp"
-        app:cardBackgroundColor="#F5F5F5">
+        app:cardBackgroundColor="#111111"
+        app:strokeColor="#3C4043"
+        app:strokeWidth="1dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -192,7 +208,7 @@
                 android:layout_weight="1"
                 android:text="Share the session code with others to collaborate. All changes sync instantly!"
                 android:textSize="14sp"
-                android:textColor="#616161"
+                android:textColor="#9AA0A6"
                 android:lineSpacingExtra="3dp" />
 
         </LinearLayout>

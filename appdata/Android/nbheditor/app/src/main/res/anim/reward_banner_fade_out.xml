@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Nir Eyal Hook Micro-Interactions: Smooth fade-out for Variable Reward banner -->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:interpolator="@android:anim/accelerate_interpolator"
+    android:shareInterpolator="true">
+    <alpha
+        android:duration="250"
+        android:fromAlpha="1.0"
+        android:toAlpha="0.0" />
+    <translate
+        android:duration="250"
+        android:fromYDelta="0%"
+        android:toYDelta="-15%" />
+    <scale
+        android:duration="250"
+        android:fromXScale="1.0"
+        android:fromYScale="1.0"
+        android:pivotX="50%"
+        android:pivotY="50%"
+        android:toXScale="0.95"
+        android:toYScale="0.95" />
+</set>

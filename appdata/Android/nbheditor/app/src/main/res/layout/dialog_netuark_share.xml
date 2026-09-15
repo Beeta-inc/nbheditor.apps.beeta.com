@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="16dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="1.5dp"
+    app:strokeColor="#10B981"
+    app:cardBackgroundColor="#111111">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Share to NeTuArk Network"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF" />
+
+            <ImageButton
+                android:id="@+id/btnCloseNetuark"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_close_clear_cancel"
+                android:tint="#9AA0A6"
+                android:contentDescription="Close" />
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Decentralized end-to-end peer sharing"
+            android:textSize="13sp"
+            android:textColor="#9AA0A6"
+            android:layout_marginBottom="16dp" />
+
+        <EditText
+            android:id="@+id/etNetuarkCaption"
+            android:layout_width="match_parent"
+            android:layout_height="80dp"
+            android:background="@drawable/bg_input_dark"
+            android:hint="Add a note or message for your contacts..."
+            android:textColorHint="#9AA0A6"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:gravity="top|start"
+            android:padding="12dp"
+            android:layout_marginBottom="16dp" />
+
+        <Button
+            android:id="@+id/btnPublishNetuark"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:text="Post to NeTuArk Feed"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:textColor="#000000"
+            android:background="@drawable/bg_primary_button" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

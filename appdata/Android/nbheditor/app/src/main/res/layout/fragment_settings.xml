@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/editor_bg"
+    android:background="#000000"
     tools:context=".ui.settings.SettingsFragment">
 
     <LinearLayout
@@ -13,23 +13,44 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Back Button -->
-        <ImageButton
-            android:id="@+id/backButton"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@drawable/ic_back"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Back"
-            android:layout_marginBottom="16dp" />
+        <!-- Header / Back Button -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
 
-        <!-- App Updates Section -->
+            <ImageButton
+                android:id="@+id/backButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_back"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Back"
+                android:tint="#FFFFFF"
+                app:tint="#FFFFFF" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Settings"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+
+        <!-- Editor Settings Section -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/editor_surface"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#111111"
+            android:backgroundTint="#111111"
+            app:strokeColor="#3C4043"
+            app:strokeWidth="1dp"
             android:layout_marginBottom="16dp">
 
             <LinearLayout
@@ -44,8 +65,15 @@
                     android:text="Editor Settings"
                     android:textSize="18sp"
                     android:textStyle="bold"
-                    android:textColor="@color/editor_text"
+                    android:textColor="#FFFFFF"
                     android:layout_marginBottom="12dp" />
+
+                <!-- Section Divider -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#3C4043"
+                    android:layout_marginBottom="16dp" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -58,28 +86,199 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:orientation="vertical">
+                        android:orientation="vertical"
+                        android:layout_marginEnd="16dp">
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Rich Text Mode"
                             android:textSize="16sp"
-                            android:textColor="@color/editor_text" />
+                            android:textStyle="bold"
+                            android:textColor="#FFFFFF" />
 
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Render Markdown/HTML formatting"
                             android:textSize="12sp"
-                            android:textColor="@color/editor_hint" />
+                            android:textColor="#9AA0A6"
+                            android:layout_marginTop="2dp" />
                     </LinearLayout>
 
                     <androidx.appcompat.widget.SwitchCompat
                         android:id="@+id/richTextSwitch"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:checked="true" />
+                        android:checked="true"
+                        android:thumbTint="#FFFFFF"
+                        app:thumbTint="#FFFFFF"
+                        android:trackTint="#77FFFFFF"
+                        app:trackTint="#77FFFFFF" />
+                </LinearLayout>
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Habit & Automation Settings -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#111111"
+            android:backgroundTint="#111111"
+            app:strokeColor="#3C4043"
+            app:strokeWidth="1dp"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Preferences &amp; Habits"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    android:layout_marginBottom="12dp" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#3C4043"
+                    android:layout_marginBottom="16dp" />
+
+                <!-- Instant Autosave Switch -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="14dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginEnd="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Instant Autosave"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:textColor="#FFFFFF" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Save changes locally as you type"
+                            android:textSize="12sp"
+                            android:textColor="#9AA0A6"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
+
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/autosaveSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:thumbTint="#FFFFFF"
+                        app:thumbTint="#FFFFFF"
+                        android:trackTint="#77FFFFFF"
+                        app:trackTint="#77FFFFFF" />
+                </LinearLayout>
+
+                <!-- Habit & Task Sounds Switch -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="14dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginEnd="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Habit &amp; Task Sounds"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:textColor="#FFFFFF" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Audio feedback when completing tasks"
+                            android:textSize="12sp"
+                            android:textColor="#9AA0A6"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
+
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/soundEffectsSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:thumbTint="#FFFFFF"
+                        app:thumbTint="#FFFFFF"
+                        android:trackTint="#77FFFFFF"
+                        app:trackTint="#77FFFFFF" />
+                </LinearLayout>
+
+                <!-- Gmail Email Reminders Switch -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:layout_marginEnd="16dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Gmail Email Reminders"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:textColor="#FFFFFF" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Auto-deliver reminders to your Gmail inbox"
+                            android:textSize="12sp"
+                            android:textColor="#9AA0A6"
+                            android:layout_marginTop="2dp" />
+                    </LinearLayout>
+
+                    <androidx.appcompat.widget.SwitchCompat
+                        android:id="@+id/emailRemindersSwitch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:thumbTint="#FBBF24"
+                        app:thumbTint="#FBBF24"
+                        android:trackTint="#77FBBF24"
+                        app:trackTint="#77FBBF24" />
                 </LinearLayout>
 
             </LinearLayout>
@@ -90,8 +289,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/editor_surface"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#111111"
+            android:backgroundTint="#111111"
+            app:strokeColor="#3C4043"
+            app:strokeWidth="1dp"
             android:layout_marginBottom="16dp">
 
             <LinearLayout
@@ -106,8 +308,15 @@
                     android:text="App Updates"
                     android:textSize="18sp"
                     android:textStyle="bold"
-                    android:textColor="@color/editor_text"
-                    android:layout_marginBottom="8dp" />
+                    android:textColor="#FFFFFF"
+                    android:layout_marginBottom="12dp" />
+
+                <!-- Section Divider -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#3C4043"
+                    android:layout_marginBottom="16dp" />
 
                 <TextView
                     android:id="@+id/updateStatusText"
@@ -115,7 +324,7 @@
                     android:layout_height="wrap_content"
                     android:text="Tap to check for updates"
                     android:textSize="14sp"
-                    android:textColor="@color/editor_hint"
+                    android:textColor="#9AA0A6"
                     android:layout_marginBottom="12dp" />
 
                 <ProgressBar
@@ -125,7 +334,8 @@
                     android:layout_height="4dp"
                     android:visibility="gone"
                     android:indeterminate="true"
-                    android:progressTint="@color/accent_primary"
+                    android:indeterminateTint="#FFFFFF"
+                    android:progressTint="#FFFFFF"
                     android:layout_marginBottom="12dp" />
 
                 <com.google.android.material.button.MaterialButton
@@ -134,9 +344,13 @@
                     android:layout_height="wrap_content"
                     android:text="Check for Updates"
                     android:textAllCaps="false"
+                    android:textColor="#FFFFFF"
                     app:icon="@drawable/ic_save_toolbar"
                     app:iconGravity="start"
-                    app:backgroundTint="@color/accent_primary"
+                    app:iconTint="#FFFFFF"
+                    app:backgroundTint="#1F2937"
+                    app:strokeColor="#3C4043"
+                    app:strokeWidth="1dp"
                     app:cornerRadius="8dp" />
 
                 <TextView
@@ -145,7 +359,7 @@
                     android:layout_height="wrap_content"
                     android:text="Current version: v5.0.0"
                     android:textSize="12sp"
-                    android:textColor="@color/editor_line_number_text"
+                    android:textColor="#9AA0A6"
                     android:layout_marginTop="8dp" />
 
             </LinearLayout>
@@ -156,8 +370,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:cardCornerRadius="12dp"
-            app:cardElevation="2dp"
-            app:cardBackgroundColor="@color/editor_surface">
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#111111"
+            android:backgroundTint="#111111"
+            app:strokeColor="#3C4043"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -171,15 +388,23 @@
                     android:text="About"
                     android:textSize="18sp"
                     android:textStyle="bold"
-                    android:textColor="@color/editor_text"
-                    android:layout_marginBottom="8dp" />
+                    android:textColor="#FFFFFF"
+                    android:layout_marginBottom="12dp" />
+
+                <!-- Section Divider -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#3C4043"
+                    android:layout_marginBottom="16dp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="NBH Editor"
                     android:textSize="16sp"
-                    android:textColor="@color/editor_text"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"
                     android:layout_marginBottom="4dp" />
 
                 <TextView
@@ -187,7 +412,7 @@
                     android:layout_height="wrap_content"
                     android:text="A blazing-fast, modern text editor with AI assistance"
                     android:textSize="14sp"
-                    android:textColor="@color/editor_hint" />
+                    android:textColor="#9AA0A6" />
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

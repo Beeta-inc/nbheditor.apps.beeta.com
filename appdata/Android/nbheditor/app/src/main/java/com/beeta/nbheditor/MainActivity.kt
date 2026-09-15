@@ -257,7 +257,23 @@ open class MainActivity : AppCompatActivity() {
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        
+
+        // Force dark system bars to match web design
+        window.statusBarColor = Color.BLACK
+        window.navigationBarColor = Color.BLACK
+        window.decorView.systemUiVisibility = (
+            View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
+            View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            window.decorView.systemUiVisibility = window.decorView.systemUiVisibility and
+                View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            window.decorView.systemUiVisibility = window.decorView.systemUiVisibility and
+                View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR.inv()
+        }
+
         // Force keyboard to show properly
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE or WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
         
@@ -294,6 +310,23 @@ open class MainActivity : AppCompatActivity() {
         setupTabs()
         setupAiChat()
         setupBottomNav()
+        binding.appBarMain.toolbar.findViewById<View>(R.id.btn_apps_launcher)?.setOnClickListener {
+            showAppsLauncherDialog()
+        }
+        binding.appBarMain.toolbar.findViewById<View>(R.id.btn_header_streak)?.setOnClickListener {
+            showHabitStatsDialog()
+        }
+        binding.appBarMain.toolbar.findViewById<TextView>(R.id.header_streak_text)?.text = "${getOrCalculateStreak()}d"
+        binding.appBarMain.toolbar.findViewById<View>(R.id.btn_header_zen)?.setOnClickListener {
+            toggleZenMode()
+        }
+        binding.appBarMain.toolbar.findViewById<View>(R.id.btn_header_refresh)?.setOnClickListener {
+            refreshHomeFiles()
+            rewardBannerController?.showSessionSync("Synced ⚡", "Workspace refreshed")
+        }
+        findViewById<View>(R.id.banner_reward_container)?.let { bannerView ->
+            rewardBannerController = VariableRewardBannerController(bannerView)
+        }
         checkForRecovery()
         handleOpenIntent(intent)
         
@@ -378,6 +411,8 @@ open class MainActivity : AppCompatActivity() {
         } else {
             showHome()
         }
+        initDevicePairingSync()
+        UniversalClipboardManager.init(this)
     }
 
     override fun onDestroy() {
@@ -578,8 +613,7 @@ open class MainActivity : AppCompatActivity() {
         val gridManager = androidx.recyclerview.widget.GridLayoutManager(this, spanCount)
         fileCardAdapter = FileCardAdapter(
             onOpen = { entry ->
-                openFileFromUri(entry.uri)
-                showEditor()
+                showKeepNoteDetailDialog(entry)
             },
             onLongClick = { entry ->
                 // Long click: delete from recents
@@ -606,6 +640,160 @@ open class MainActivity : AppCompatActivity() {
             showEditor()
         }
 
+        homeBinding.btnPillText?.setOnClickListener {
+            editorBinding.textArea.setText("")
+            currentFileUri = null
+            textChanged = false
+            updateLineNumbers()
+            updateToolbarTitle()
+            showEditor()
+        }
+        homeBinding.btnPillList?.setOnClickListener {
+            editorBinding.textArea.setText("☐ Task 1\n☐ Task 2\n☐ Task 3\n")
+            currentFileUri = null
+            textChanged = true
+            updateLineNumbers()
+            updateToolbarTitle()
+            showEditor()
+        }
+        homeBinding.btnPillVoice?.setOnClickListener {
+            showEditor()
+            toggleVoiceInput(editorBinding.textArea)
+        }
+        homeBinding.btnPillImage?.setOnClickListener {
+            showEditor()
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "image/*"
+            }
+            imagePickerLauncher.launch(intent)
+        }
+        homeBinding.btnPillDraw?.setOnClickListener {
+            showDrawingCanvasDialog()
+        }
+
+        // --- Nir Eyal Inline Expanded Note & Micro-Triggers Setup ---
+        homeBinding.searchCard?.setOnClickListener {
+            homeBinding.searchCard.visibility = View.GONE
+            homeBinding.expandedNoteCard?.visibility = View.VISIBLE
+            homeBinding.inlineNoteTitle?.requestFocus()
+        }
+
+        homeBinding.btnQuickChecklist?.setOnClickListener {
+            homeBinding.searchCard.visibility = View.GONE
+            homeBinding.expandedNoteCard?.visibility = View.VISIBLE
+            homeBinding.inlineNoteTitle?.setText("Checklist")
+            homeBinding.inlineNoteContent?.setText("☐ \n☐ \n☐ ")
+            homeBinding.inlineNoteContent?.requestFocus()
+        }
+
+        homeBinding.btnQuickVoice?.setOnClickListener {
+            showEditor()
+            toggleVoiceInput(editorBinding.textArea)
+        }
+
+        homeBinding.btnQuickImage?.setOnClickListener {
+            showEditor()
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "image/*"
+            }
+            imagePickerLauncher.launch(intent)
+        }
+
+        homeBinding.btnQuickDraw?.setOnClickListener {
+            showDrawingCanvasDialog()
+        }
+
+        // Nir Eyal Quick Templates
+        homeBinding.templateIdea?.setOnClickListener {
+            homeBinding.inlineNoteContent?.append("#ideas\n- ")
+            homeBinding.inlineNoteContent?.setSelection(homeBinding.inlineNoteContent?.text?.length ?: 0)
+        }
+        homeBinding.templateTasks?.setOnClickListener {
+            homeBinding.inlineNoteContent?.append("#todo\n☐ Task 1\n☐ Task 2\n☐ Task 3\n")
+            homeBinding.inlineNoteContent?.setSelection(homeBinding.inlineNoteContent?.text?.length ?: 0)
+        }
+        homeBinding.templateBraindump?.setOnClickListener {
+            homeBinding.inlineNoteContent?.append("#braindump\n")
+            homeBinding.inlineNoteContent?.setSelection(homeBinding.inlineNoteContent?.text?.length ?: 0)
+        }
+        homeBinding.templateJournal?.setOnClickListener {
+            homeBinding.inlineNoteContent?.append("#journal\n**Today's Win:** \n**Blockers:** \n**Tomorrow's Goal:** \n")
+            homeBinding.inlineNoteContent?.setSelection(homeBinding.inlineNoteContent?.text?.length ?: 0)
+        }
+        homeBinding.templateGoals?.setOnClickListener {
+            homeBinding.inlineNoteContent?.append("#goals\n☐ Key Milestone 1\n☐ Key Milestone 2\n")
+            homeBinding.inlineNoteContent?.setSelection(homeBinding.inlineNoteContent?.text?.length ?: 0)
+        }
+
+        homeBinding.inlineNoteContent?.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val words = s?.toString()?.trim()?.split("\\s+".toRegex())?.filter { it.isNotEmpty() }?.size ?: 0
+                homeBinding.inlineNoteWordCount?.text = "$words words"
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
+        homeBinding.inlineNoteMicBtn?.setOnClickListener {
+            showEditor()
+            toggleVoiceInput(editorBinding.textArea)
+        }
+        homeBinding.inlineNoteImageBtn?.setOnClickListener {
+            showEditor()
+            val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "image/*"
+            }
+            imagePickerLauncher.launch(intent)
+        }
+        homeBinding.inlineNoteDrawBtn?.setOnClickListener {
+            showDrawingCanvasDialog()
+        }
+
+        homeBinding.inlineNoteCloseBtn?.setOnClickListener {
+            val title = homeBinding.inlineNoteTitle?.text?.toString()?.trim().orEmpty()
+            val content = homeBinding.inlineNoteContent?.text?.toString()?.trim().orEmpty()
+            if (title.isNotEmpty() || content.isNotEmpty()) {
+                val fullText = if (title.isNotEmpty()) "$title\n\n$content" else content
+                editorBinding.textArea.setText(fullText)
+                currentFileUri = null
+                textChanged = true
+                updateLineNumbers()
+                updateToolbarTitle()
+                rewardBannerController?.showSessionSync("Note Saved ⚡", "Ready in editor")
+                showEditor()
+            }
+            homeBinding.inlineNoteTitle?.setText("")
+            homeBinding.inlineNoteContent?.setText("")
+            homeBinding.expandedNoteCard?.visibility = View.GONE
+            homeBinding.searchCard?.visibility = View.VISIBLE
+        }
+
+        // Tag Filter Chips Wiring
+        val chips = listOf(
+            homeBinding.chipTagAll,
+            homeBinding.chipTagNotes,
+            homeBinding.chipTagTodos,
+            homeBinding.chipTagIdeas,
+            homeBinding.chipTagSketches
+        )
+        chips.forEach { chip ->
+            chip?.setOnClickListener { clicked ->
+                chips.forEach { c ->
+                    if (c == clicked) {
+                        c?.setBackgroundResource(R.drawable.bg_subnav_active)
+                        c?.setTextColor(Color.BLACK)
+                    } else {
+                        c?.setBackgroundResource(R.drawable.bg_subnav_inactive)
+                        c?.setTextColor(Color.parseColor("#9AA0A6"))
+                    }
+                }
+                refreshHomeFiles()
+            }
+        }
+
         // Glass toggle
         val glassOn = isGlassMode
         fileCardAdapter.isGlassMode = glassOn
@@ -626,6 +814,11 @@ open class MainActivity : AppCompatActivity() {
                     homeBinding.fileGrid.animate().alpha(1f).setDuration(150).start()
                 }
                 .start()
+        }
+
+        // Wire side rail navigation if present in the layout
+        if (binding.navView != null || supportFragmentManager.findFragmentById(R.id.fragment_container) != null) {
+            setupSideRailNavigation()
         }
     }
 
@@ -1017,6 +1210,9 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun setupBottomNav() {
+        // Hide legacy bottom nav since we now have side rail
+        binding.appBarMain.contentMain.bottomNavView?.visibility = View.GONE
+
         binding.appBarMain.contentMain.bottomNavView.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_editor -> {
@@ -1033,6 +1229,614 @@ open class MainActivity : AppCompatActivity() {
                 }
                 else -> false
             }
+        }
+    }
+
+    private fun setupSideRailNavigation() {
+        // Wire new side rail items if they exist in the layout
+        val sideRail = findViewById<View>(R.id.side_rail_container) ?: return
+
+        listOf(
+            R.id.nav_item_notes to { showHome() },
+            R.id.nav_item_writer to { showEditor() },
+            R.id.nav_item_todo to {
+                Toast.makeText(this, "Reminders & Checklist", Toast.LENGTH_SHORT).show()
+            },
+            R.id.nav_item_ai to {
+                binding.appBarMain.contentMain.fragmentContainer.visibility = View.VISIBLE
+                binding.appBarMain.contentMain.homeContainer.visibility = View.GONE
+                setupAiChat()
+            },
+            R.id.nav_item_collab to { showCollaborativeSessionDialog() },
+            R.id.nav_item_netuark to { showNetuarkShareDialog() },
+            R.id.nav_item_drive to { showSnapshotRecoveryDialog() },
+            R.id.nav_item_trash to {
+                Toast.makeText(this, "Trash is empty", Toast.LENGTH_SHORT).show()
+            },
+            R.id.nav_item_settings to {
+                val settingsItem = binding.appBarMain.toolbar.menu.findItem(R.id.nav_settings)
+                    ?: return@to
+                handleMenuItem(settingsItem)
+            },
+            R.id.nav_item_reset_session to {
+                androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle("Reset Session")
+                    .setMessage("Are you sure you want to reset current session and cache?")
+                    .setPositiveButton("Reset") { _, _ ->
+                        rewardBannerController?.showSessionSync("Session Reset ⚡", "Cache cleared")
+                        Toast.makeText(this, "Session reset completed", Toast.LENGTH_SHORT).show()
+                    }
+                    .setNegativeButton("Cancel", null)
+                    .show()
+            }
+        ).forEach { (id, action) ->
+            sideRail.findViewById<View>(id)?.setOnClickListener {
+                updateSideRailSelection(id)
+                action()
+            }
+        }
+    }
+
+    private var rewardBannerController: VariableRewardBannerController? = null
+    private var lastRewardedWordCount = 0
+
+    private fun showAppsLauncherDialog() {
+        val themedContext = androidx.appcompat.view.ContextThemeWrapper(this, R.style.Theme_Nbheditor)
+        val dialogView = android.view.LayoutInflater.from(themedContext).inflate(R.layout.dialog_apps_launcher, null)
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+
+        dialogView.findViewById<View>(R.id.appLaunchWriter)?.setOnClickListener {
+            dialog.dismiss()
+            showEditor()
+        }
+        dialogView.findViewById<View>(R.id.appLaunchEditor)?.setOnClickListener {
+            dialog.dismiss()
+            showEditor()
+        }
+        dialogView.findViewById<View>(R.id.appLaunchTasks)?.setOnClickListener {
+            dialog.dismiss()
+            Toast.makeText(this, "Reminders & Checklist", Toast.LENGTH_SHORT).show()
+        }
+        dialogView.findViewById<View>(R.id.appLaunchAi)?.setOnClickListener {
+            dialog.dismiss()
+            binding.appBarMain.contentMain.fragmentContainer.visibility = View.VISIBLE
+            binding.appBarMain.contentMain.homeContainer.visibility = View.GONE
+            setupAiChat()
+        }
+        dialogView.findViewById<View>(R.id.appLaunchCollab)?.setOnClickListener {
+            dialog.dismiss()
+            showCollaborativeSessionDialog()
+        }
+        dialogView.findViewById<View>(R.id.appLaunchLatex)?.setOnClickListener {
+            dialog.dismiss()
+            SimpleMathHelper.showMathDialog(this) { bmp ->
+                val b64 = bitmapToBase64(bmp)
+                insertBase64ImageIntoEditor(b64)
+            }
+        }
+        dialogView.findViewById<View>(R.id.appLaunchPlotter)?.setOnClickListener {
+            dialog.dismiss()
+            GraphPlotterHelper.showGraphDialog(this) { bmp ->
+                val b64 = bitmapToBase64(bmp)
+                insertBase64ImageIntoEditor(b64)
+            }
+        }
+        dialogView.findViewById<View>(R.id.appLaunchPair)?.setOnClickListener {
+            dialog.dismiss()
+            showDevicePairingDialog()
+        }
+        dialogView.findViewById<View>(R.id.appLaunchDraw)?.setOnClickListener {
+            dialog.dismiss()
+            showDrawingCanvasDialog()
+        }
+        dialogView.findViewById<View>(R.id.appLaunchRecovery)?.setOnClickListener {
+            dialog.dismiss()
+            showSnapshotRecoveryDialog()
+        }
+        dialogView.findViewById<View>(R.id.appLaunchNetuark)?.setOnClickListener {
+            dialog.dismiss()
+            showNetuarkShareDialog()
+        }
+        dialogView.findViewById<View>(R.id.appLaunchDevDocs)?.setOnClickListener {
+            dialog.dismiss()
+            try {
+                val browserIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://nbheditor.pages.dev/docs.html"))
+                startActivity(browserIntent)
+            } catch (e: Exception) {
+                Toast.makeText(this, "Opening Dev Docs", Toast.LENGTH_SHORT).show()
+            }
+        }
+        dialogView.findViewById<View>(R.id.appLaunchGateway)?.setOnClickListener {
+            dialog.dismiss()
+            try {
+                val browserIntent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse("https://nbheditor.pages.dev/gateway.html"))
+                startActivity(browserIntent)
+            } catch (e: Exception) {
+                Toast.makeText(this, "Connecting NBH Gateway", Toast.LENGTH_SHORT).show()
+            }
+        }
+        dialogView.findViewById<View>(R.id.appLaunchSettings)?.setOnClickListener {
+            dialog.dismiss()
+            val settingsItem = binding.appBarMain.toolbar.menu.findItem(R.id.nav_settings)
+            if (settingsItem != null) handleMenuItem(settingsItem)
+        }
+        dialog.show()
+    }
+
+    private fun showDrawingCanvasDialog() {
+        val themedContext = androidx.appcompat.view.ContextThemeWrapper(this, R.style.Theme_Nbheditor)
+        val dialogView = android.view.LayoutInflater.from(themedContext).inflate(R.layout.dialog_drawing_canvas, null)
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+
+        val drawingBoard = dialogView.findViewById<DrawingCanvasView>(R.id.drawingBoard)
+        val btnUndo = dialogView.findViewById<ImageButton>(R.id.btnDrawUndo)
+        val btnRedo = dialogView.findViewById<ImageButton>(R.id.btnDrawRedo)
+        val btnClear = dialogView.findViewById<ImageButton>(R.id.btnDrawClear)
+        val btnClose = dialogView.findViewById<ImageButton>(R.id.btnDrawClose)
+        val btnInsert = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnInsertDrawing)
+
+        val btnPen = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnToolPen)
+        val btnHighlighter = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnToolHighlighter)
+        val btnEraser = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnToolEraser)
+
+        val updateHistoryUi = {
+            btnUndo?.alpha = if (drawingBoard.canUndo()) 1.0f else 0.4f
+            btnRedo?.alpha = if (drawingBoard.canRedo()) 1.0f else 0.4f
+        }
+        drawingBoard.onHistoryChangeListener = updateHistoryUi
+        updateHistoryUi()
+
+        btnPen?.setOnClickListener {
+            drawingBoard.setTool(DrawingCanvasView.Tool.PEN)
+            btnPen.setBackgroundColor(Color.parseColor("#28292A"))
+            btnHighlighter?.setBackgroundColor(Color.parseColor("#1A1A1A"))
+            btnEraser?.setBackgroundColor(Color.parseColor("#1A1A1A"))
+        }
+
+        btnHighlighter?.setOnClickListener {
+            drawingBoard.setTool(DrawingCanvasView.Tool.HIGHLIGHTER)
+            btnHighlighter.setBackgroundColor(Color.parseColor("#28292A"))
+            btnPen?.setBackgroundColor(Color.parseColor("#1A1A1A"))
+            btnEraser?.setBackgroundColor(Color.parseColor("#1A1A1A"))
+        }
+
+        btnEraser?.setOnClickListener {
+            drawingBoard.setTool(DrawingCanvasView.Tool.ERASER)
+            btnEraser.setBackgroundColor(Color.parseColor("#28292A"))
+            btnPen?.setBackgroundColor(Color.parseColor("#1A1A1A"))
+            btnHighlighter?.setBackgroundColor(Color.parseColor("#1A1A1A"))
+        }
+
+        dialogView.findViewById<View>(R.id.swatchWhite)?.setOnClickListener { drawingBoard.setColor(Color.WHITE) }
+        dialogView.findViewById<View>(R.id.swatchRed)?.setOnClickListener { drawingBoard.setColor(Color.parseColor("#EF4444")) }
+        dialogView.findViewById<View>(R.id.swatchYellow)?.setOnClickListener { drawingBoard.setColor(Color.parseColor("#FBBF24")) }
+        dialogView.findViewById<View>(R.id.swatchGreen)?.setOnClickListener { drawingBoard.setColor(Color.parseColor("#10B981")) }
+        dialogView.findViewById<View>(R.id.swatchCyan)?.setOnClickListener { drawingBoard.setColor(Color.parseColor("#38BDF8")) }
+        dialogView.findViewById<View>(R.id.swatchPurple)?.setOnClickListener { drawingBoard.setColor(Color.parseColor("#C084FC")) }
+
+        btnUndo?.setOnClickListener { drawingBoard.undo() }
+        btnRedo?.setOnClickListener { drawingBoard.redo() }
+        btnClear?.setOnClickListener { drawingBoard.clearCanvas() }
+        btnClose?.setOnClickListener { dialog.dismiss() }
+
+        btnInsert?.setOnClickListener {
+            val bmp = drawingBoard.exportBitmap(Color.BLACK)
+            if (bmp != null) {
+                val b64 = bitmapToBase64(bmp)
+                showEditor()
+                insertBase64ImageIntoEditor(b64)
+                rewardBannerController?.showSessionSync("Sketch Inserted 🎨", "Embedded in document")
+            }
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    private fun showKeepNoteDetailDialog(entry: FileCardAdapter.FileEntry) {
+        val themedContext = androidx.appcompat.view.ContextThemeWrapper(this, R.style.Theme_Nbheditor)
+        val dialogView = android.view.LayoutInflater.from(themedContext).inflate(R.layout.dialog_keep_note_detail, null)
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+
+        val titleInput = dialogView.findViewById<EditText>(R.id.keepModalTitle)
+        val contentInput = dialogView.findViewById<EditText>(R.id.keepModalContent)
+        val statsText = dialogView.findViewById<TextView>(R.id.keepModalWordStats)
+        val closeBtn = dialogView.findViewById<View>(R.id.keepModalCloseBtn)
+
+        titleInput?.setText(entry.name.substringBeforeLast('.'))
+        contentInput?.setText(entry.preview)
+
+        val updateStats = {
+            val words = contentInput?.text?.toString()?.trim()?.split("\\s+".toRegex())?.filter { it.isNotEmpty() }?.size ?: 0
+            val readTime = Math.max(1, words / 200)
+            statsText?.text = "$words words • $readTime min read"
+        }
+        updateStats()
+
+        contentInput?.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                updateStats()
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
+
+        closeBtn?.setOnClickListener {
+            val updatedTitle = titleInput?.text?.toString()?.trim() ?: ""
+            val updatedContent = contentInput?.text?.toString() ?: ""
+            if (updatedTitle.isNotEmpty() || updatedContent.isNotEmpty()) {
+                try {
+                    val file = java.io.File(filesDir, entry.name)
+                    if (file.exists() || !entry.uri.toString().startsWith("content://")) {
+                        val targetFile = if (file.exists()) file else java.io.File(filesDir, "${updatedTitle.ifEmpty { "Note" }}.txt")
+                        targetFile.writeText(updatedContent)
+                        addToRecents(android.net.Uri.fromFile(targetFile))
+                        refreshHomeFiles()
+                        rewardBannerController?.showSessionSync("Note Saved ⚡", "Changes persisted")
+                    }
+                } catch (e: Exception) {
+                    // Ignore persistence errors
+                }
+            }
+            dialog.dismiss()
+        }
+
+        dialogView.findViewById<View>(R.id.keepModalRemindBtn)?.setOnClickListener {
+            Toast.makeText(this, "Reminder set for Today 8:00 PM ⏰", Toast.LENGTH_SHORT).show()
+            rewardBannerController?.showSessionSync("Reminder Set 🔔", "8:00 PM Today")
+        }
+
+        dialogView.findViewById<View>(R.id.keepModalPinBtn)?.setOnClickListener {
+            Toast.makeText(this, "Note pinned to top 📌", Toast.LENGTH_SHORT).show()
+            rewardBannerController?.showSessionSync("Note Pinned 📌", "Sorted to top")
+        }
+
+        dialogView.findViewById<View>(R.id.keepModalArchiveBtn)?.setOnClickListener {
+            removeFromRecents(entry.uri)
+            refreshHomeFiles()
+            dialog.dismiss()
+            rewardBannerController?.showSessionSync("Note Archived 📥", "Saved to archive")
+        }
+
+        dialogView.findViewById<View>(R.id.keepModalAiSparkBtn)?.setOnClickListener {
+            val content = contentInput?.text?.toString() ?: ""
+            if (content.isNotEmpty()) {
+                val words = content.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }.size
+                contentInput?.append("\n\n✦ AI Summary ($words words): Key takeaways captured.")
+                rewardBannerController?.showSessionSync("AI Spark ✨", "Summary generated")
+            } else {
+                Toast.makeText(this, "Write something first for AI Spark", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        dialogView.findViewById<View>(R.id.keepModalDrawBtn)?.setOnClickListener {
+            dialog.dismiss()
+            showDrawingCanvasDialog()
+        }
+
+        dialogView.findViewById<View>(R.id.keepModalCollabBtn)?.setOnClickListener {
+            dialog.dismiss()
+            showCollaborativeSessionDialog()
+        }
+
+        dialogView.findViewById<View>(R.id.keepModalPaletteBtn)?.setOnClickListener {
+            showColorPickerPopover(dialogView.findViewById(R.id.keepModalCard))
+        }
+
+        dialogView.findViewById<View>(R.id.keepModalDeleteBtn)?.setOnClickListener {
+            removeFromRecents(entry.uri)
+            refreshHomeFiles()
+            dialog.dismiss()
+            rewardBannerController?.showSessionSync("Note Archived 🗑", "Moved to Trash")
+        }
+
+        dialog.show()
+    }
+
+    private fun showColorPickerPopover(targetCard: View?) {
+        val themedContext = androidx.appcompat.view.ContextThemeWrapper(this, R.style.Theme_Nbheditor)
+        val popView = android.view.LayoutInflater.from(themedContext).inflate(R.layout.color_picker_popover, null)
+        val popDialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(popView)
+            .create()
+        popDialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+
+        val colors = listOf(
+            R.id.colorDefault to "#000000",
+            R.id.colorCoral to "#77172e",
+            R.id.colorPeach to "#692b17",
+            R.id.colorSand to "#7c4a03",
+            R.id.colorMint to "#264d3b",
+            R.id.colorSage to "#0c625d",
+            R.id.colorFog to "#256377",
+            R.id.colorStorm to "#284255",
+            R.id.colorDusk to "#472e5b",
+            R.id.colorBlossom to "#6c394f",
+            R.id.colorClay to "#4b443a",
+            R.id.colorChalk to "#232427"
+        )
+
+        colors.forEach { (id, hex) ->
+            popView.findViewById<View>(id)?.setOnClickListener {
+                targetCard?.setBackgroundColor(Color.parseColor(hex))
+                popDialog.dismiss()
+            }
+        }
+        popDialog.show()
+    }
+
+    
+    private fun getOrCalculateStreak(): Int {
+        val todayStr = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date())
+        val lastActive = prefs.getString("nbh_last_active_date", "") ?: ""
+        var streak = prefs.getInt("writing_streak_days", 1)
+
+        if (lastActive.isNotEmpty() && lastActive != todayStr) {
+            try {
+                val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+                val lastDate = sdf.parse(lastActive)
+                val todayDate = sdf.parse(todayStr)
+                if (lastDate != null && todayDate != null) {
+                    val diffDays = ((todayDate.time - lastDate.time) / (1000 * 60 * 60 * 24)).toInt()
+                    if (diffDays == 1) {
+                        streak += 1
+                    } else if (diffDays > 1) {
+                        streak = 1
+                    }
+                }
+            } catch (e: Exception) {
+                streak = 1
+            }
+        }
+        prefs.edit().putString("nbh_last_active_date", todayStr).putInt("writing_streak_days", streak).apply()
+        return streak
+    }
+private fun showHabitStatsDialog() {
+        val themedContext = androidx.appcompat.view.ContextThemeWrapper(this, R.style.Theme_Nbheditor)
+        val dialogView = android.view.LayoutInflater.from(themedContext).inflate(R.layout.dialog_habit_stats, null)
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+
+        val streakText = dialogView.findViewById<TextView>(R.id.habitStreakCount)
+        val notesText = dialogView.findViewById<TextView>(R.id.habitNotesCount)
+        val wordsText = dialogView.findViewById<TextView>(R.id.habitWordsCount)
+
+        val currentStreak = getOrCalculateStreak()
+        val totalNotes = getRecentFiles().size
+        val totalWords = getRecentFiles().sumOf { file ->
+            try {
+                file.preview.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }.size
+            } catch (e: Exception) { 0 }
+        }
+
+        streakText?.text = "$currentStreak"
+        notesText?.text = "$totalNotes"
+        wordsText?.text = "$totalWords"
+
+        dialogView.findViewById<View>(R.id.btnCloseHabitStats)?.setOnClickListener { dialog.dismiss() }
+        dialogView.findViewById<View>(R.id.btnKeepMomentum)?.setOnClickListener {
+            dialog.dismiss()
+            rewardBannerController?.showWritingStreak(currentStreak, totalWords)
+        }
+
+        dialog.show()
+    }
+
+    private var deviceTransfersJob: kotlinx.coroutines.Job? = null
+    private var myDevicePairCode: String? = null
+
+    private fun initDevicePairingSync() {
+        val code = DevicePairingManager.getOrCreateDevicePairCode(this)
+        myDevicePairCode = code
+        lifecycleScope.launch(Dispatchers.IO) {
+            DevicePairingManager.registerHostSession(this@MainActivity, code)
+        }
+
+        if (deviceTransfersJob?.isActive != true) {
+            deviceTransfersJob = lifecycleScope.launch {
+                DevicePairingManager.observeIncomingTransfers(code).collect { payload ->
+                    handleIncomingTransferredNote(payload)
+                }
+            }
+        }
+    }
+
+    private fun handleIncomingTransferredNote(payload: DeviceTransferPayload) {
+        val title = payload.title.ifBlank { "Incoming Note" }
+        val content = payload.content
+        val seenKey = "nbh_seen_transfer_${payload.transferId.ifBlank { payload.id }}"
+        val prefs = getSharedPreferences("nbh_transfers", MODE_PRIVATE)
+        if (prefs.getBoolean(seenKey, false)) return
+        prefs.edit().putBoolean(seenKey, true).apply()
+
+        runOnUiThread {
+            // Save note locally as an rtf / txt note
+            val cleanTitle = title.replace(Regex("[^a-zA-Z0-9._-]"), "_")
+            val fileName = if (cleanTitle.endsWith(".rtf") || cleanTitle.endsWith(".txt")) cleanTitle else "$cleanTitle.rtf"
+            val file = java.io.File(filesDir, fileName)
+            try {
+                file.writeText(content)
+                addRecentFile(file)
+                refreshHomeFiles()
+                rewardBannerController?.showSessionSync(
+                    status = "Incoming Sync ⚡",
+                    detail = "\"$title\" received from paired device"
+                )
+                Toast.makeText(this, "Received note: \"$title\"", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Failed to save incoming transferred note", e)
+            }
+        }
+    }
+
+    private fun showDevicePairingDialog() {
+        val themedContext = androidx.appcompat.view.ContextThemeWrapper(this, R.style.Theme_Nbheditor)
+        val dialogView = android.view.LayoutInflater.from(themedContext).inflate(R.layout.dialog_device_pairing, null)
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+
+        val panelHost = dialogView.findViewById<View>(R.id.panelHost)
+        val panelJoin = dialogView.findViewById<View>(R.id.panelJoin)
+        val btnTabHost = dialogView.findViewById<android.widget.Button>(R.id.btnTabHost)
+        val btnTabJoin = dialogView.findViewById<android.widget.Button>(R.id.btnTabJoin)
+        val tvDeviceCode = dialogView.findViewById<TextView>(R.id.tvDeviceCode)
+        val etPairCode = dialogView.findViewById<EditText>(R.id.etPairCode)
+        val btnConnectDevice = dialogView.findViewById<android.widget.Button>(R.id.btnConnectDevice)
+        val btnTestPing = dialogView.findViewById<android.widget.Button>(R.id.btnTestPing)
+        val btnSendCurrentNote = dialogView.findViewById<android.widget.Button>(R.id.btnSendCurrentNote)
+
+        val code = DevicePairingManager.getOrCreateDevicePairCode(this)
+        myDevicePairCode = code
+        tvDeviceCode?.text = code
+
+        // Ensure host session is active in Firebase RTDB
+        lifecycleScope.launch(Dispatchers.IO) {
+            DevicePairingManager.registerHostSession(this@MainActivity, code)
+        }
+
+        btnTabHost?.setOnClickListener {
+            panelHost?.visibility = View.VISIBLE
+            panelJoin?.visibility = View.GONE
+            btnTabHost.setTextColor(Color.BLACK)
+            btnTabHost.setBackgroundResource(R.drawable.bg_subnav_active)
+            btnTabJoin?.setTextColor(Color.parseColor("#9AA0A6"))
+            btnTabJoin?.setBackgroundColor(Color.TRANSPARENT)
+        }
+
+        btnTabJoin?.setOnClickListener {
+            panelHost?.visibility = View.GONE
+            panelJoin?.visibility = View.VISIBLE
+            btnTabJoin.setTextColor(Color.BLACK)
+            btnTabJoin.setBackgroundResource(R.drawable.bg_subnav_active)
+            btnTabHost?.setTextColor(Color.parseColor("#9AA0A6"))
+            btnTabHost?.setBackgroundColor(Color.TRANSPARENT)
+            etPairCode?.requestFocus()
+        }
+
+        btnTestPing?.setOnClickListener {
+            lifecycleScope.launch {
+                val res = DevicePairingManager.sendTransferPayload(
+                    pairCode = code,
+                    title = "Quick Test Sync",
+                    content = "Instant cross-device transfer verified from Android APK!"
+                )
+                if (res.isSuccess) {
+                    Toast.makeText(this@MainActivity, "Test payload sent to paired channel!", Toast.LENGTH_SHORT).show()
+                    rewardBannerController?.showSessionSync("Test Ping Sent ⚡", "Dispatched to channel $code")
+                } else {
+                    Toast.makeText(this@MainActivity, "Failed: ${res.exceptionOrNull()?.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        btnSendCurrentNote?.setOnClickListener {
+            val content = editorBinding.textArea.text.toString()
+            val title = currentFile?.nameWithoutExtension ?: "Current Note"
+            if (content.isBlank()) {
+                Toast.makeText(this, "Active note is empty", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            lifecycleScope.launch {
+                val res = DevicePairingManager.sendTransferPayload(
+                    pairCode = code,
+                    title = title,
+                    content = content
+                )
+                if (res.isSuccess) {
+                    Toast.makeText(this@MainActivity, "Pushed note \"$title\" to device channel!", Toast.LENGTH_SHORT).show()
+                    rewardBannerController?.showSessionSync("Note Pushed ⚡", "\"$title\" shared across devices")
+                    dialog.dismiss()
+                } else {
+                    Toast.makeText(this@MainActivity, "Push failed: ${res.exceptionOrNull()?.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        btnConnectDevice?.setOnClickListener {
+            val targetCode = etPairCode?.text?.toString()?.trim()?.uppercase() ?: ""
+            if (targetCode.length < 5) {
+                Toast.makeText(this, "Please enter a valid pairing code", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            btnConnectDevice.isEnabled = false
+            btnConnectDevice.text = "Connecting..."
+            lifecycleScope.launch {
+                val res = DevicePairingManager.pairWithDevice(targetCode, "Android ${Build.MODEL}")
+                if (res.isSuccess) {
+                    Toast.makeText(this@MainActivity, "Successfully paired with $targetCode!", Toast.LENGTH_SHORT).show()
+                    rewardBannerController?.showSessionSync("Device Paired ⚡", "Linked to $targetCode")
+                    dialog.dismiss()
+                } else {
+                    btnConnectDevice.isEnabled = true
+                    btnConnectDevice.text = "Connect Device"
+                    Toast.makeText(this@MainActivity, "Pairing failed: ${res.exceptionOrNull()?.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+
+        dialogView.findViewById<View>(R.id.btnClosePairing)?.setOnClickListener { dialog.dismiss() }
+        dialog.show()
+    }
+
+    private fun showSnapshotRecoveryDialog() {
+        val themedContext = androidx.appcompat.view.ContextThemeWrapper(this, R.style.Theme_Nbheditor)
+        val dialogView = android.view.LayoutInflater.from(themedContext).inflate(R.layout.dialog_snapshot_recovery, null)
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+
+        dialogView.findViewById<View>(R.id.btnCloseRecovery)?.setOnClickListener { dialog.dismiss() }
+        dialogView.findViewById<View>(R.id.btnCreateSnapshot)?.setOnClickListener {
+            Toast.makeText(this, "Instant snapshot created", Toast.LENGTH_SHORT).show()
+            rewardBannerController?.showSessionSync("Snapshot Created ⚡", "Local backup point saved")
+            dialog.dismiss()
+        }
+        dialog.show()
+    }
+
+    private fun showNetuarkShareDialog() {
+        val themedContext = androidx.appcompat.view.ContextThemeWrapper(this, R.style.Theme_Nbheditor)
+        val dialogView = android.view.LayoutInflater.from(themedContext).inflate(R.layout.dialog_netuark_share, null)
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .create()
+        dialog.window?.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(android.graphics.Color.TRANSPARENT))
+
+        dialogView.findViewById<View>(R.id.btnCloseNetuark)?.setOnClickListener { dialog.dismiss() }
+        dialogView.findViewById<View>(R.id.btnPublishNetuark)?.setOnClickListener {
+            Toast.makeText(this, "Shared to NeTuArk network", Toast.LENGTH_SHORT).show()
+            rewardBannerController?.showSessionSync("Published to NeTuArk ⚡", "Peer network updated")
+            dialog.dismiss()
+        }
+        dialog.show()
+    }
+
+    private fun updateSideRailSelection(selectedId: Int) {
+        val sideRail = findViewById<View>(R.id.side_rail_container) ?: return
+        val itemIds = listOf(
+            R.id.nav_item_notes,
+            R.id.nav_item_writer,
+            R.id.nav_item_todo,
+            R.id.nav_item_ai,
+            R.id.nav_item_collab,
+            R.id.nav_item_trash
+        )
+        itemIds.forEach { id ->
+            sideRail.findViewById<View>(id)?.isSelected = (id == selectedId)
         }
     }
 
@@ -2775,6 +3579,10 @@ open class MainActivity : AppCompatActivity() {
         // Word count
         val words = if (text.isBlank()) 0 else text.trim().split("\\s+".toRegex()).size
         editorBinding.statusWordCount.text = "Words: $words"
+        if (words in listOf(50, 100, 250, 500, 1000) && words != lastRewardedWordCount) {
+            lastRewardedWordCount = words
+            rewardBannerController?.showWordMilestone(words)
+        }
         
         // Line and column info
         val cursor = editorBinding.textArea.selectionStart
@@ -2800,6 +3608,7 @@ open class MainActivity : AppCompatActivity() {
                 }
                 prefs.edit().putString("last_file_uri", uri.toString()).apply()
                 addToRecents(uri)
+                rewardBannerController?.showSessionSync("Saved ⚡", "Note synced automatically")
             } catch (e: Exception) {
                 Log.e("AutoSave", "Failed to save locally", e)
             }

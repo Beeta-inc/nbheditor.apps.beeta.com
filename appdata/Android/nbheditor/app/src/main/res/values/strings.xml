@@ -1,6 +1,6 @@
 <resources>
     <string name="app_name">NBH Editor</string>
-    <string name="app_version">4.5.1</string>
+    <string name="app_version">6.0.0</string>
     <string name="company_name">Beeta Technologies Inc</string>
     <string name="website">nbheditor.pages.dev</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
@@ -9,6 +9,28 @@
     <string name="nav_header_subtitle">by Beeta Technologies Inc</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Settings</string>
+
+    <!-- App Tagline -->
+    <string name="app_tagline">Write. Think. Collaborate.</string>
+
+    <!-- Navigation Labels -->
+    <string name="nav_notes">Notes</string>
+    <string name="nav_writer">Writer</string>
+    <string name="nav_reminders">Reminders</string>
+    <string name="nav_ask_ai">Ask AI</string>
+    <string name="nav_collab">Collab</string>
+    <string name="nav_netuark">NeTuArk</string>
+    <string name="nav_trash">Trash</string>
+
+    <!-- Empty State Strings -->
+    <string name="empty_state_notes">No notes yet</string>
+    <string name="empty_state_writer">No documents found</string>
+    <string name="empty_state_reminders">No reminders set</string>
+    <string name="empty_state_ask_ai">No AI chat history</string>
+    <string name="empty_state_collab">No active sessions</string>
+    <string name="empty_state_netuark">No synced items</string>
+    <string name="empty_state_trash">Trash is empty</string>
+    <string name="empty_state_default">Nothing here yet</string>
 
     <string name="menu_transform">Transform</string>
     <string name="menu_reflow">Reflow</string>

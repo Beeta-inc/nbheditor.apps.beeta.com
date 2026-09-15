@@ -4,54 +4,190 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/coordinator_layout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
-    tools:context=".MainActivity">
+    android:layout_height="wrap_content"
+    android:fitsSystemWindows="true">
 
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/app_bar_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:fitsSystemWindows="true"
-        android:background="@color/toolbar_bg"
+        android:background="#000000"
         app:elevation="0dp">
 
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="@null"
+            android:background="#000000"
+            app:contentInsetStart="0dp"
+            app:contentInsetEnd="12dp"
+            app:contentInsetLeft="0dp"
+            app:contentInsetRight="12dp"
             app:popupTheme="@style/Theme.Nbheditor.PopupOverlay">
 
             <LinearLayout
-                android:layout_width="wrap_content"
+                android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:orientation="horizontal"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="●"
-                    android:textColor="@color/accent_primary"
-                    android:textSize="10sp"
-                    android:paddingEnd="6dp" />
+                <ImageButton
+                    android:id="@+id/btn_hamburger"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_menu"
+                    android:tint="#9AA0A6"
+                    app:tint="#9AA0A6"
+                    android:contentDescription="Navigation menu" />
+
+                <ImageView
+                    android:layout_width="28dp"
+                    android:layout_height="28dp"
+                    android:src="@mipmap/ic_launcher"
+                    android:contentDescription="NbhEditor Logo" />
 
                 <TextView
                     android:id="@+id/toolbarTitle"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="NBH Editor"
+                    android:text="NbhEditor"
                     android:textStyle="bold"
-                    android:textSize="19sp"
-                    android:letterSpacing="0.02" />
+                    android:textSize="18sp"
+                    android:textColor="#FFFFFF"
+                    android:paddingStart="8dp" />
+
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:layout_weight="1" />
+
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/search_pill"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    app:cardCornerRadius="18dp"
+                    app:cardBackgroundColor="#1A1A1A"
+                    app:strokeColor="#3C4043"
+                    app:strokeWidth="1dp"
+                    app:cardElevation="0dp">
+
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="match_parent"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:paddingStart="10dp"
+                        android:paddingEnd="10dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="🔍"
+                            android:textSize="12sp" />
+
+                        <EditText
+                            android:id="@+id/search_input"
+                            android:layout_width="100dp"
+                            android:layout_height="wrap_content"
+                            android:hint="Search..."
+                            android:textColorHint="#9AA0A6"
+                            android:textColor="#FFFFFF"
+                            android:textSize="13sp"
+                            android:background="@null"
+                            android:singleLine="true"
+                            android:maxLines="1"
+                            android:imeOptions="actionSearch"
+                            android:paddingStart="6dp" />
+
+                    </LinearLayout>
+
+                </com.google.android.material.card.MaterialCardView>
+
+                <!-- Streak & Habit Entry Button (Nir Eyal Fire Indicator) -->
+                <LinearLayout
+                    android:id="@+id/btn_header_streak"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/bg_suggestion_chip"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="8dp"
+                    android:paddingEnd="8dp"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🔥"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/header_streak_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="3d"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:fontFamily="monospace"
+                        android:paddingStart="4dp" />
+                </LinearLayout>
+
+                <!-- Zen / Focus Mode Button (Alt+Z) -->
+                <ImageButton
+                    android:id="@+id/btn_header_zen"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/circle_bg_dark"
+                    android:src="@android:drawable/ic_menu_crop"
+                    android:tint="#9AA0A6"
+                    app:tint="#9AA0A6"
+                    android:contentDescription="Zen Mode" />
+
+                <!-- Refresh Notes Button -->
+                <ImageButton
+                    android:id="@+id/btn_header_refresh"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="6dp"
+                    android:background="@drawable/circle_bg_dark"
+                    android:src="@android:drawable/ic_popup_sync"
+                    android:tint="#9AA0A6"
+                    app:tint="#9AA0A6"
+                    android:contentDescription="Refresh" />
+
+                <ImageButton
+                    android:id="@+id/btn_apps_launcher"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/circle_bg_dark"
+                    android:src="@android:drawable/ic_menu_agenda"
+                    android:tint="#9AA0A6"
+                    app:tint="#9AA0A6"
+                    android:contentDescription="Apps" />
+
+                <ImageButton
+                    android:id="@+id/btn_profile_avatar"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_marginStart="8dp"
+                    android:background="@drawable/circle_bg_dark"
+                    android:src="@drawable/ic_account_circle"
+                    android:tint="#9AA0A6"
+                    app:tint="#9AA0A6"
+                    android:contentDescription="Profile" />
+
             </LinearLayout>
 
         </androidx.appcompat.widget.Toolbar>
 
     </com.google.android.material.appbar.AppBarLayout>
-
-    <include
-        android:id="@+id/content_main"
-        layout="@layout/content_main" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

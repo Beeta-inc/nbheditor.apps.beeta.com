@@ -87,25 +87,27 @@ class FileCardAdapter(
                 }
             } else {
                 b.root.apply {
-                    setCardBackgroundColor(ContextCompat.getColor(ctx, R.color.editor_surface))
-                    strokeColor = ContextCompat.getColor(ctx, R.color.divider)
-                    strokeWidth = 1
-                    cardElevation = 2f
-                    radius = 16f
+                    setCardBackgroundColor(Color.BLACK)
+                    strokeColor = Color.parseColor("#3C4043")
+                    strokeWidth = (1 * ctx.resources.displayMetrics.density).toInt()
+                    cardElevation = 0f
+                    radius = 8 * ctx.resources.displayMetrics.density
                 }
                 b.fileName.apply {
-                    setTextColor(ContextCompat.getColor(ctx, R.color.editor_text))
+                    setTextColor(Color.WHITE)
                     textSize = 15f
                     setShadowLayer(0f, 0f, 0f, 0)
                 }
-                b.fileDate.setTextColor(ContextCompat.getColor(ctx, R.color.editor_line_number_text))
-                b.filePreview.setTextColor(ContextCompat.getColor(ctx, R.color.editor_hint))
+                b.fileDate.setTextColor(Color.parseColor("#9AA0A6"))
+                b.filePreview.setTextColor(Color.parseColor("#E0E0E0"))
+                b.fileSnippet.text = b.filePreview.text
                 b.fileTypeIcon?.apply {
-                    setTextColor(ContextCompat.getColor(ctx, R.color.editor_text))
+                    setTextColor(Color.WHITE)
                     setShadowLayer(0f, 0f, 0f, 0)
                 }
             }
 
+            b.fileMenu.setOnClickListener { onLongClick(entry) }
             b.root.setOnClickListener { onOpen(entry) }
             b.root.setOnLongClickListener { onLongClick(entry); true }
             

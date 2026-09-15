@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Nir Eyal Hook Model - Micro-Interactions Specialist (SA-32)
+    Phase 3: Variable Reward Banner
+    Subtle streak / achievement badge pill (#141414 with #10B981 emerald border)
+    Displaying writing streak, word milestone, or session sync status
+    with smooth fade in/out to trigger positive reinforcement.
+-->
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/cardVariableReward"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_horizontal|top"
+    android:layout_marginStart="16dp"
+    android:layout_marginEnd="16dp"
+    android:layout_marginTop="12dp"
+    android:layout_marginBottom="8dp"
+    android:animateLayoutChanges="true"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
+    app:cardBackgroundColor="#141414"
+    app:cardCornerRadius="24dp"
+    app:cardElevation="6dp"
+    app:strokeColor="#10B981"
+    app:strokeWidth="1.5dp">
+
+    <LinearLayout
+        android:id="@+id/layoutRewardContent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="12dp"
+        android:paddingTop="8dp"
+        android:paddingEnd="12dp"
+        android:paddingBottom="8dp">
+
+        <!-- Icon with subtle glowing emerald badge -->
+        <FrameLayout
+            android:id="@+id/frameRewardIcon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@drawable/bg_reward_icon_badge">
+
+            <ImageView
+                android:id="@+id/ivRewardIcon"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:contentDescription="Reward icon"
+                android:src="@drawable/ic_reward_streak"
+                app:tint="#10B981" />
+        </FrameLayout>
+
+        <!-- Reward Details: Primary title and positive reinforcement micro-copy -->
+        <LinearLayout
+            android:id="@+id/layoutRewardText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="8dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvRewardTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
+                android:text="3-Day Writing Streak!"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:singleLine="true"
+                android:ellipsize="end"
+                tools:text="3-Day Writing Streak!" />
+
+            <TextView
+                android:id="@+id/tvRewardSubtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif"
+                android:text="500 words reached • Flow unlocked"
+                android:textColor="#A7F3D0"
+                android:textSize="11sp"
+                android:singleLine="true"
+                android:ellipsize="end"
+                tools:text="500 words reached • Flow unlocked" />
+        </LinearLayout>
+
+        <!-- Metric / Streak Badge Pill -->
+        <TextView
+            android:id="@+id/tvRewardMetric"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="6dp"
+            android:background="@drawable/bg_reward_metric_pill"
+            android:fontFamily="sans-serif-medium"
+            android:paddingStart="8dp"
+            android:paddingTop="3dp"
+            android:paddingEnd="8dp"
+            android:paddingBottom="3dp"
+            android:text="🔥 3d"
+            android:textColor="#10B981"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            tools:text="🔥 3d" />
+
+        <!-- Micro-Interaction Dismiss Action -->
+        <ImageView
+            android:id="@+id/btnRewardDismiss"
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:layout_marginStart="2dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Dismiss notification"
+            android:padding="3dp"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            app:tint="#6B7280" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

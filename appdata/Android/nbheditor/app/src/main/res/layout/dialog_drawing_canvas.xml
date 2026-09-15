@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="12dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="#3C4043"
+    app:cardBackgroundColor="#111111">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Top Header & Controls -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Sketch &amp; Drawing"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF" />
+
+            <!-- Undo Button -->
+            <ImageButton
+                android:id="@+id/btnDrawUndo"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:src="@android:drawable/ic_menu_revert"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:tint="#9AA0A6"
+                android:contentDescription="Undo" />
+
+            <!-- Redo Button -->
+            <ImageButton
+                android:id="@+id/btnDrawRedo"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:src="@android:drawable/ic_menu_rotate"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:tint="#9AA0A6"
+                android:contentDescription="Redo" />
+
+            <!-- Clear Canvas Button -->
+            <ImageButton
+                android:id="@+id/btnDrawClear"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:src="@android:drawable/ic_menu_delete"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:tint="#EF4444"
+                android:contentDescription="Clear" />
+
+            <!-- Close Dialog Button -->
+            <ImageButton
+                android:id="@+id/btnDrawClose"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:src="@android:drawable/ic_menu_close_clear_cancel"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:tint="#9AA0A6"
+                android:contentDescription="Close" />
+
+        </LinearLayout>
+
+        <!-- Tools & Color Palette Bar -->
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <!-- Pen Tool -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnToolPen"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:text="✏️ Pen"
+                    android:textColor="#FFFFFF"
+                    android:textSize="12sp"
+                    android:textAllCaps="false"
+                    app:cornerRadius="18dp"
+                    app:backgroundTint="#28292A"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="#5F6368"
+                    android:layout_marginEnd="6dp" />
+
+                <!-- Highlighter Tool -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnToolHighlighter"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:text="🖍 Highlighter"
+                    android:textColor="#9AA0A6"
+                    android:textSize="12sp"
+                    android:textAllCaps="false"
+                    app:cornerRadius="18dp"
+                    app:backgroundTint="#1A1A1A"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="#3C4043"
+                    android:layout_marginEnd="6dp" />
+
+                <!-- Eraser Tool -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnToolEraser"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:text="🧹 Eraser"
+                    android:textColor="#9AA0A6"
+                    android:textSize="12sp"
+                    android:textAllCaps="false"
+                    app:cornerRadius="18dp"
+                    app:backgroundTint="#1A1A1A"
+                    app:strokeWidth="1dp"
+                    app:strokeColor="#3C4043"
+                    android:layout_marginEnd="12dp" />
+
+                <View
+                    android:layout_width="1dp"
+                    android:layout_height="24dp"
+                    android:background="#3C4043"
+                    android:layout_marginEnd="12dp" />
+
+                <!-- Color Swatches: White, Red, Amber, Green, Cyan, Purple -->
+                <View
+                    android:id="@+id/swatchWhite"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:background="@drawable/circle_bg_white"
+                    android:layout_marginEnd="8dp" />
+
+                <View
+                    android:id="@+id/swatchRed"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:background="@drawable/circle_bg_white"
+                    android:backgroundTint="#EF4444"
+                    android:layout_marginEnd="8dp" />
+
+                <View
+                    android:id="@+id/swatchYellow"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:background="@drawable/circle_bg_white"
+                    android:backgroundTint="#FBBF24"
+                    android:layout_marginEnd="8dp" />
+
+                <View
+                    android:id="@+id/swatchGreen"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:background="@drawable/circle_bg_white"
+                    android:backgroundTint="#10B981"
+                    android:layout_marginEnd="8dp" />
+
+                <View
+                    android:id="@+id/swatchCyan"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:background="@drawable/circle_bg_white"
+                    android:backgroundTint="#38BDF8"
+                    android:layout_marginEnd="8dp" />
+
+                <View
+                    android:id="@+id/swatchPurple"
+                    android:layout_width="26dp"
+                    android:layout_height="26dp"
+                    android:background="@drawable/circle_bg_white"
+                    android:backgroundTint="#C084FC"
+                    android:layout_marginEnd="8dp" />
+
+            </LinearLayout>
+        </HorizontalScrollView>
+
+        <!-- Canvas Container Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="320dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="#3C4043"
+            app:cardBackgroundColor="#000000"
+            android:layout_marginBottom="16dp">
+
+            <com.beeta.nbheditor.DrawingCanvasView
+                android:id="@+id/drawingBoard"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Bottom Action Bar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Live touch sketch engine"
+                android:textSize="12sp"
+                android:textColor="#9AA0A6" />
+
+            <!-- Insert Into Note / Editor Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnInsertDrawing"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:text="Insert into Note"
+                android:textColor="#000000"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textAllCaps="false"
+                app:cornerRadius="22dp"
+                app:backgroundTint="#FFFFFF"
+                app:icon="@android:drawable/ic_menu_send"
+                app:iconTint="#000000"
+                app:iconGravity="textStart" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

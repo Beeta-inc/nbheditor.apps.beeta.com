@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:interpolator="@interpolator/fast_out_extra_slow_in"
+    android:shareInterpolator="true">
+    <alpha
+        android:duration="120"
+        android:fromAlpha="1.0"
+        android:toAlpha="0.0" />
+</set>

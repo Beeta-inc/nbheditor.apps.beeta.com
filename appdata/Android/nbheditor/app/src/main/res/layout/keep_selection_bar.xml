@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="48dp"
+    android:background="@drawable/bg_selection_bar"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="12dp"
+    android:paddingEnd="12dp"
+    android:elevation="8dp">
+
+    <!-- Close / Clear Selection Button -->
+    <ImageView
+        android:id="@+id/btnClose"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:focusable="true"
+        android:contentDescription="Close selection"
+        android:padding="6dp"
+        android:src="@android:drawable/ic_menu_close_clear_cancel"
+        android:tint="#9AA0A6" />
+
+    <!-- Selection Counter Text -->
+    <TextView
+        android:id="@+id/tvSelectionCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="16dp"
+        android:text="0 selected"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <!-- Pin Action Button -->
+    <ImageView
+        android:id="@+id/btnPin"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginEnd="8dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:focusable="true"
+        android:contentDescription="Pin"
+        android:padding="6dp"
+        android:src="@android:drawable/ic_menu_agenda"
+        android:tint="#9AA0A6" />
+
+    <!-- Color Action Button -->
+    <ImageView
+        android:id="@+id/btnColor"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginEnd="8dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:focusable="true"
+        android:contentDescription="Change color"
+        android:padding="6dp"
+        android:src="@android:drawable/ic_menu_manage"
+        android:tint="#9AA0A6" />
+
+    <!-- Archive Action Button -->
+    <ImageView
+        android:id="@+id/btnArchive"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:layout_marginEnd="8dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:focusable="true"
+        android:contentDescription="Archive"
+        android:padding="6dp"
+        android:src="@drawable/ic_save"
+        android:tint="#9AA0A6" />
+
+    <!-- Delete Action Button -->
+    <ImageView
+        android:id="@+id/btnDelete"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:clickable="true"
+        android:focusable="true"
+        android:contentDescription="Delete"
+        android:padding="6dp"
+        android:src="@android:drawable/ic_menu_delete"
+        android:tint="#9AA0A6" />
+
+</LinearLayout>

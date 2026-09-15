@@ -5,55 +5,82 @@
     android:id="@+id/viewerRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FF000000"
+    android:background="#000000"
     android:fitsSystemWindows="false">
 
-    <!-- Header — top padding applied in code to clear status bar -->
+    <!-- Header — top navigation toolbar transparent on black (top padding applied in code to clear status bar) -->
     <LinearLayout
         android:id="@+id/viewerHeader"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingStart="4dp"
+        android:paddingStart="12dp"
         android:paddingEnd="12dp"
+        android:paddingTop="8dp"
         android:paddingBottom="8dp"
-        android:background="#DD000000"
-        android:elevation="8dp"
+        android:background="@android:color/transparent"
+        android:elevation="4dp"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <ImageButton
-            android:id="@+id/btnViewerClose"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@drawable/ic_back"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:tint="@color/white"
-            android:contentDescription="Back" />
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            app:cardCornerRadius="20dp"
+            app:cardBackgroundColor="#1A1A1A"
+            app:strokeColor="#3C4043"
+            app:strokeWidth="1dp"
+            app:cardElevation="0dp">
+
+            <ImageButton
+                android:id="@+id/btnViewerClose"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_back"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:tint="#FFFFFF"
+                app:tint="#FFFFFF"
+                android:padding="8dp"
+                android:scaleType="centerInside"
+                android:contentDescription="Back" />
+        </com.google.android.material.card.MaterialCardView>
 
         <TextView
             android:id="@+id/tvViewerTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:textSize="15sp"
+            android:textSize="16sp"
             android:textStyle="bold"
-            android:textColor="@color/white"
+            android:textColor="#FFFFFF"
             android:maxLines="1"
             android:ellipsize="middle"
-            android:paddingStart="4dp"
-            android:paddingEnd="4dp" />
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp" />
 
-        <ImageButton
-            android:id="@+id/btnViewerDownload"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:src="@android:drawable/stat_sys_download"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:tint="@color/white"
-            android:contentDescription="Download" />
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            app:cardCornerRadius="20dp"
+            app:cardBackgroundColor="#1A1A1A"
+            app:strokeColor="#3C4043"
+            app:strokeWidth="1dp"
+            app:cardElevation="0dp">
+
+            <ImageButton
+                android:id="@+id/btnViewerDownload"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@android:drawable/stat_sys_download"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:tint="#FFFFFF"
+                app:tint="#FFFFFF"
+                android:padding="8dp"
+                android:scaleType="centerInside"
+                android:contentDescription="Download" />
+        </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 
     <!-- IMAGE viewer -->
@@ -62,7 +89,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:visibility="gone"
-        android:background="#FF000000"
+        android:background="#000000"
         android:contentDescription="Image"
         app:layout_constraintTop_toBottomOf="@id/viewerHeader"
         app:layout_constraintBottom_toBottomOf="parent" />
@@ -82,6 +109,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:visibility="gone"
+        android:background="#000000"
         app:layout_constraintTop_toBottomOf="@id/viewerHeader"
         app:layout_constraintBottom_toTopOf="@id/videoControls" />
 
@@ -91,10 +119,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="#DD000000"
+        android:background="#000000"
         android:paddingStart="16dp"
         android:paddingEnd="16dp"
-        android:paddingTop="8dp"
+        android:paddingTop="12dp"
         android:paddingBottom="24dp"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent">
@@ -103,44 +131,83 @@
             android:id="@+id/videoSeekBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:progressTint="@color/accent_primary"
-            android:thumbTint="@color/white" />
+            android:progressTint="#FFFFFF"
+            android:thumbTint="#FFFFFF" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center"
-            android:layout_marginTop="4dp">
+            android:gravity="center_vertical"
+            android:layout_marginTop="8dp">
 
-            <ImageButton
-                android:id="@+id/btnVideoRewind"
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="44dp"
                 android:layout_height="44dp"
-                android:src="@android:drawable/ic_media_rew"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:tint="@color/white"
-                android:contentDescription="Rewind 10s" />
+                app:cardCornerRadius="22dp"
+                app:cardBackgroundColor="#1A1A1A"
+                app:strokeColor="#3C4043"
+                app:strokeWidth="1dp"
+                app:cardElevation="0dp">
 
-            <ImageButton
-                android:id="@+id/btnVideoPlayPause"
+                <ImageButton
+                    android:id="@+id/btnVideoRewind"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:src="@android:drawable/ic_media_rew"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:tint="#FFFFFF"
+                    app:tint="#FFFFFF"
+                    android:padding="8dp"
+                    android:scaleType="centerInside"
+                    android:contentDescription="Rewind 10s" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="56dp"
                 android:layout_height="56dp"
-                android:src="@android:drawable/ic_media_play"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:tint="@color/white"
-                android:layout_marginStart="24dp"
-                android:layout_marginEnd="24dp"
-                android:contentDescription="Play/Pause" />
+                app:cardCornerRadius="28dp"
+                app:cardBackgroundColor="#1A1A1A"
+                app:strokeColor="#3C4043"
+                app:strokeWidth="1dp"
+                app:cardElevation="0dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp">
 
-            <ImageButton
-                android:id="@+id/btnVideoForward"
+                <ImageButton
+                    android:id="@+id/btnVideoPlayPause"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:src="@android:drawable/ic_media_play"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:tint="#FFFFFF"
+                    app:tint="#FFFFFF"
+                    android:padding="12dp"
+                    android:scaleType="centerInside"
+                    android:contentDescription="Play/Pause" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="44dp"
                 android:layout_height="44dp"
-                android:src="@android:drawable/ic_media_ff"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:tint="@color/white"
-                android:contentDescription="Forward 10s" />
+                app:cardCornerRadius="22dp"
+                app:cardBackgroundColor="#1A1A1A"
+                app:strokeColor="#3C4043"
+                app:strokeWidth="1dp"
+                app:cardElevation="0dp">
+
+                <ImageButton
+                    android:id="@+id/btnVideoForward"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:src="@android:drawable/ic_media_ff"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:tint="#FFFFFF"
+                    app:tint="#FFFFFF"
+                    android:padding="8dp"
+                    android:scaleType="centerInside"
+                    android:contentDescription="Forward 10s" />
+            </com.google.android.material.card.MaterialCardView>
 
             <TextView
                 android:id="@+id/tvVideoTime"
@@ -148,8 +215,8 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="0:00 / 0:00"
-                android:textColor="#CCFFFFFF"
-                android:textSize="12sp"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
                 android:gravity="end" />
         </LinearLayout>
     </LinearLayout>
@@ -163,18 +230,22 @@
         android:gravity="center"
         android:paddingStart="32dp"
         android:paddingEnd="32dp"
+        android:background="#000000"
         android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/viewerHeader"
         app:layout_constraintBottom_toBottomOf="parent">
 
-        <!-- Music note icon -->
+        <!-- Music note icon pill card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="120dp"
             android:layout_height="120dp"
             app:cardCornerRadius="60dp"
-            app:cardElevation="8dp"
-            app:cardBackgroundColor="@color/accent_primary"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#1A1A1A"
+            app:strokeColor="#3C4043"
+            app:strokeWidth="1dp"
             android:layout_marginBottom="24dp">
+
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
@@ -187,8 +258,8 @@
             android:id="@+id/tvAudioName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="16sp"
-            android:textColor="@color/white"
+            android:textSize="18sp"
+            android:textColor="#FFFFFF"
             android:textStyle="bold"
             android:gravity="center"
             android:maxLines="2"
@@ -199,16 +270,16 @@
             android:id="@+id/audioSeekBar"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:progressTint="@color/accent_primary"
-            android:thumbTint="@color/white" />
+            android:progressTint="#FFFFFF"
+            android:thumbTint="#FFFFFF" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginTop="4dp"
-            android:layout_marginBottom="24dp">
+            android:layout_marginTop="6dp"
+            android:layout_marginBottom="28dp">
 
             <TextView
                 android:id="@+id/tvAudioTime"
@@ -216,16 +287,16 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="0:00"
-                android:textColor="#AAFFFFFF"
-                android:textSize="12sp" />
+                android:textColor="#9AA0A6"
+                android:textSize="13sp" />
 
             <TextView
                 android:id="@+id/tvAudioDuration"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="0:00"
-                android:textColor="#AAFFFFFF"
-                android:textSize="12sp" />
+                android:textColor="#9AA0A6"
+                android:textSize="13sp" />
         </LinearLayout>
 
         <LinearLayout
@@ -234,35 +305,75 @@
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
-            <ImageButton
-                android:id="@+id/btnAudioRewind"
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="52dp"
                 android:layout_height="52dp"
-                android:src="@android:drawable/ic_media_rew"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:tint="@color/white"
-                android:contentDescription="Rewind 10s" />
+                app:cardCornerRadius="26dp"
+                app:cardBackgroundColor="#1A1A1A"
+                app:strokeColor="#3C4043"
+                app:strokeWidth="1dp"
+                app:cardElevation="0dp">
 
-            <com.google.android.material.floatingactionbutton.FloatingActionButton
-                android:id="@+id/btnAudioPlayPause"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@android:drawable/ic_media_play"
-                app:backgroundTint="@color/accent_primary"
-                app:tint="@color/white"
-                app:fabSize="normal"
+                <ImageButton
+                    android:id="@+id/btnAudioRewind"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:src="@android:drawable/ic_media_rew"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:tint="#FFFFFF"
+                    app:tint="#FFFFFF"
+                    android:padding="10dp"
+                    android:scaleType="centerInside"
+                    android:contentDescription="Rewind 10s" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="64dp"
+                android:layout_height="64dp"
+                app:cardCornerRadius="32dp"
+                app:cardBackgroundColor="#1A1A1A"
+                app:strokeColor="#3C4043"
+                app:strokeWidth="1dp"
+                app:cardElevation="0dp"
                 android:layout_marginStart="24dp"
-                android:layout_marginEnd="24dp"
-                android:contentDescription="Play/Pause" />
+                android:layout_marginEnd="24dp">
 
-            <ImageButton
-                android:id="@+id/btnAudioForward"
+                <com.google.android.material.floatingactionbutton.FloatingActionButton
+                    android:id="@+id/btnAudioPlayPause"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:src="@android:drawable/ic_media_play"
+                    app:backgroundTint="#1A1A1A"
+                    app:tint="#FFFFFF"
+                    app:fabSize="normal"
+                    app:fabCustomSize="64dp"
+                    app:maxImageSize="32dp"
+                    app:elevation="0dp"
+                    app:borderWidth="0dp"
+                    android:contentDescription="Play/Pause" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="52dp"
                 android:layout_height="52dp"
-                android:src="@android:drawable/ic_media_ff"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:tint="@color/white"
-                android:contentDescription="Forward 10s" />
+                app:cardCornerRadius="26dp"
+                app:cardBackgroundColor="#1A1A1A"
+                app:strokeColor="#3C4043"
+                app:strokeWidth="1dp"
+                app:cardElevation="0dp">
+
+                <ImageButton
+                    android:id="@+id/btnAudioForward"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:src="@android:drawable/ic_media_ff"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:tint="#FFFFFF"
+                    app:tint="#FFFFFF"
+                    android:padding="10dp"
+                    android:scaleType="centerInside"
+                    android:contentDescription="Forward 10s" />
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </LinearLayout>
 
@@ -272,7 +383,7 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:visibility="gone"
-        android:background="#FFFFFFFF"
+        android:background="#000000"
         app:layout_constraintTop_toBottomOf="@id/viewerHeader"
         app:layout_constraintBottom_toBottomOf="parent" />
 
@@ -281,7 +392,7 @@
         android:id="@+id/viewerProgress"
         android:layout_width="48dp"
         android:layout_height="48dp"
-        android:indeterminateTint="@color/accent_primary"
+        android:indeterminateTint="#FFFFFF"
         android:visibility="gone"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -293,7 +404,7 @@
         android:id="@+id/tvViewerError"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:textColor="#AAFFFFFF"
+        android:textColor="#EF4444"
         android:textSize="15sp"
         android:gravity="center"
         android:padding="32dp"

@@ -3,7 +3,6 @@ package com.beeta.nbheditor
 import android.content.Context
 import android.graphics.Typeface
 import android.view.View
-import android.view.ViewGroup
 import android.widget.HorizontalScrollView
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -43,28 +42,29 @@ class TabUI(
     private fun createTabView(tab: EditorTab, index: Int, isActive: Boolean): View {
         val tabLayout = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
-            setPadding(12, 8, 4, 8)
+            setPadding(14, 6, 8, 6)
             background = ContextCompat.getDrawable(
                 context,
-                if (isActive) R.drawable.bg_glass_card else android.R.color.transparent
+                if (isActive) R.drawable.bg_tab_selected else R.drawable.bg_tab_unselected
             )
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.MATCH_PARENT
+                LinearLayout.LayoutParams.WRAP_CONTENT
             ).apply {
-                marginEnd = 4
+                marginEnd = 6
             }
             setOnClickListener { onTabClick(index) }
         }
         
         val titleText = TextView(context).apply {
             text = if (tab.isModified) "● ${tab.title}" else tab.title
-            textSize = 13f
-            setTextColor(ContextCompat.getColor(context, R.color.editor_text))
+            textSize = 12f
+            val textColorRes = if (isActive) R.color.tab_active_text else R.color.tab_inactive_text
+            setTextColor(ContextCompat.getColor(context, textColorRes))
             if (isActive) {
                 setTypeface(null, Typeface.BOLD)
             }
-            maxWidth = 200
+            maxWidth = 240
             isSingleLine = true
             setPadding(0, 0, 8, 0)
         }
@@ -75,9 +75,10 @@ class TabUI(
             val closeButton = ImageButton(context).apply {
                 setImageResource(android.R.drawable.ic_menu_close_clear_cancel)
                 background = null
-                layoutParams = LinearLayout.LayoutParams(32, 32)
+                layoutParams = LinearLayout.LayoutParams(28, 28)
                 scaleType = ImageView.ScaleType.FIT_CENTER
-                setColorFilter(ContextCompat.getColor(context, R.color.editor_text))
+                val iconColorRes = if (isActive) R.color.tab_active_text else R.color.tab_inactive_text
+                setColorFilter(ContextCompat.getColor(context, iconColorRes))
                 setPadding(2, 2, 2, 2)
                 setOnClickListener { event ->
                     event.stopPropagation()

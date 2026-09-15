@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/emptyStateContainer"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:paddingStart="32dp"
+    android:paddingEnd="32dp"
+    android:paddingTop="32dp"
+    android:paddingBottom="32dp"
+    tools:background="#000000">
+
+    <!-- Customizable Glyph/Emoji Icon (48sp, 0.4 alpha) -->
+    <TextView
+        android:id="@+id/emptyStateIcon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="✦"
+        android:textSize="48sp"
+        android:textColor="#FFFFFF"
+        android:alpha="0.4"
+        android:gravity="center"
+        android:includeFontPadding="false" />
+
+    <!-- Optional Drawable/Vector Icon (48dp, 0.4 alpha) -->
+    <ImageView
+        android:id="@+id/emptyStateImage"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
+        android:alpha="0.4"
+        android:contentDescription="Empty state icon"
+        android:visibility="gone"
+        app:tint="#FFFFFF" />
+
+    <!-- Title (20sp bold #FFFFFF) -->
+    <TextView
+        android:id="@+id/emptyStateTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:gravity="center"
+        android:text="No items yet"
+        android:textColor="#FFFFFF"
+        android:textSize="20sp"
+        android:textStyle="bold" />
+
+    <!-- Subtitle (13sp #9AA0A6) -->
+    <TextView
+        android:id="@+id/emptyStateSubtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text="Items will appear here once created"
+        android:textColor="#9AA0A6"
+        android:textSize="13sp" />
+
+    <!-- Action Button (@drawable/bg_primary_button, white with black text) -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/emptyStateButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:background="@drawable/bg_primary_button"
+        app:backgroundTint="@null"
+        android:text="Get Started"
+        android:textColor="#000000"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textAllCaps="false"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="10dp"
+        android:paddingBottom="10dp"
+        android:minHeight="40dp" />
+
+</LinearLayout>

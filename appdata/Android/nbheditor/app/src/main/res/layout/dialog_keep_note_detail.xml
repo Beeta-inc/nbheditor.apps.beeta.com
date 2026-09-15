@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/keepModalCard"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="12dp"
+    app:cardCornerRadius="14dp"
+    app:cardElevation="12dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="#3C4043"
+    app:cardBackgroundColor="#000000">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Top Title & Pin Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="16dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="8dp">
+
+            <EditText
+                android:id="@+id/keepModalTitle"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="Title"
+                android:textColorHint="#9AA0A6"
+                android:textColor="#FFFFFF"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:background="@null"
+                android:inputType="textCapSentences" />
+
+            <TextView
+                android:id="@+id/keepModalPinBtn"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:gravity="center"
+                android:text="📌"
+                android:textSize="16sp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:clickable="true"
+                android:focusable="true" />
+        </LinearLayout>
+
+        <!-- Body / Content Editor -->
+        <EditText
+            android:id="@+id/keepModalContent"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="180dp"
+            android:maxHeight="360dp"
+            android:gravity="top|start"
+            android:hint="Note"
+            android:textColorHint="#9AA0A6"
+            android:textColor="#FFFFFF"
+            android:textSize="14sp"
+            android:lineSpacingMultiplier="1.5"
+            android:background="@null"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:inputType="textMultiLine"
+            android:scrollbars="vertical" />
+
+        <!-- Timestamp & Word Stats Meta -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="4dp">
+
+            <TextView
+                android:id="@+id/keepModalWordStats"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="0 words • 1 min read"
+                android:textColor="#9AA0A6"
+                android:textSize="11sp" />
+
+            <TextView
+                android:id="@+id/keepModalEditedTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Edited just now"
+                android:textColor="#9AA0A6"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#202124"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="6dp" />
+
+        <!-- Google Keep Action Toolbar -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="8dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="12dp">
+
+            <HorizontalScrollView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:id="@+id/keepModalRemindBtn"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:gravity="center"
+                        android:text="🔔"
+                        android:textSize="15sp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                    <TextView
+                        android:id="@+id/keepModalCollabBtn"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:gravity="center"
+                        android:text="👥"
+                        android:textSize="15sp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                    <TextView
+                        android:id="@+id/keepModalPaletteBtn"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:gravity="center"
+                        android:text="🎨"
+                        android:textSize="15sp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                    <TextView
+                        android:id="@+id/keepModalImageBtn"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:gravity="center"
+                        android:text="🖼"
+                        android:textSize="15sp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                    <TextView
+                        android:id="@+id/keepModalDrawBtn"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:gravity="center"
+                        android:text="✏️"
+                        android:textSize="15sp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                    <TextView
+                        android:id="@+id/keepModalMicBtn"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:gravity="center"
+                        android:text="🎤"
+                        android:textSize="15sp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                    <TextView
+                        android:id="@+id/keepModalArchiveBtn"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:gravity="center"
+                        android:text="📥"
+                        android:textSize="15sp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                    <TextView
+                        android:id="@+id/keepModalAiSparkBtn"
+                        android:layout_width="wrap_content"
+                        android:layout_height="28dp"
+                        android:gravity="center"
+                        android:text="✨ AI Spark"
+                        android:textSize="11sp"
+                        android:textColor="#FFFFFF"
+                        android:background="@drawable/bg_suggestion_chip"
+                        android:paddingHorizontal="8dp"
+                        android:layout_marginEnd="4dp"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                    <TextView
+                        android:id="@+id/keepModalUndoBtn"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:gravity="center"
+                        android:text="↩"
+                        android:textSize="15sp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                    <TextView
+                        android:id="@+id/keepModalRedoBtn"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:gravity="center"
+                        android:text="↪"
+                        android:textSize="15sp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                    <TextView
+                        android:id="@+id/keepModalDeleteBtn"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:gravity="center"
+                        android:text="🗑"
+                        android:textSize="15sp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/keepModalCloseBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="34dp"
+                android:text="Close"
+                android:textColor="#FFFFFF"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textAllCaps="false"
+                app:cornerRadius="6dp"
+                app:backgroundTint="#202124"
+                app:strokeWidth="1dp"
+                app:strokeColor="#3C4043" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

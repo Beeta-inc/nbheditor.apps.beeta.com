@@ -1,9 +1,21 @@
 <resources>
     <dimen name="fab_margin">16dp</dimen>
-    <dimen name="fragment_horizontal_margin">16dp</dimen>
+    <dimen name="text_margin">16dp</dimen>
+    <dimen name="corner_radius_card">8dp</dimen>
+    <dimen name="corner_radius_pill">9999dp</dimen>
+    <dimen name="corner_radius_modal">16dp</dimen>
+    <dimen name="corner_radius_button">8dp</dimen>
+    <dimen name="corner_radius_tab">6dp</dimen>
+    <dimen name="corner_radius_input">24dp</dimen>
+    <dimen name="header_height">56dp</dimen>
+    <dimen name="sidebar_width_collapsed">68dp</dimen>
+    <dimen name="sidebar_width_expanded">280dp</dimen>
+    <dimen name="rail_item_height">48dp</dimen>
+    <dimen name="rail_icon_size">24dp</dimen>
+    <dimen name="card_padding_h">16dp</dimen>
+    <dimen name="card_padding_v">14dp</dimen>
+    <dimen name="card_margin">4dp</dimen>
+    <dimen name="card_gap">10dp</dimen>
+    <dimen name="divider_size">1dp</dimen>
     <dimen name="item_transform_image_length">48dp</dimen>
-    <dimen name="reflow_text_block_max_percent">1</dimen>
-    <dimen name="reflow_text_block_horizontal_gap">8dp</dimen>
-    <dimen name="reflow_text_title_size">22sp</dimen>
-    <dimen name="reflow_text_description_size">13sp</dimen>
 </resources>

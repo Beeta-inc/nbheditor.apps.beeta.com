@@ -4,304 +4,787 @@
     android:id="@+id/homeRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/editor_bg">
+    android:background="#000000">
 
-    <LinearLayout
+    <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:fillViewport="true"
+        android:scrollbars="none">
 
-        <!-- Glass Header -->
         <LinearLayout
-            android:id="@+id/homeHeader"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingStart="20dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="28dp"
-            android:paddingBottom="16dp"
-            android:background="@color/editor_surface">
+            android:orientation="vertical">
 
-            <LinearLayout
+            <!-- Collapsed Note Trigger Bar (Matches keep-quick-note-bar) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/searchCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="6dp"
+                app:cardCornerRadius="8dp"
+                app:cardBackgroundColor="#000000"
+                app:strokeColor="#3C4043"
+                app:strokeWidth="1dp"
+                app:cardElevation="0dp">
 
                 <LinearLayout
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:orientation="vertical">
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="12dp">
 
                     <TextView
-                        android:id="@+id/homeTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="✦ NBH Editor"
-                        android:textSize="26sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/editor_text"
-                        android:letterSpacing="0.01" />
+                        android:text="💡"
+                        android:textSize="15sp"
+                        android:paddingEnd="10dp" />
+
+                    <EditText
+                        android:id="@+id/searchBar"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:hint="Take a note..."
+                        android:textColorHint="#9AA0A6"
+                        android:textColor="#FFFFFF"
+                        android:textSize="14sp"
+                        android:background="@null"
+                        android:gravity="center_vertical"
+                        android:inputType="text"
+                        android:imeOptions="actionSearch"
+                        android:singleLine="true" />
 
                     <TextView
-                        android:id="@+id/fileCountLabel"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="by Beeta Technologies"
-                        android:textSize="12sp"
-                        android:textColor="@color/accent_primary"
-                        android:paddingTop="2dp" />
+                        android:id="@+id/btnQuickChecklist"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:gravity="center"
+                        android:text="☑️"
+                        android:textSize="16sp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                    <TextView
+                        android:id="@+id/btnQuickVoice"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:gravity="center"
+                        android:text="🎤"
+                        android:textSize="16sp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                    <TextView
+                        android:id="@+id/btnQuickImage"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:gravity="center"
+                        android:text="🖼"
+                        android:textSize="16sp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                    <TextView
+                        android:id="@+id/btnQuickDraw"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:gravity="center"
+                        android:text="🎨"
+                        android:textSize="16sp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:clickable="true"
+                        android:focusable="true" />
+
                 </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
 
-                <!-- Glass toggle button -->
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnGlassToggle"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:text="Glass"
-                    android:textSize="11sp"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp"
-                    android:layout_marginEnd="8dp"
-                    app:strokeColor="@color/accent_primary"
-                    app:strokeWidth="1dp"
-                    android:textColor="@color/accent_primary" />
-
-                <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-                    android:id="@+id/btnNewFile"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="New"
-                    android:textSize="13sp"
-                    app:icon="@drawable/ic_new_file"
-                    app:backgroundTint="@color/accent_primary"
-                    android:textColor="@color/editor_bg"
-                    app:iconTint="@color/editor_bg"
-                    app:elevation="4dp" />
-
-            </LinearLayout>
-
-        </LinearLayout>
-
-        <!-- Search bar -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/searchCard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginTop="12dp"
-            android:layout_marginBottom="4dp"
-            app:cardBackgroundColor="@color/editor_surface"
-            app:cardCornerRadius="14dp"
-            app:cardElevation="0dp"
-            app:strokeWidth="1dp"
-            app:strokeColor="@color/divider">
-
-            <LinearLayout
+            <!-- Expanded Inline Take A Note Box (Matches keep-quick-note-expanded) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/expandedNoteCard"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp">
+                android:layout_marginStart="12dp"
+                android:layout_marginEnd="12dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="6dp"
+                android:visibility="gone"
+                app:cardCornerRadius="8dp"
+                app:cardBackgroundColor="#000000"
+                app:strokeColor="#5F6368"
+                app:strokeWidth="1dp"
+                app:cardElevation="4dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <!-- Title Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="8dp">
+
+                        <EditText
+                            android:id="@+id/inlineNoteTitle"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:hint="Title"
+                            android:textColorHint="#9AA0A6"
+                            android:textColor="#FFFFFF"
+                            android:textSize="16sp"
+                            android:textStyle="bold"
+                            android:background="@null"
+                            android:inputType="textCapSentences" />
+
+                        <TextView
+                            android:id="@+id/inlineNotePinBtn"
+                            android:layout_width="36dp"
+                            android:layout_height="36dp"
+                            android:gravity="center"
+                            android:text="📌"
+                            android:textSize="16sp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:clickable="true"
+                            android:focusable="true" />
+                    </LinearLayout>
+
+                    <!-- Quick Category / Template Starters (Nir Eyal Micro-Triggers) -->
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:scrollbars="none"
+                        android:layout_marginBottom="10dp">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/templateIdea"
+                                android:layout_width="wrap_content"
+                                android:layout_height="28dp"
+                                android:layout_marginEnd="6dp"
+                                android:background="@drawable/bg_suggestion_chip"
+                                android:text="💡 Idea"
+                                android:textColor="#FBBF24"
+                                android:textSize="11sp"
+                                android:gravity="center"
+                                android:paddingStart="10dp"
+                                android:paddingEnd="10dp" />
+
+                            <TextView
+                                android:id="@+id/templateTasks"
+                                android:layout_width="wrap_content"
+                                android:layout_height="28dp"
+                                android:layout_marginEnd="6dp"
+                                android:background="@drawable/bg_suggestion_chip"
+                                android:text="☑️ Task List"
+                                android:textColor="#38BDF8"
+                                android:textSize="11sp"
+                                android:gravity="center"
+                                android:paddingStart="10dp"
+                                android:paddingEnd="10dp" />
+
+                            <TextView
+                                android:id="@+id/templateBraindump"
+                                android:layout_width="wrap_content"
+                                android:layout_height="28dp"
+                                android:layout_marginEnd="6dp"
+                                android:background="@drawable/bg_suggestion_chip"
+                                android:text="🧠 Brain Dump"
+                                android:textColor="#C084FC"
+                                android:textSize="11sp"
+                                android:gravity="center"
+                                android:paddingStart="10dp"
+                                android:paddingEnd="10dp" />
+
+                            <TextView
+                                android:id="@+id/templateJournal"
+                                android:layout_width="wrap_content"
+                                android:layout_height="28dp"
+                                android:layout_marginEnd="6dp"
+                                android:background="@drawable/bg_suggestion_chip"
+                                android:text="📖 Journal"
+                                android:textColor="#34D399"
+                                android:textSize="11sp"
+                                android:gravity="center"
+                                android:paddingStart="10dp"
+                                android:paddingEnd="10dp" />
+
+                            <TextView
+                                android:id="@+id/templateGoals"
+                                android:layout_width="wrap_content"
+                                android:layout_height="28dp"
+                                android:background="@drawable/bg_suggestion_chip"
+                                android:text="🎯 Goals"
+                                android:textColor="#F87171"
+                                android:textSize="11sp"
+                                android:gravity="center"
+                                android:paddingStart="10dp"
+                                android:paddingEnd="10dp" />
+
+                        </LinearLayout>
+                    </HorizontalScrollView>
+
+                    <!-- Content Textarea -->
+                    <EditText
+                        android:id="@+id/inlineNoteContent"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:minHeight="72dp"
+                        android:gravity="top|start"
+                        android:hint="Take a note..."
+                        android:textColorHint="#9AA0A6"
+                        android:textColor="#FFFFFF"
+                        android:textSize="14sp"
+                        android:lineSpacingMultiplier="1.4"
+                        android:background="@null"
+                        android:inputType="textMultiLine"
+                        android:layout_marginBottom="12dp" />
+
+                    <!-- Bottom Actions Row -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:id="@+id/inlineNoteFormatBtn"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:gravity="center"
+                            android:text="U"
+                            android:textSize="13sp"
+                            android:textColor="#9AA0A6"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:clickable="true"
+                            android:focusable="true" />
+
+                        <TextView
+                            android:id="@+id/inlineNoteAiSparkBtn"
+                            android:layout_width="wrap_content"
+                            android:layout_height="26dp"
+                            android:gravity="center"
+                            android:text="✨ AI Spark"
+                            android:textSize="10sp"
+                            android:textColor="#FFFFFF"
+                            android:background="@drawable/bg_suggestion_chip"
+                            android:paddingHorizontal="8dp"
+                            android:layout_marginEnd="4dp"
+                            android:clickable="true"
+                            android:focusable="true" />
+
+                        <TextView
+                            android:id="@+id/inlineNoteMicBtn"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:gravity="center"
+                            android:text="🎤"
+                            android:textSize="14sp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:clickable="true"
+                            android:focusable="true" />
+
+                        <TextView
+                            android:id="@+id/inlineNoteColorBtn"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:gravity="center"
+                            android:text="🎨"
+                            android:textSize="14sp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:clickable="true"
+                            android:focusable="true" />
+
+                        <TextView
+                            android:id="@+id/inlineNoteRemindBtn"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:gravity="center"
+                            android:text="🔔"
+                            android:textSize="14sp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:clickable="true"
+                            android:focusable="true" />
+
+                        <TextView
+                            android:id="@+id/inlineNoteImageBtn"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:gravity="center"
+                            android:text="🖼"
+                            android:textSize="14sp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:clickable="true"
+                            android:focusable="true" />
+
+                        <TextView
+                            android:id="@+id/inlineNoteDrawBtn"
+                            android:layout_width="32dp"
+                            android:layout_height="32dp"
+                            android:gravity="center"
+                            android:text="✏️"
+                            android:textSize="14sp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:clickable="true"
+                            android:focusable="true" />
+
+                        <TextView
+                            android:id="@+id/inlineNoteUndoBtn"
+                            android:layout_width="30dp"
+                            android:layout_height="30dp"
+                            android:gravity="center"
+                            android:text="↩"
+                            android:textSize="14sp"
+                            android:textColor="#9AA0A6"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:clickable="true"
+                            android:focusable="true" />
+
+                        <TextView
+                            android:id="@+id/inlineNoteRedoBtn"
+                            android:layout_width="30dp"
+                            android:layout_height="30dp"
+                            android:gravity="center"
+                            android:text="↪"
+                            android:textSize="14sp"
+                            android:textColor="#9AA0A6"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:clickable="true"
+                            android:focusable="true" />
+
+                        <View
+                            android:layout_width="0dp"
+                            android:layout_height="0dp"
+                            android:layout_weight="1" />
+
+                        <TextView
+                            android:id="@+id/inlineNoteWordCount"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0 words"
+                            android:textColor="#9AA0A6"
+                            android:textSize="11sp"
+                            android:paddingEnd="12dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/inlineNoteCloseBtn"
+                            android:layout_width="wrap_content"
+                            android:layout_height="34dp"
+                            android:text="Close"
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:textAllCaps="false"
+                            app:cornerRadius="6dp"
+                            app:backgroundTint="#202124"
+                            app:strokeWidth="1dp"
+                            app:strokeColor="#3C4043" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Template Pills HorizontalScrollView -->
+            <HorizontalScrollView
+                android:id="@+id/templatePillsScroll"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:clipToPadding="false"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="2dp"
+                android:paddingBottom="6dp">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/btnPillText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="34dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/bg_template_pill"
+                        android:text="📝 Text"
+                        android:textColor="#9AA0A6"
+                        android:textSize="12sp"
+                        android:gravity="center"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                    <TextView
+                        android:id="@+id/btnPillList"
+                        android:layout_width="wrap_content"
+                        android:layout_height="34dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/bg_template_pill"
+                        android:text="☑ List"
+                        android:textColor="#9AA0A6"
+                        android:textSize="12sp"
+                        android:gravity="center"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                    <TextView
+                        android:id="@+id/btnPillImage"
+                        android:layout_width="wrap_content"
+                        android:layout_height="34dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/bg_template_pill"
+                        android:text="🖼 Image"
+                        android:textColor="#9AA0A6"
+                        android:textSize="12sp"
+                        android:gravity="center"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                    <TextView
+                        android:id="@+id/btnPillVoice"
+                        android:layout_width="wrap_content"
+                        android:layout_height="34dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/bg_template_pill"
+                        android:text="🔊 Voice"
+                        android:textColor="#9AA0A6"
+                        android:textSize="12sp"
+                        android:gravity="center"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                    <TextView
+                        android:id="@+id/btnPillDraw"
+                        android:layout_width="wrap_content"
+                        android:layout_height="34dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/bg_template_pill"
+                        android:text="🎨 Draw"
+                        android:textColor="#9AA0A6"
+                        android:textSize="12sp"
+                        android:gravity="center"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:clickable="true"
+                        android:focusable="true" />
+
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <!-- Tag Filter Chips Bar (Instant Categorization & Discovery) -->
+            <HorizontalScrollView
+                android:id="@+id/tagChipsBar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:scrollbars="none"
+                android:clipToPadding="false"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingBottom="6dp">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/chipTagAll"
+                        android:layout_width="wrap_content"
+                        android:layout_height="28dp"
+                        android:layout_marginEnd="6dp"
+                        android:background="@drawable/bg_subnav_active"
+                        android:text="All"
+                        android:textColor="#000000"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:gravity="center"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp" />
+
+                    <TextView
+                        android:id="@+id/chipTagNotes"
+                        android:layout_width="wrap_content"
+                        android:layout_height="28dp"
+                        android:layout_marginEnd="6dp"
+                        android:background="@drawable/bg_subnav_inactive"
+                        android:text="Notes"
+                        android:textColor="#9AA0A6"
+                        android:textSize="11sp"
+                        android:gravity="center"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp" />
+
+                    <TextView
+                        android:id="@+id/chipTagTodos"
+                        android:layout_width="wrap_content"
+                        android:layout_height="28dp"
+                        android:layout_marginEnd="6dp"
+                        android:background="@drawable/bg_subnav_inactive"
+                        android:text="Tasks"
+                        android:textColor="#9AA0A6"
+                        android:textSize="11sp"
+                        android:gravity="center"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp" />
+
+                    <TextView
+                        android:id="@+id/chipTagIdeas"
+                        android:layout_width="wrap_content"
+                        android:layout_height="28dp"
+                        android:layout_marginEnd="6dp"
+                        android:background="@drawable/bg_subnav_inactive"
+                        android:text="#ideas"
+                        android:textColor="#9AA0A6"
+                        android:textSize="11sp"
+                        android:gravity="center"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp" />
+
+                    <TextView
+                        android:id="@+id/chipTagSketches"
+                        android:layout_width="wrap_content"
+                        android:layout_height="28dp"
+                        android:background="@drawable/bg_subnav_inactive"
+                        android:text="#sketches"
+                        android:textColor="#9AA0A6"
+                        android:textSize="11sp"
+                        android:gravity="center"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp" />
+
+                </LinearLayout>
+            </HorizontalScrollView>
+
+            <!-- Pinned Notes Label -->
+            <TextView
+                android:id="@+id/sortLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="PINNED NOTES"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="#9AA0A6"
+                android:letterSpacing="0.08"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="6dp" />
+
+            <!-- Empty state -->
+            <LinearLayout
+                android:id="@+id/emptyHomeState"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="240dp"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="24dp"
+                android:visibility="gone">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="🔍"
-                    android:textSize="14sp"
-                    android:paddingEnd="8dp" />
+                    android:text="✦"
+                    android:textSize="56sp"
+                    android:textColor="#FFFFFF"
+                    android:alpha="0.4" />
 
-                <EditText
-                    android:id="@+id/searchBar"
-                    android:layout_width="match_parent"
-                    android:layout_height="44dp"
-                    android:hint="Search files..."
-                    android:textColorHint="@color/editor_hint"
-                    android:textColor="@color/editor_text"
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="No notes yet"
+                    android:textSize="18sp"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    android:paddingTop="16dp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tap + or type above"
                     android:textSize="13sp"
-                    android:background="@null"
-                    android:inputType="text"
-                    android:imeOptions="actionSearch"
-                    android:singleLine="true" />
+                    android:textColor="#9AA0A6"
+                    android:paddingTop="8dp" />
+
             </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
 
-        <!-- Empty state -->
-        <LinearLayout
-            android:id="@+id/emptyHomeState"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:visibility="gone">
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="✦"
-                android:textSize="56sp"
-                android:textColor="@color/accent_primary"
-                android:alpha="0.4" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="No files yet"
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:textColor="@color/editor_text"
-                android:paddingTop="16dp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Tap New to create your first file"
-                android:textSize="13sp"
-                android:textColor="@color/editor_hint"
-                android:paddingTop="8dp" />
-
-        </LinearLayout>
-
-        <!-- Loading state -->
-        <LinearLayout
-            android:id="@+id/loadingState"
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:visibility="gone">
-
-            <ProgressBar
-                android:id="@+id/syncProgressBar"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:indeterminateTint="@color/accent_primary" />
-
-            <TextView
-                android:id="@+id/syncStatusText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Syncing from cloud..."
-                android:textSize="14sp"
-                android:textColor="@color/editor_text"
-                android:paddingTop="16dp" />
-
-            <TextView
-                android:id="@+id/syncDetailText"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Checking for updates"
-                android:textSize="12sp"
-                android:textColor="@color/editor_hint"
-                android:paddingTop="4dp" />
-
-        </LinearLayout>
-
-        <!-- Scrollable content -->
-        <androidx.core.widget.NestedScrollView
-            android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
-            android:fillViewport="true">
-
+            <!-- Loading state -->
             <LinearLayout
+                android:id="@+id/loadingState"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:minHeight="240dp"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:padding="24dp"
+                android:visibility="gone">
 
-        <!-- Sort / Open row -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingStart="20dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="8dp"
-            android:paddingBottom="6dp">
+                <ProgressBar
+                    android:id="@+id/syncProgressBar"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:indeterminateTint="#8AB4F8" />
 
-            <TextView
-                android:id="@+id/sortLabel"
-                android:layout_width="0dp"
+                <TextView
+                    android:id="@+id/syncStatusText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Syncing from cloud..."
+                    android:textSize="14sp"
+                    android:textColor="#FFFFFF"
+                    android:paddingTop="16dp" />
+
+                <TextView
+                    android:id="@+id/syncDetailText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Checking for updates"
+                    android:textSize="12sp"
+                    android:textColor="#9AA0A6"
+                    android:paddingTop="4dp" />
+
+            </LinearLayout>
+
+            <!-- File grid -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/fileGrid"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="📄 My Files"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:textColor="@color/editor_text" />
+                android:nestedScrollingEnabled="false"
+                android:background="#000000"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:clipToPadding="false"
+                android:visibility="gone" />
 
+            <!-- Section Divider -->
+            <View
+                android:id="@+id/sectionDivider"
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="16dp"
+                android:layout_marginEnd="16dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:background="#3C4043"
+                android:visibility="gone" />
+
+            <!-- Collaborative Sessions Section -->
+            <TextView
+                android:id="@+id/collabSessionsLabel"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="COLLABORATIVE SESSIONS"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:textColor="#9AA0A6"
+                android:letterSpacing="0.08"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingTop="16dp"
+                android:paddingBottom="6dp"
+                android:visibility="gone" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/collabSessionsGrid"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:nestedScrollingEnabled="false"
+                android:background="#000000"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:clipToPadding="false"
+                android:visibility="gone" />
+
+            <!-- Open local file button -->
             <TextView
                 android:id="@+id/btnOpenFile"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Open file..."
-                android:textSize="12sp"
-                android:textColor="@color/accent_primary"
-                android:padding="6dp"
+                android:text="Open local file..."
+                android:textColor="#8AB4F8"
+                android:textSize="13sp"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="80dp"
                 android:background="?attr/selectableItemBackgroundBorderless" />
 
         </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 
-        <!-- File grid -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/fileGrid"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:nestedScrollingEnabled="false"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:paddingBottom="16dp"
-            android:clipToPadding="false"
-            android:visibility="gone" />
+    <!-- Floating Action Button -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/btnNewFile"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:contentDescription="New Note"
+        app:backgroundTint="#FFFFFF"
+        android:backgroundTint="#FFFFFF"
+        app:tint="#000000"
+        android:tint="#000000"
+        app:srcCompat="@drawable/ic_new_file"
+        android:src="@drawable/ic_new_file"
+        app:elevation="6dp" />
 
-        <!-- Divider -->
-        <View
-            android:id="@+id/sectionDivider"
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
-            android:background="@color/divider"
-            android:visibility="gone" />
+    <!-- fabNewFile view for ID binding parity -->
+    <View
+        android:id="@+id/fabNewFile"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone" />
 
-        <!-- Collaborative Sessions Section -->
+    <!-- Hidden views preserved for MainActivity ViewBinding compatibility -->
+    <LinearLayout
+        android:id="@+id/homeHeader"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone">
+
         <TextView
-            android:id="@+id/collabSessionsLabel"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="🔗 Collaborative Sessions"
-            android:textSize="13sp"
-            android:textStyle="bold"
-            android:textColor="@color/editor_text"
-            android:paddingStart="20dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="12dp"
-            android:paddingBottom="6dp"
-            android:visibility="gone" />
-        
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/collabSessionsGrid"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:nestedScrollingEnabled="false"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:paddingBottom="80dp"
-            android:clipToPadding="false"
-            android:visibility="gone" />
+            android:id="@+id/homeTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
 
-            </LinearLayout>
-        </androidx.core.widget.NestedScrollView>
+        <TextView
+            android:id="@+id/fileCountLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
 
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGlassToggle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
     </LinearLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="16dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="12dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="#3C4043"
+    app:cardBackgroundColor="#000000">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="🔥 Habit &amp; Focus Stats"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF" />
+
+            <ImageButton
+                android:id="@+id/btnCloseHabitStats"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@android:drawable/ic_menu_close_clear_cancel"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:tint="#9AA0A6"
+                android:contentDescription="Close" />
+        </LinearLayout>
+
+        <!-- Stats Grid (Day Streak, Total Notes, Words Written) -->
+        <GridLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="2"
+            android:layout_marginBottom="16dp">
+
+            <!-- Day Streak Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:layout_marginEnd="6dp"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="10dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="#3C4043"
+                app:cardBackgroundColor="#111111">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="12dp">
+                    <TextView
+                        android:id="@+id/habitStreakCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="3"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:fontFamily="monospace" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="DAY STREAK"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:textColor="#9AA0A6"
+                        android:letterSpacing="0.05"
+                        android:paddingTop="2dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Total Notes Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:layout_marginStart="6dp"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="10dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="#3C4043"
+                app:cardBackgroundColor="#111111">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="12dp">
+                    <TextView
+                        android:id="@+id/habitNotesCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="12"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:fontFamily="monospace" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="TOTAL NOTES"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:textColor="#9AA0A6"
+                        android:letterSpacing="0.05"
+                        android:paddingTop="2dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Words Written Card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_columnSpan="2"
+                app:cardCornerRadius="10dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="#3C4043"
+                app:cardBackgroundColor="#111111">
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:padding="12dp">
+                    <TextView
+                        android:id="@+id/habitWordsCount"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="1,480"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:fontFamily="monospace" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="WORDS WRITTEN"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:textColor="#9AA0A6"
+                        android:letterSpacing="0.05"
+                        android:paddingTop="2dp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </GridLayout>
+
+        <!-- Mastery Level Bar (Nir Eyal Variable Reward: Self Mastery) -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="#3C4043"
+            app:cardBackgroundColor="#111111"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="⚡ Thinker (Level 2)"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="8/15 notes to Level 3"
+                        android:textSize="11sp"
+                        android:textColor="#9AA0A6" />
+                </LinearLayout>
+
+                <ProgressBar
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="6dp"
+                    android:progress="55"
+                    android:max="100"
+                    android:progressTint="#FFFFFF"
+                    android:progressBackgroundTint="#202124" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- 7-Day Activity Heatmap Grid -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="10dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:strokeColor="#3C4043"
+            app:cardBackgroundColor="#111111"
+            android:layout_marginBottom="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="7-DAY ACTIVITY"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:textColor="#9AA0A6"
+                    android:letterSpacing="0.05"
+                    android:layout_marginBottom="8dp" />
+
+                <LinearLayout
+                    android:id="@+id/habitWeekHeatmap"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center">
+
+                    <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="28dp" android:text="M" android:textColor="#FFFFFF" android:textSize="11sp" android:gravity="center" android:background="@drawable/bg_suggestion_chip" android:layout_margin="2dp" />
+                    <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="28dp" android:text="T" android:textColor="#FFFFFF" android:textSize="11sp" android:gravity="center" android:background="@drawable/bg_suggestion_chip" android:layout_margin="2dp" />
+                    <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="28dp" android:text="W" android:textColor="#FFFFFF" android:textSize="11sp" android:gravity="center" android:background="@drawable/bg_suggestion_chip" android:layout_margin="2dp" />
+                    <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="28dp" android:text="T" android:textColor="#FFFFFF" android:textSize="11sp" android:gravity="center" android:background="@drawable/bg_suggestion_chip" android:layout_margin="2dp" />
+                    <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="28dp" android:text="F" android:textColor="#FFFFFF" android:textSize="11sp" android:gravity="center" android:background="@drawable/bg_suggestion_chip" android:layout_margin="2dp" />
+                    <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="28dp" android:text="S" android:textColor="#FFFFFF" android:textSize="11sp" android:gravity="center" android:background="@drawable/bg_suggestion_chip" android:layout_margin="2dp" />
+                    <TextView android:layout_width="0dp" android:layout_weight="1" android:layout_height="28dp" android:text="S" android:textColor="#FFFFFF" android:textSize="11sp" android:gravity="center" android:background="@drawable/bg_subnav_active" android:layout_margin="2dp" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Motivational Quote Box -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_input_dark"
+            android:padding="12dp"
+            android:text="&quot;Make it a habit to capture thoughts immediately before they slip away.&quot;"
+            android:textSize="12sp"
+            android:textColor="#9AA0A6"
+            android:textStyle="italic"
+            android:gravity="center"
+            android:layout_marginBottom="16dp" />
+
+        <!-- Done / Keep Momentum Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnKeepMomentum"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:text="Keep the Momentum Going"
+            android:textColor="#000000"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textAllCaps="false"
+            app:cornerRadius="22dp"
+            app:backgroundTint="#FFFFFF" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

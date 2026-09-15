@@ -4,7 +4,7 @@
     android:id="@+id/videoChatRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#1C1C1E">
+    android:background="#000000">
 
     <!-- Main video area (host/maximized participant) -->
     <FrameLayout
@@ -30,7 +30,7 @@
             android:layout_height="match_parent"
             android:orientation="vertical"
             android:gravity="center"
-            android:background="#2C2C2E"
+            android:background="#000000"
             android:visibility="gone">
 
             <TextView
@@ -43,7 +43,7 @@
                 android:textColor="@color/white"
                 android:gravity="center"
                 android:background="@drawable/circle_bg"
-                android:backgroundTint="#4CAF50" />
+                android:backgroundTint="#3C4043" />
 
             <TextView
                 android:id="@+id/mainUserName"
@@ -77,7 +77,7 @@
                 android:layout_width="8dp"
                 android:layout_height="8dp"
                 android:background="@drawable/circle_bg"
-                android:backgroundTint="#4CAF50"
+                android:backgroundTint="#10B981"
                 android:layout_marginEnd="8dp"
                 android:visibility="gone" />
 
@@ -116,13 +116,13 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/participantsGrid"
         android:layout_width="match_parent"
-        android:layout_height="140dp"
+        android:layout_height="136dp"
         android:orientation="horizontal"
         android:paddingStart="8dp"
         android:paddingEnd="8dp"
         android:paddingTop="8dp"
         android:paddingBottom="8dp"
-        android:background="#1C1C1E"
+        android:background="#000000"
         android:clipToPadding="false"
         app:layout_constraintBottom_toTopOf="@id/topInfoBar"
         app:layout_constraintStart_toStartOf="parent"
@@ -134,12 +134,13 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:background="@drawable/gradient_bottom_overlay"
+        android:background="@android:color/transparent"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
-        android:paddingTop="12dp"
-        android:paddingBottom="12dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp"
         android:gravity="center_vertical"
+        android:layout_marginBottom="8dp"
         app:layout_constraintBottom_toTopOf="@id/controlsBar">
 
         <LinearLayout
@@ -173,25 +174,33 @@
             android:layout_height="wrap_content"
             android:text="● Connected"
             android:textSize="12sp"
-            android:textColor="#4CAF50"
-            android:background="#33000000"
+            android:textColor="#10B981"
+            android:background="@drawable/bg_status_pill"
             android:paddingStart="10dp"
             android:paddingEnd="10dp"
             android:paddingTop="4dp"
             android:paddingBottom="4dp" />
     </LinearLayout>
 
-    <!-- Bottom control bar -->
+    <!-- Bottom control bar (floating toolbar) -->
     <LinearLayout
         android:id="@+id/controlsBar"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="#1C1C1E"
-        android:paddingTop="16dp"
-        android:paddingBottom="24dp"
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
+        android:gravity="center_horizontal"
+        android:background="@drawable/bg_video_controls_bar"
+        android:paddingTop="10dp"
+        android:paddingBottom="12dp"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:layout_marginBottom="20dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:elevation="8dp"
+        app:layout_constrainedWidth="true"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent">
 
         <LinearLayout
@@ -206,20 +215,25 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:layout_margin="8dp">
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:layout_marginTop="2dp"
+                android:layout_marginBottom="2dp">
 
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/btnToggleMic"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    app:cardCornerRadius="28dp"
-                    app:cardElevation="4dp"
-                    app:cardBackgroundColor="#3A3A3C">
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    app:cardCornerRadius="26dp"
+                    app:cardElevation="2dp"
+                    app:cardBackgroundColor="#3A3A3C"
+                    app:strokeColor="#3C4043"
+                    app:strokeWidth="1dp">
 
                     <ImageView
                         android:id="@+id/imgMic"
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:layout_gravity="center"
                         android:src="@android:drawable/ic_btn_speak_now"
                         android:tint="@color/white" />
@@ -230,7 +244,7 @@
                     android:layout_height="wrap_content"
                     android:text="Mic"
                     android:textSize="11sp"
-                    android:textColor="#CCFFFFFF"
+                    android:textColor="#9AA0A6"
                     android:layout_marginTop="4dp" />
             </LinearLayout>
 
@@ -240,20 +254,25 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:layout_margin="8dp">
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:layout_marginTop="2dp"
+                android:layout_marginBottom="2dp">
 
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/btnToggleVideo"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    app:cardCornerRadius="28dp"
-                    app:cardElevation="4dp"
-                    app:cardBackgroundColor="#3A3A3C">
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    app:cardCornerRadius="26dp"
+                    app:cardElevation="2dp"
+                    app:cardBackgroundColor="#3A3A3C"
+                    app:strokeColor="#3C4043"
+                    app:strokeWidth="1dp">
 
                     <ImageView
                         android:id="@+id/imgVideo"
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:layout_gravity="center"
                         android:src="@android:drawable/presence_video_online"
                         android:tint="@color/white" />
@@ -264,7 +283,7 @@
                     android:layout_height="wrap_content"
                     android:text="Video"
                     android:textSize="11sp"
-                    android:textColor="#CCFFFFFF"
+                    android:textColor="#9AA0A6"
                     android:layout_marginTop="4dp" />
             </LinearLayout>
 
@@ -274,19 +293,24 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:layout_margin="8dp">
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:layout_marginTop="2dp"
+                android:layout_marginBottom="2dp">
 
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/btnRotateCamera"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    app:cardCornerRadius="28dp"
-                    app:cardElevation="4dp"
-                    app:cardBackgroundColor="#3A3A3C">
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    app:cardCornerRadius="26dp"
+                    app:cardElevation="2dp"
+                    app:cardBackgroundColor="#3A3A3C"
+                    app:strokeColor="#3C4043"
+                    app:strokeWidth="1dp">
 
                     <ImageView
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:layout_gravity="center"
                         android:src="@android:drawable/ic_menu_rotate"
                         android:tint="@color/white" />
@@ -297,7 +321,7 @@
                     android:layout_height="wrap_content"
                     android:text="Flip"
                     android:textSize="11sp"
-                    android:textColor="#CCFFFFFF"
+                    android:textColor="#9AA0A6"
                     android:layout_marginTop="4dp" />
             </LinearLayout>
 
@@ -307,19 +331,24 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:layout_margin="8dp">
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:layout_marginTop="2dp"
+                android:layout_marginBottom="2dp">
 
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/btnSettings"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    app:cardCornerRadius="28dp"
-                    app:cardElevation="4dp"
-                    app:cardBackgroundColor="#3A3A3C">
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    app:cardCornerRadius="26dp"
+                    app:cardElevation="2dp"
+                    app:cardBackgroundColor="#3A3A3C"
+                    app:strokeColor="#3C4043"
+                    app:strokeWidth="1dp">
 
                     <ImageView
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:layout_gravity="center"
                         android:src="@android:drawable/ic_menu_manage"
                         android:tint="@color/white" />
@@ -330,7 +359,7 @@
                     android:layout_height="wrap_content"
                     android:text="Settings"
                     android:textSize="11sp"
-                    android:textColor="#CCFFFFFF"
+                    android:textColor="#9AA0A6"
                     android:layout_marginTop="4dp" />
             </LinearLayout>
 
@@ -340,19 +369,24 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:layout_margin="8dp">
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:layout_marginTop="2dp"
+                android:layout_marginBottom="2dp">
 
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/btnEndCall"
-                    android:layout_width="64dp"
-                    android:layout_height="64dp"
-                    app:cardCornerRadius="32dp"
-                    app:cardElevation="6dp"
-                    app:cardBackgroundColor="#F44336">
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    app:cardCornerRadius="26dp"
+                    app:cardElevation="2dp"
+                    app:cardBackgroundColor="#EA4335"
+                    app:strokeColor="#EA4335"
+                    app:strokeWidth="1dp">
 
                     <ImageView
-                        android:layout_width="32dp"
-                        android:layout_height="32dp"
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
                         android:layout_gravity="center"
                         android:src="@android:drawable/ic_menu_call"
                         android:rotation="135"
@@ -365,7 +399,7 @@
                     android:layout_height="wrap_content"
                     android:text="End"
                     android:textSize="11sp"
-                    android:textColor="#CCFFFFFF"
+                    android:textColor="#9AA0A6"
                     android:layout_marginTop="4dp" />
             </LinearLayout>
 
@@ -376,20 +410,25 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:layout_margin="8dp"
+                android:layout_marginStart="4dp"
+                android:layout_marginEnd="4dp"
+                android:layout_marginTop="2dp"
+                android:layout_marginBottom="2dp"
                 android:visibility="gone">
 
                 <com.google.android.material.card.MaterialCardView
                     android:id="@+id/btnLeaveCall"
-                    android:layout_width="56dp"
-                    android:layout_height="56dp"
-                    app:cardCornerRadius="28dp"
-                    app:cardElevation="4dp"
-                    app:cardBackgroundColor="#3A3A3C">
+                    android:layout_width="52dp"
+                    android:layout_height="52dp"
+                    app:cardCornerRadius="26dp"
+                    app:cardElevation="2dp"
+                    app:cardBackgroundColor="#3A3A3C"
+                    app:strokeColor="#3C4043"
+                    app:strokeWidth="1dp">
 
                     <ImageView
-                        android:layout_width="28dp"
-                        android:layout_height="28dp"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
                         android:layout_gravity="center"
                         android:src="@android:drawable/ic_menu_revert"
                         android:tint="@color/white" />
@@ -400,7 +439,7 @@
                     android:layout_height="wrap_content"
                     android:text="Leave"
                     android:textSize="11sp"
-                    android:textColor="#CCFFFFFF"
+                    android:textColor="#9AA0A6"
                     android:layout_marginTop="4dp" />
             </LinearLayout>
         </LinearLayout>

@@ -1,13 +1,11 @@
-<?xml version="1.0" encoding="utf-8"?><!--
-Wrap the DrawerLayout with FrameLayout to use the same View type for the same view ID
-across the layout configurations
--->
+<?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/activity_container"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#000000">
 
     <androidx.drawerlayout.widget.DrawerLayout
         android:id="@+id/drawer_layout"
@@ -24,11 +22,48 @@ across the layout configurations
 
         <com.google.android.material.navigation.NavigationView
             android:id="@+id/nav_view"
-            android:layout_width="wrap_content"
+            android:layout_width="280dp"
             android:layout_height="match_parent"
             android:layout_gravity="start"
             android:fitsSystemWindows="true"
+            android:background="#000000"
+            app:itemTextColor="@color/sidebar_item_color"
+            app:itemIconTint="@color/sidebar_item_color"
+            app:itemBackground="@drawable/bg_sidebar_item"
             app:headerLayout="@layout/nav_header_main"
             app:menu="@menu/navigation_drawer" />
+
     </androidx.drawerlayout.widget.DrawerLayout>
+
+    <!-- Nir Eyal Variable Reward Milestone Banner -->
+    <include
+        android:id="@+id/banner_reward_container"
+        layout="@layout/view_variable_reward_banner"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|center_horizontal"
+        android:layout_marginTop="64dp"
+        android:visibility="gone" />
+
+    <!-- Mind Clear Sync Toast -->
+    <include
+        android:id="@+id/toast_mind_clear_container"
+        layout="@layout/view_mind_clear_toast"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="24dp"
+        android:visibility="gone" />
+
+    <!-- Action Undo Toast -->
+    <include
+        android:id="@+id/toast_action_undo_container"
+        layout="@layout/view_action_undo_toast"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="24dp"
+        android:visibility="gone" />
+
 </FrameLayout>

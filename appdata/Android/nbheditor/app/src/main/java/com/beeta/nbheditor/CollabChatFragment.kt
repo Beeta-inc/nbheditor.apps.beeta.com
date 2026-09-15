@@ -114,31 +114,30 @@ class CollabChatFragment : Fragment() {
         val isGlass = (requireActivity() as MainActivity).isGlassModePublic()
         if (!isGlass) return
         
-        // Enhanced glass theme application
-        binding.chatRoot.setBackgroundColor(0xBB0A0E14.toInt())
-        binding.rvChatMessages.setBackgroundColor(0x00000000)
+        // Theme application ensuring requested colors
+        binding.chatRoot.setBackgroundColor(0xFF000000.toInt())
+        binding.rvChatMessages.setBackgroundColor(0xFF0A0A0A.toInt())
         
-        // Improved header styling
+        // Header styling
         binding.chatHeader.apply {
-            setBackgroundColor(0xCC1976D2.toInt())
+            setBackgroundResource(R.drawable.bg_session_info_bar)
             elevation = 12f
         }
         
-        // Enhanced input bar styling
+        // Input bar styling
         binding.inputBar.apply {
-            setBackgroundColor(0xCC0D1117.toInt())
+            setBackgroundResource(R.drawable.bg_session_info_bar)
             elevation = 16f
         }
         
         // Improved text input styling
         binding.etChatMessage.apply {
-            setBackgroundColor(0x00000000)
             setTextColor(0xFFFFFFFF.toInt())
             setHintTextColor(0x88FFFFFF.toInt())
         }
         
         // Enhanced typing indicator
-        binding.typingIndicatorBar.setBackgroundColor(0xBB0D1117.toInt())
+        binding.typingIndicatorBar.setBackgroundColor(0xFF000000.toInt())
         
         // Improved mention popup
         binding.mentionPopup.apply {

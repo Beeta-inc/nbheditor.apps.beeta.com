@@ -9,8 +9,14 @@ import android.text.SpannableStringBuilder
 import android.text.style.*
 import android.util.AttributeSet
 import android.util.Log
-import androidx.appcompat.widget.AppCompatEditText
-import androidx.core.text.HtmlCompat
+import android.os.Build
+import android.view.ActionMode
+import android.view.Menu
+import android.view.MenuItem
+import android.widget.Toast
+import androidx.core.widget.TextViewCompat
+import kotlin.math.max
+import kotlin.math.min
 
 /**
  * Rich text editor with support for Markdown, HTML, and inline formatting.
@@ -21,6 +27,10 @@ class RichEditText @JvmOverloads constructor(
     attrs: AttributeSet? = null,
     defStyle: Int = android.R.attr.editTextStyle
 ) : AppCompatEditText(context, attrs, defStyle) {
+
+    init {
+        setupUniversalClipboardActionMode()
+    }
 
     var isRichTextMode = true
     private var isApplyingSpans = false
@@ -168,8 +178,27 @@ class RichEditText @JvmOverloads constructor(
                 }
                 
                 // Bullet lists: - item or * item
-                if (line.trimStart().startsWith("- ") || line.trimStart().startsWith("* ")) {
+                val trimmed = line.trimStart()
+                if (trimmed.startsWith("- ") || trimmed.startsWith("* ")) {
                     safeSetSpan(spannable, BulletSpan(20), lineStart, lineEnd)
+                } else if (trimmed.startsWith("[x] ", ignoreCase = true) || trimmed.startsWith("☑ ")) {
+                    // Completed checklist task (strikethrough + dimmed)
+                    safeSetSpan(spannable, StrikethroughSpan(), lineStart, lineEnd)
+                    safeSetSpan(spannable, ForegroundColorSpan(0x809AA0A6.toInt()), lineStart, lineEnd)
+                } else if (trimmed.startsWith("[ ] ") || trimmed.startsWith("☐ ")) {
+                    // Open checklist task
+                    safeSetSpan(spannable, ForegroundColorSpan(0xFFFFFFFF.toInt()), lineStart, lineEnd)
+                } else if (trimmed.startsWith("> ")) {
+                    // Blockquote
+                    safeSetSpan(spannable, QuoteSpan(0xFF3C4043.toInt()), lineStart, lineEnd)
+                    safeSetSpan(spannable, StyleSpan(Typeface.ITALIC), lineStart, lineEnd)
+                    safeSetSpan(spannable, ForegroundColorSpan(0xFF9AA0A6.toInt()), lineStart, lineEnd)
+                }
+
+                // LaTeX formulas $...$ (emerald highlight matching web)
+                applyPattern(spannable, lineStart, lineEnd, "\\$(.+?)\\$") { start, end ->
+                    safeSetSpan(spannable, TypefaceSpan("monospace"), start, end)
+                    safeSetSpan(spannable, ForegroundColorSpan(0xFF10B981.toInt()), start, end)
                 }
                 
                 currentPos = lineEnd + 1 // +1 for newline
@@ -280,5 +309,95 @@ class RichEditText @JvmOverloads constructor(
         return if (w != src.width || h != src.height)
             Bitmap.createScaledBitmap(src, w, h, true)
         else src
+    }
+
+    private fun setupUniversalClipboardActionMode() {
+        val customSelectionCallback = object : ActionMode.Callback2() {
+            override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
+                if (menu == null) return false
+                menu.add(Menu.NONE, 9091, 1, "📋 Paste from Universal Clipboard")
+                    .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
+                menu.add(Menu.NONE, 9092, 2, "⚡ Copy to Universal Clipboard")
+                    .setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
+                return true
+            }
+
+            override fun onPrepareActionMode(mode: ActionMode?, menu: Menu?): Boolean {
+                menu?.findItem(9091)?.isVisible = UniversalClipboardManager.hasClip(context)
+                menu?.findItem(9092)?.isVisible = hasSelection()
+                return true
+            }
+
+            override fun onActionItemClicked(mode: ActionMode?, item: MenuItem?): Boolean {
+                return when (item?.itemId) {
+                    9091 -> {
+                        val clip = UniversalClipboardManager.getClipContent(context)
+                        if (clip.isNotEmpty()) {
+                            val rawStart = selectionStart
+                            val rawEnd = selectionEnd
+                            val start = min(rawStart, rawEnd).coerceAtLeast(0)
+                            val end = max(rawStart, rawEnd).coerceAtLeast(0)
+                            text?.replace(start, end, clip)
+                            setSelection(start + clip.length)
+                            Toast.makeText(context, "Pasted from Universal Clipboard ⚡", Toast.LENGTH_SHORT).show()
+                        }
+                        mode?.finish()
+                        true
+                    }
+                    9092 -> {
+                        val rawStart = selectionStart
+                        val rawEnd = selectionEnd
+                        val start = min(rawStart, rawEnd).coerceAtLeast(0)
+                        val end = max(rawStart, rawEnd).coerceAtLeast(0)
+                        if (start < end) {
+                            val selectedText = text?.substring(start, end) ?: ""
+                            if (selectedText.isNotBlank()) {
+                                UniversalClipboardManager.copyToUniversalClipboard(context, selectedText, "NBH_APK")
+                                Toast.makeText(context, "Copied to Universal Clipboard 🌐", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        mode?.finish()
+                        true
+                    }
+                    else -> false
+                }
+            }
+
+            override fun onDestroyActionMode(mode: ActionMode?) {}
+        }
+
+        TextViewCompat.setCustomSelectionActionModeCallback(this, customSelectionCallback)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            this.customInsertionActionModeCallback = object : ActionMode.Callback {
+                override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
+                    menu?.add(Menu.NONE, 9091, 1, "📋 Paste from Universal Clipboard")
+                        ?.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
+                    return true
+                }
+
+                override fun onPrepareActionMode(mode: ActionMode?, menu: Menu?): Boolean {
+                    menu?.findItem(9091)?.isVisible = UniversalClipboardManager.hasClip(context)
+                    return true
+                }
+
+                override fun onActionItemClicked(mode: ActionMode?, item: MenuItem?): Boolean {
+                    if (item?.itemId == 9091) {
+                        val clip = UniversalClipboardManager.getClipContent(context)
+                        if (clip.isNotEmpty()) {
+                            val pos = selectionStart.coerceAtLeast(0)
+                            text?.insert(pos, clip)
+                            setSelection(pos + clip.length)
+                            Toast.makeText(context, "Pasted from Universal Clipboard ⚡", Toast.LENGTH_SHORT).show()
+                        }
+                        mode?.finish()
+                        return true
+                    }
+                    return false
+                }
+
+                override fun onDestroyActionMode(mode: ActionMode?) {}
+            }
+        }
     }
 }

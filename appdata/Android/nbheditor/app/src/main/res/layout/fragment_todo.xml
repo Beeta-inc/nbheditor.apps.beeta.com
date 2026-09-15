@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <!-- Header Toolbar / Title -->
+    <LinearLayout
+        android:id="@+id/headerLayout"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="#000000"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="12dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔔 Reminders"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/todoCountBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:background="@drawable/bg_suggestion_chip"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="2dp"
+            android:text="0 items"
+            android:textColor="#9AA0A6"
+            android:textSize="10sp"
+            android:fontFamily="monospace" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+
+        <ImageButton
+            android:id="@+id/btnAddTodo"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Add Todo"
+            android:src="@android:drawable/ic_input_add"
+            app:tint="#FFFFFF" />
+
+    </LinearLayout>
+
+    <!-- Collapsed Quick Reminder Trigger Bar -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/cardAddTodo"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="8dp"
+        android:backgroundTint="#141414"
+        app:cardBackgroundColor="#141414"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="0dp"
+        app:strokeColor="#3C4043"
+        app:strokeWidth="1dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/headerLayout">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingHorizontal="14dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🔔"
+                android:textSize="14sp"
+                android:paddingEnd="10dp" />
+
+            <EditText
+                android:id="@+id/etNewTodoTitle"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@android:color/transparent"
+                android:hint="Set a reminder or checklist..."
+                android:inputType="text|textCapSentences"
+                android:textColor="#FFFFFF"
+                android:textColorHint="#9AA0A6"
+                android:textSize="13sp" />
+
+            <TextView
+                android:id="@+id/chipNewReminder"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_suggestion_chip"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:text="⏰ Custom"
+                android:textColor="#9AA0A6"
+                android:textSize="11sp" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnSaveTodo"
+                android:layout_width="wrap_content"
+                android:layout_height="32dp"
+                android:layout_marginStart="8dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:paddingHorizontal="14dp"
+                android:text="Save"
+                android:textColor="#000000"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                app:backgroundTint="#FFFFFF"
+                app:cornerRadius="16dp" />
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Nir Eyal Quick Preset Row (Today, Tomorrow, Next Week) -->
+    <HorizontalScrollView
+        android:id="@+id/presetChipsScroll"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="8dp"
+        android:scrollbars="none"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/cardAddTodo">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/presetToday"
+                android:layout_width="wrap_content"
+                android:layout_height="28dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_suggestion_chip"
+                android:text="🕒 Today 8PM"
+                android:textColor="#FFFFFF"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:paddingHorizontal="10dp"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <TextView
+                android:id="@+id/presetTomorrow"
+                android:layout_width="wrap_content"
+                android:layout_height="28dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_suggestion_chip"
+                android:text="📅 Tomorrow 8AM"
+                android:textColor="#FFFFFF"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:paddingHorizontal="10dp"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <TextView
+                android:id="@+id/presetNextWeek"
+                android:layout_width="wrap_content"
+                android:layout_height="28dp"
+                android:layout_marginEnd="6dp"
+                android:background="@drawable/bg_suggestion_chip"
+                android:text="📆 Next Mon"
+                android:textColor="#FFFFFF"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:paddingHorizontal="10dp"
+                android:clickable="true"
+                android:focusable="true" />
+
+            <TextView
+                android:id="@+id/presetChecklist"
+                android:layout_width="wrap_content"
+                android:layout_height="28dp"
+                android:background="@drawable/bg_suggestion_chip"
+                android:text="☑️ Add Checklist"
+                android:textColor="#38BDF8"
+                android:textSize="11sp"
+                android:gravity="center"
+                android:paddingHorizontal="10dp"
+                android:clickable="true"
+                android:focusable="true" />
+
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <!-- Summary Bar (Tasks count + Clear Completed) -->
+    <LinearLayout
+        android:id="@+id/remindersSummaryBar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="6dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/presetChipsScroll">
+
+        <TextView
+            android:id="@+id/tvRemindersSummary"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Tasks across all notes"
+            android:textSize="11sp"
+            android:textColor="#9AA0A6" />
+
+        <TextView
+            android:id="@+id/btnClearCompleted"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Clear Completed"
+            android:textSize="11sp"
+            android:textColor="#FFFFFF"
+            android:clickable="true"
+            android:focusable="true" />
+    </LinearLayout>
+
+    <!-- Todo List RecyclerView -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvTodos"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="4dp"
+        android:clipToPadding="false"
+        android:paddingBottom="16dp"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/remindersSummaryBar" />
+
+    <!-- Empty State / Placeholder -->
+    <LinearLayout
+        android:id="@+id/layoutEmpty"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/presetChipsScroll">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="🔔"
+            android:textSize="48sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="No tasks or reminders"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Add your first task above"
+            android:textColor="#9AA0A6"
+            android:textSize="14sp" />
+
+    </LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

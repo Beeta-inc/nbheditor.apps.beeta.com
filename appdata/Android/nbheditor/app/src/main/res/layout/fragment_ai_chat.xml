@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@android:color/transparent">
+    android:background="#000000">
 
     <!-- Header -->
     <LinearLayout
@@ -11,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="@color/editor_surface"
+        android:background="#000000"
         android:paddingStart="16dp"
         android:paddingEnd="12dp"
         android:paddingTop="12dp"
@@ -64,6 +64,7 @@
                 android:text="🕐"
                 android:textSize="18sp"
                 android:padding="8dp"
+                android:textColor="#FFFFFF"
                 android:background="?attr/selectableItemBackgroundBorderless" />
 
             <TextView
@@ -72,7 +73,7 @@
                 android:layout_height="wrap_content"
                 android:text="Clear"
                 android:textSize="11sp"
-                android:textColor="@color/editor_line_number_text"
+                android:textColor="#9AA0A6"
                 android:padding="8dp"
                 android:background="?attr/selectableItemBackgroundBorderless" />
         </LinearLayout>
@@ -99,8 +100,9 @@
                 android:layout_height="32dp"
                 android:text="🌐 Web"
                 android:textSize="11sp"
-                app:chipBackgroundColor="@color/suggestion_bg"
-                app:chipStrokeColor="@color/accent_secondary"
+                android:textColor="#FFFFFF"
+                app:chipBackgroundColor="#141414"
+                app:chipStrokeColor="#3C4043"
                 app:chipStrokeWidth="1.5dp"
                 android:checkable="true"
                 android:checked="false"
@@ -114,8 +116,9 @@
                 android:layout_height="32dp"
                 android:text="🖼 Image"
                 android:textSize="11sp"
-                app:chipBackgroundColor="@color/suggestion_bg"
-                app:chipStrokeColor="@color/accent_primary"
+                android:textColor="#FFFFFF"
+                app:chipBackgroundColor="#141414"
+                app:chipStrokeColor="#3C4043"
                 app:chipStrokeWidth="1.5dp"
                 android:checkable="true"
                 android:checked="false"
@@ -129,8 +132,9 @@
                 android:layout_height="32dp"
                 android:text="🎥 Video"
                 android:textSize="11sp"
-                app:chipBackgroundColor="@color/suggestion_bg"
-                app:chipStrokeColor="@color/accent_purple"
+                android:textColor="#FFFFFF"
+                app:chipBackgroundColor="#141414"
+                app:chipStrokeColor="#3C4043"
                 app:chipStrokeWidth="1.5dp"
                 android:checkable="true"
                 android:checked="false"
@@ -143,7 +147,7 @@
         android:id="@+id/headerDivider"
         android:layout_width="match_parent"
         android:layout_height="0.5dp"
-        android:background="@color/divider"
+        android:background="#3C4043"
         app:layout_constraintTop_toBottomOf="@id/chatHeader" />
 
     <!-- Empty state -->
@@ -155,83 +159,139 @@
         android:gravity="center"
         android:visibility="visible"
         android:padding="32dp"
+        android:background="#000000"
         app:layout_constraintTop_toBottomOf="@id/headerDivider"
         app:layout_constraintBottom_toTopOf="@id/typingRow">
 
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="120dp"
-            android:layout_height="120dp"
-            app:cardCornerRadius="60dp"
-            app:cardElevation="8dp"
-            app:cardBackgroundColor="@color/accent_primary">
+        <LinearLayout
+            android:id="@+id/emptyStateContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <View
+                android:id="@+id/ai_empty_state"
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:visibility="gone" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="120dp"
+                android:layout_height="120dp"
+                app:cardCornerRadius="60dp"
+                app:cardElevation="8dp"
+                app:cardBackgroundColor="#1A1A1A"
+                app:strokeWidth="1dp"
+                app:strokeColor="#3C4043">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:text="✦"
+                    android:textSize="64sp"
+                    android:textColor="#FFFFFF"
+                    android:gravity="center" />
+            </com.google.android.material.card.MaterialCardView>
 
             <TextView
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:text="✦"
-                android:textSize="64sp"
-                android:textColor="@color/white"
-                android:gravity="center" />
-        </com.google.android.material.card.MaterialCardView>
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Ask Beeta AI anything"
-            android:textSize="24sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.01"
-            android:textColor="@color/editor_text"
-            android:paddingTop="24dp" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Code · Writing · Images · Voice"
-            android:textSize="14sp"
-            android:textColor="@color/editor_hint"
-            android:paddingTop="8dp" />
-
-        <!-- Quick Action Chips -->
-        <com.google.android.material.chip.ChipGroup
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            app:singleLine="false">
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/quickCodeChip"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="💻 Help with code"
-                android:textSize="12sp"
-                app:chipBackgroundColor="@color/suggestion_bg"
-                app:chipStrokeColor="@color/divider"
-                app:chipStrokeWidth="1dp"
-                style="@style/Widget.MaterialComponents.Chip.Action" />
+                android:text="Ask Beeta AI anything"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.01"
+                android:textColor="#FFFFFF"
+                android:paddingTop="24dp" />
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/quickExplainChip"
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="📖 Explain concept"
-                android:textSize="12sp"
-                app:chipBackgroundColor="@color/suggestion_bg"
-                app:chipStrokeColor="@color/divider"
-                app:chipStrokeWidth="1dp"
-                style="@style/Widget.MaterialComponents.Chip.Action" />
+                android:text="Code · Writing · Images · Voice"
+                android:textSize="14sp"
+                android:textColor="#9AA0A6"
+                android:paddingTop="8dp" />
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/quickDebugChip"
+            <!-- Quick Action Chips (Nir Eyal 1-Tap Trigger aligned with Web) -->
+            <com.google.android.material.chip.ChipGroup
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="🐛 Debug issue"
-                android:textSize="12sp"
-                app:chipBackgroundColor="@color/suggestion_bg"
-                app:chipStrokeColor="@color/divider"
-                app:chipStrokeWidth="1dp"
-                style="@style/Widget.MaterialComponents.Chip.Action" />
-        </com.google.android.material.chip.ChipGroup>
+                android:layout_marginTop="24dp"
+                app:singleLine="false">
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/quickSummarizeChip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📋 Summarize Notes"
+                    android:textSize="12sp"
+                    android:textColor="#38BDF8"
+                    app:chipBackgroundColor="#141414"
+                    app:chipStrokeColor="#3C4043"
+                    app:chipStrokeWidth="1dp"
+                    style="@style/Widget.MaterialComponents.Chip.Action" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/quickBrainstormChip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="💡 Brainstorm Ideas"
+                    android:textSize="12sp"
+                    android:textColor="#FBBF24"
+                    app:chipBackgroundColor="#141414"
+                    app:chipStrokeColor="#3C4043"
+                    app:chipStrokeWidth="1dp"
+                    style="@style/Widget.MaterialComponents.Chip.Action" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/quickChecklistChip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="☑️ Action Checklist"
+                    android:textSize="12sp"
+                    android:textColor="#34D399"
+                    app:chipBackgroundColor="#141414"
+                    app:chipStrokeColor="#3C4043"
+                    app:chipStrokeWidth="1dp"
+                    style="@style/Widget.MaterialComponents.Chip.Action" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/quickCodeChip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="💻 Help with code"
+                    android:textSize="12sp"
+                    android:textColor="#FFFFFF"
+                    app:chipBackgroundColor="#141414"
+                    app:chipStrokeColor="#3C4043"
+                    app:chipStrokeWidth="1dp"
+                    style="@style/Widget.MaterialComponents.Chip.Action" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/quickExplainChip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="📖 Explain concept"
+                    android:textSize="12sp"
+                    android:textColor="#FFFFFF"
+                    app:chipBackgroundColor="#141414"
+                    app:chipStrokeColor="#3C4043"
+                    app:chipStrokeWidth="1dp"
+                    style="@style/Widget.MaterialComponents.Chip.Action" />
+
+                <com.google.android.material.chip.Chip
+                    android:id="@+id/quickDebugChip"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🐛 Debug issue"
+                    android:textSize="12sp"
+                    android:textColor="#FFFFFF"
+                    app:chipBackgroundColor="#141414"
+                    app:chipStrokeColor="#3C4043"
+                    app:chipStrokeWidth="1dp"
+                    style="@style/Widget.MaterialComponents.Chip.Action" />
+            </com.google.android.material.chip.ChipGroup>
+        </LinearLayout>
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
@@ -242,6 +302,7 @@
         android:paddingBottom="4dp"
         android:clipToPadding="false"
         android:visibility="gone"
+        android:background="#000000"
         app:layout_constraintTop_toBottomOf="@id/headerDivider"
         app:layout_constraintBottom_toTopOf="@id/voiceStatusIndicator" />
 
@@ -257,7 +318,7 @@
         android:paddingBottom="8dp"
         android:gravity="center_vertical"
         android:visibility="gone"
-        android:background="@drawable/bg_glass_card"
+        android:background="#1A1A1A"
         android:layout_marginStart="16dp"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="8dp"
@@ -270,7 +331,7 @@
             android:layout_weight="1"
             android:text="Voice mode active - no speech detected"
             android:textSize="13sp"
-            android:textColor="@color/editor_text" />
+            android:textColor="#FFFFFF" />
 
         <com.beeta.nbheditor.VoiceEqualizerView
             android:id="@+id/voiceEqualizer"
@@ -291,6 +352,7 @@
         android:paddingBottom="6dp"
         android:gravity="center_vertical"
         android:visibility="gone"
+        android:background="#000000"
         app:layout_constraintBottom_toTopOf="@id/inputDivider">
 
         <ProgressBar
@@ -304,7 +366,7 @@
             android:layout_height="wrap_content"
             android:text="Beeta AI is thinking..."
             android:textSize="12sp"
-            android:textColor="@color/editor_line_number_text"
+            android:textColor="#9AA0A6"
             android:paddingStart="8dp" />
     </LinearLayout>
 
@@ -312,7 +374,7 @@
         android:id="@+id/inputDivider"
         android:layout_width="match_parent"
         android:layout_height="0.5dp"
-        android:background="@color/divider"
+        android:background="#3C4043"
         app:layout_constraintBottom_toTopOf="@id/inputBar" />
 
     <!-- Input bar -->
@@ -321,7 +383,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:background="@color/editor_surface"
+        android:background="#000000"
         android:paddingStart="16dp"
         android:paddingEnd="16dp"
         android:paddingTop="16dp"
@@ -335,8 +397,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:src="@drawable/ic_mic"
-            app:backgroundTint="@color/accent_primary"
-            app:tint="@color/white"
+            app:backgroundTint="#1A1A1A"
+            app:tint="#FFFFFF"
             app:fabSize="normal"
             app:elevation="2dp"
             android:contentDescription="Voice input"
@@ -346,19 +408,19 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            app:cardBackgroundColor="@color/input_bg"
+            app:cardBackgroundColor="#1A1A1A"
             app:cardCornerRadius="24dp"
             app:cardElevation="0dp"
             app:strokeWidth="1.5dp"
-            app:strokeColor="@color/divider">
+            app:strokeColor="#3C4043">
 
             <EditText
                 android:id="@+id/queryEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="Message Beeta AI..."
-                android:textColorHint="@color/editor_hint"
-                android:textColor="@color/editor_text"
+                android:textColorHint="#9AA0A6"
+                android:textColor="#FFFFFF"
                 android:textSize="15sp"
                 android:inputType="textMultiLine|textCapSentences"
                 android:maxLines="5"
@@ -376,8 +438,8 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:src="@drawable/ic_send"
-            app:backgroundTint="@color/accent_secondary"
-            app:tint="@color/white"
+            app:backgroundTint="#FFFFFF"
+            app:tint="#000000"
             app:fabSize="normal"
             app:elevation="2dp"
             android:contentDescription="Send" />

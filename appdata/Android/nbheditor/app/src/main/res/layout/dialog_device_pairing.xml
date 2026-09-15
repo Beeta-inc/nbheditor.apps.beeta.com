@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="20dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="#3C4043"
+    app:cardBackgroundColor="#111111">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Pair Device (PhoneWhisper)"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF" />
+
+            <ImageButton
+                android:id="@+id/btnClosePairing"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@android:drawable/ic_menu_close_clear_cancel"
+                android:tint="#9AA0A6"
+                android:contentDescription="Close" />
+        </LinearLayout>
+
+        <!-- Sub Tabs (Host / Join) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="40dp"
+            android:orientation="horizontal"
+            android:background="#141414"
+            android:padding="3dp"
+            android:layout_marginBottom="16dp">
+
+            <Button
+                android:id="@+id/btnTabHost"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="My Code"
+                android:textSize="12sp"
+                android:textColor="#000000"
+                android:textStyle="bold"
+                android:background="@drawable/bg_subnav_active" />
+
+            <Button
+                android:id="@+id/btnTabJoin"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:text="Enter Code"
+                android:textSize="12sp"
+                android:textColor="#9AA0A6"
+                android:background="@android:color/transparent" />
+        </LinearLayout>
+
+        <!-- Host Panel -->
+        <LinearLayout
+            android:id="@+id/panelHost"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:padding="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Your 6-character device code:"
+                android:textSize="13sp"
+                android:textColor="#9AA0A6"
+                android:layout_marginBottom="12dp" />
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="12dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="#10B981"
+                app:cardBackgroundColor="#141414"
+                android:layout_marginBottom="16dp">
+
+                <TextView
+                    android:id="@+id/tvDeviceCode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="NBH-742"
+                    android:textSize="26sp"
+                    android:textStyle="bold"
+                    android:fontFamily="monospace"
+                    android:textColor="#10B981"
+                    android:paddingStart="24dp"
+                    android:paddingEnd="24dp"
+                    android:paddingTop="12dp"
+                    android:paddingBottom="12dp" />
+            </com.google.android.material.card.MaterialCardView>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Enter this code on web or another device to link"
+                android:textSize="12sp"
+                android:textColor="#9AA0A6"
+                android:layout_marginBottom="16dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center">
+
+                <Button
+                    android:id="@+id/btnTestPing"
+                    android:layout_width="0dp"
+                    android:layout_height="38dp"
+                    android:layout_weight="1"
+                    android:text="⚡ Send Test Ping"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="#FFFFFF"
+                    android:background="@drawable/bg_secondary_button"
+                    android:layout_marginEnd="6dp" />
+
+                <Button
+                    android:id="@+id/btnSendCurrentNote"
+                    android:layout_width="0dp"
+                    android:layout_height="38dp"
+                    android:layout_weight="1"
+                    android:text="📤 Push Active Note"
+                    android:textSize="12sp"
+                    android:textStyle="bold"
+                    android:textColor="#000000"
+                    android:background="@drawable/bg_primary_button"
+                    android:layout_marginStart="6dp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Join Panel (initially hidden) -->
+        <LinearLayout
+            android:id="@+id/panelJoin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:padding="8dp">
+
+            <EditText
+                android:id="@+id/etPairCode"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:background="@drawable/bg_input_dark"
+                android:hint="Enter 6-character code..."
+                android:textColorHint="#9AA0A6"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
+                android:fontFamily="monospace"
+                android:gravity="center"
+                android:padding="12dp"
+                android:layout_marginBottom="16dp" />
+
+            <Button
+                android:id="@+id/btnConnectDevice"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:text="Connect Device"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#000000"
+                android:background="@drawable/bg_primary_button" />
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

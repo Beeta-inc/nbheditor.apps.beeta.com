@@ -1,51 +1,80 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Base Material colors -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
 
-    <!-- Light mode (Modern Clean) -->
-    <color name="editor_bg">#FFF8F9FA</color>
-    <color name="editor_surface">#FFFFFFFF</color>
-    <color name="editor_line_numbers_bg">#FFF1F3F5</color>
-    <color name="editor_line_number_text">#FF868E96</color>
-    <color name="editor_text">#FF212529</color>
-    <color name="editor_hint">#FFADB5BD</color>
-    <color name="accent_primary">#FF4C6EF5</color>
-    <color name="accent_secondary">#FF51CF66</color>
-    <color name="accent_purple">#FF9775FA</color>
-    <color name="accent_peach">#FFFF8787</color>
-    <color name="suggestion_bg">#FFF1F3F5</color>
-    <color name="toolbar_bg">#FFFFFFFF</color>
-    <color name="bottom_nav_bg">#FFFFFFFF</color>
-    <color name="chat_user_bubble">#FF4C6EF5</color>
-    <color name="chat_ai_bubble">#FFF1F3F5</color>
-    <color name="chat_user_text">#FFFFFFFF</color>
-    <color name="chat_ai_text">#FF212529</color>
-    <color name="input_bg">#FFF8F9FA</color>
-    <color name="divider">#FFE9ECEF</color>
+    <!-- NbhEditor Pure-Black Web Design System -->
+    <color name="editor_bg">#000000</color>
+    <color name="editor_surface">#111111</color>
+    <color name="editor_line_numbers_bg">#0D0D0D</color>
+    <color name="editor_line_number_text">#9AA0A6</color>
+    <color name="editor_text">#FFFFFF</color>
+    <color name="editor_hint">#9AA0A6</color>
+    <color name="accent_primary">#FFFFFF</color>
+    <color name="accent_secondary">#10B981</color>
+    <color name="accent_purple">#8AB4F8</color>
+    <color name="accent_peach">#EF4444</color>
+    <color name="suggestion_bg">#141414</color>
+    <color name="toolbar_bg">#000000</color>
+    <color name="bottom_nav_bg">#000000</color>
+    <color name="chat_user_bubble">#1A1A1A</color>
+    <color name="chat_ai_bubble">#0D0D0D</color>
+    <color name="chat_user_text">#FFFFFF</color>
+    <color name="chat_ai_text">#FFFFFF</color>
+    <color name="input_bg">#1A1A1A</color>
+    <color name="divider">#3C4043</color>
 
-    <!-- Glass mode colors — True frosted glass effect -->
-    <color name="glass_scene_bg">#FF0A0E1A</color>
-    <color name="glass_editor_surface">#BB0D1117</color>
-    <color name="glass_line_numbers_bg">#CC0A0E14</color>
-    <color name="glass_editor_text">#FFFFFFFF</color>
-    <color name="glass_editor_hint">#AAFFFFFF</color>
-    <color name="glass_line_number_text">#AAFFFFFF</color>
-    <color name="glass_toolbar_bg">#CC0D1117</color>
-    <color name="glass_divider">#55FFFFFF</color>
-    <color name="glass_chat_ai_bubble">#BB0D1117</color>
-    <color name="glass_chat_ai_text">#FFFFFFFF</color>
-    <color name="glass_input_bg">#BB0D1117</color>
-    <color name="glass_border">#77FFFFFF</color>
-    <color name="glass_border_subtle">#44FFFFFF</color>
-    <color name="glass_tint">#BB0D1117</color>
-    <color name="glass_accent_tint">#FF4C6EF5</color>
-    <color name="glass_highlight">#FF4C6EF5</color>
-    <color name="glass_gradient_top">#33FFFFFF</color>
+    <!-- Web-matched tokens -->
+    <color name="keep_border">#3C4043</color>
+    <color name="keep_border_hover">#5F6368</color>
+    <color name="keep_icon">#9AA0A6</color>
+    <color name="keep_surface">#111111</color>
+    <color name="keep_link">#8AB4F8</color>
+    <color name="tab_active_bg">#FFFFFF</color>
+    <color name="tab_active_text">#000000</color>
+    <color name="tab_inactive_bg">#141414</color>
+    <color name="tab_inactive_text">#9AA0A6</color>
+    <color name="sidebar_active_bg">#28292A</color>
+    <color name="sidebar_hover_bg">#202124</color>
+    <color name="card_bg">#111111</color>
+    <color name="card_border">#3C4043</color>
+    <color name="input_bg_dark">#1A1A1A</color>
+    <color name="bubble_user_bg">#1A1A1A</color>
+    <color name="bubble_ai_bg">#0D0D0D</color>
+    <color name="recording_red">#EF4444</color>
+    <color name="ripple_on_dark">#20FFFFFF</color>
+
+    <!-- Additional web system tokens -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#E0E0E0</color>
+    <color name="icon_default">#9AA0A6</color>
+    <color name="icon_active">#FFFFFF</color>
+    <color name="error_red">#EF4444</color>
+    <color name="success_emerald">#10B981</color>
+
+    <!-- Glass mode colors — True dark frosted glass effect -->
+    <color name="glass_scene_bg">#000000</color>
+    <color name="glass_editor_surface">#05FFFFFF</color>
+    <color name="glass_line_numbers_bg">#03FFFFFF</color>
+    <color name="glass_editor_text">#FFFFFF</color>
+    <color name="glass_editor_hint">#9AA0A6</color>
+    <color name="glass_line_number_text">#5F6368</color>
+    <color name="glass_toolbar_bg">#05FFFFFF</color>
+    <color name="glass_divider">#3C4043</color>
+    <color name="glass_chat_ai_bubble">#0D0D0D</color>
+    <color name="glass_chat_ai_text">#FFFFFF</color>
+    <color name="glass_input_bg">#1A1A1A</color>
+    <color name="glass_border">#3C4043</color>
+    <color name="glass_border_subtle">#28292A</color>
+    <color name="glass_tint">#00000000</color>
+    <color name="glass_accent_tint">#088AB4F8</color>
+    <color name="glass_highlight">#10FFFFFF</color>
+    <color name="glass_gradient_top">#00FFFFFF</color>
     <color name="glass_gradient_bottom">#00FFFFFF</color>
 </resources>

@@ -1,0 +1,384 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/side_rail_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#000000">
+
+    <!-- Nav Header -->
+    <include layout="@layout/nav_header_main" />
+
+    <!-- Scrollable Nav Items -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:scrollbars="none">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Item 1: Notes -->
+            <LinearLayout
+                android:id="@+id/nav_item_notes"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:background="@drawable/bg_sidebar_item"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_editor"
+                    android:tint="@color/sidebar_item_color"
+                    app:tint="@color/sidebar_item_color"
+                    android:duplicateParentState="true"
+                    android:contentDescription="Notes" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Notes"
+                    android:textSize="14sp"
+                    android:textColor="@color/sidebar_item_color"
+                    android:paddingStart="12dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:duplicateParentState="true" />
+            </LinearLayout>
+
+            <!-- Item 2: Writer -->
+            <LinearLayout
+                android:id="@+id/nav_item_writer"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:background="@drawable/bg_sidebar_item"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_new_file"
+                    android:tint="@color/sidebar_item_color"
+                    app:tint="@color/sidebar_item_color"
+                    android:duplicateParentState="true"
+                    android:contentDescription="Writer" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Writer"
+                    android:textSize="14sp"
+                    android:textColor="@color/sidebar_item_color"
+                    android:paddingStart="12dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:duplicateParentState="true" />
+            </LinearLayout>
+
+            <!-- Item 3: Reminders (todo) -->
+            <LinearLayout
+                android:id="@+id/nav_item_todo"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:background="@drawable/bg_sidebar_item"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_editor"
+                    android:tint="@color/sidebar_item_color"
+                    app:tint="@color/sidebar_item_color"
+                    android:duplicateParentState="true"
+                    android:contentDescription="Reminders" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Reminders"
+                    android:textSize="14sp"
+                    android:textColor="@color/sidebar_item_color"
+                    android:paddingStart="12dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:duplicateParentState="true" />
+            </LinearLayout>
+
+            <!-- Item 4: Ask AI -->
+            <LinearLayout
+                android:id="@+id/nav_item_ai"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:background="@drawable/bg_sidebar_item"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_ai_sparkle"
+                    android:tint="@color/sidebar_item_color"
+                    app:tint="@color/sidebar_item_color"
+                    android:duplicateParentState="true"
+                    android:contentDescription="Ask AI" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ask AI"
+                    android:textSize="14sp"
+                    android:textColor="@color/sidebar_item_color"
+                    android:paddingStart="12dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:duplicateParentState="true" />
+            </LinearLayout>
+
+            <!-- Item 5: Collab -->
+            <LinearLayout
+                android:id="@+id/nav_item_collab"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:background="@drawable/bg_sidebar_item"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@android:drawable/ic_menu_share"
+                    android:tint="@color/sidebar_item_color"
+                    app:tint="@color/sidebar_item_color"
+                    android:duplicateParentState="true"
+                    android:contentDescription="Collab" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Collab"
+                    android:textSize="14sp"
+                    android:textColor="@color/sidebar_item_color"
+                    android:paddingStart="12dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:duplicateParentState="true" />
+            </LinearLayout>
+
+            <!-- Item 6: NeTuArk -->
+            <LinearLayout
+                android:id="@+id/nav_item_netuark"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:background="@drawable/bg_sidebar_item"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@android:drawable/ic_menu_send"
+                    android:tint="@color/sidebar_item_color"
+                    app:tint="@color/sidebar_item_color"
+                    android:duplicateParentState="true"
+                    android:contentDescription="NeTuArk" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:duplicateParentState="true">
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="NeTuArk"
+                        android:textSize="14sp"
+                        android:textColor="@color/sidebar_item_color"
+                        android:paddingStart="12dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:duplicateParentState="true" />
+                    <TextView
+                        android:id="@+id/netuark_sidebar_badge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Linked"
+                        android:textSize="9sp"
+                        android:textColor="#34D399"
+                        android:background="@drawable/bg_suggestion_chip"
+                        android:paddingHorizontal="6dp"
+                        android:paddingVertical="1dp"
+                        android:fontFamily="monospace" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Item 7: Trash -->
+            <LinearLayout
+                android:id="@+id/nav_item_trash"
+                android:layout_width="match_parent"
+                android:layout_height="48dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:background="@drawable/bg_sidebar_item"
+                android:clickable="true"
+                android:focusable="true">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@android:drawable/ic_menu_delete"
+                    android:tint="@color/sidebar_item_color"
+                    app:tint="@color/sidebar_item_color"
+                    android:duplicateParentState="true"
+                    android:contentDescription="Trash" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Trash"
+                    android:textSize="14sp"
+                    android:textColor="@color/sidebar_item_color"
+                    android:paddingStart="12dp"
+                    android:fontFamily="sans-serif-medium"
+                    android:duplicateParentState="true" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Divider -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#3C4043" />
+
+    <!-- Item 8: Drive Sync -->
+    <LinearLayout
+        android:id="@+id/nav_item_drive"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:background="@drawable/bg_sidebar_item"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_save"
+            android:tint="@color/sidebar_item_color"
+            app:tint="@color/sidebar_item_color"
+            android:duplicateParentState="true"
+            android:contentDescription="Drive Sync" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Drive Sync"
+            android:textSize="14sp"
+            android:textColor="@color/sidebar_item_color"
+            android:paddingStart="12dp"
+            android:fontFamily="sans-serif-medium"
+            android:duplicateParentState="true" />
+    </LinearLayout>
+
+    <!-- Item 9: Settings -->
+    <LinearLayout
+        android:id="@+id/nav_item_settings"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:background="@drawable/bg_sidebar_item"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_settings_black_24dp"
+            android:tint="@color/sidebar_item_color"
+            app:tint="@color/sidebar_item_color"
+            android:duplicateParentState="true"
+            android:contentDescription="Settings" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Settings"
+            android:textSize="14sp"
+            android:textColor="@color/sidebar_item_color"
+            android:paddingStart="12dp"
+            android:fontFamily="sans-serif-medium"
+            android:duplicateParentState="true" />
+    </LinearLayout>
+
+    <!-- Item 10: Reset Session -->
+    <LinearLayout
+        android:id="@+id/nav_item_reset_session"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:background="@drawable/bg_sidebar_item"
+        android:clickable="true"
+        android:focusable="true">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@android:drawable/ic_lock_power_off"
+            android:tint="@color/sidebar_item_color"
+            app:tint="@color/sidebar_item_color"
+            android:duplicateParentState="true"
+            android:contentDescription="Reset Session" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Reset Session"
+            android:textSize="14sp"
+            android:textColor="@color/sidebar_item_color"
+            android:paddingStart="12dp"
+            android:fontFamily="sans-serif-medium"
+            android:duplicateParentState="true" />
+    </LinearLayout>
+
+</LinearLayout>

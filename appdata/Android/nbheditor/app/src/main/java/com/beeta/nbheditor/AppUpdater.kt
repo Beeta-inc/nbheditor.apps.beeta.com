@@ -117,25 +117,46 @@ object AppUpdater {
             dialogView.findViewById<TextView>(R.id.updateChangelogText).setTextColor(0xDDFFFFFF.toInt())
         }
 
-        val dialog = MaterialAlertDialogBuilder(context)
+        val btnUpdate = dialogView.findViewById<View>(R.id.btnUpdate)
+        val btnCancel = dialogView.findViewById<View>(R.id.btnCancel)
+
+        val dialogBuilder = MaterialAlertDialogBuilder(context)
             .setView(dialogView)
-            .setPositiveButton("Download Now") { _, _ ->
+
+        val dialog: AlertDialog
+        if (btnUpdate != null) {
+            if (isMajor) {
+                dialogBuilder.setCancelable(false)
+                btnCancel?.visibility = View.GONE
+            }
+            dialog = dialogBuilder.create()
+            btnUpdate.setOnClickListener {
+                dialog.dismiss()
                 downloadApkWithProgress(context, downloadLink, version)
             }
-            .apply {
-                if (!isMajor) {
-                    setNegativeButton("Later", null)
-                    setNeutralButton("Skip") { _, _ ->
-                        prefs.edit().putString(PREFS_KEY_SKIP_VERSION, version).apply()
-                        android.widget.Toast.makeText(context, "Update skipped", android.widget.Toast.LENGTH_SHORT).show()
-                    }
-                } else {
-                    setCancelable(false)
-                }
+            btnCancel?.setOnClickListener {
+                dialog.dismiss()
             }
-            .create()
+        } else {
+            dialog = dialogBuilder
+                .setPositiveButton("Download Now") { _, _ ->
+                    downloadApkWithProgress(context, downloadLink, version)
+                }
+                .apply {
+                    if (!isMajor) {
+                        setNegativeButton("Later", null)
+                        setNeutralButton("Skip") { _, _ ->
+                            prefs.edit().putString(PREFS_KEY_SKIP_VERSION, version).apply()
+                            android.widget.Toast.makeText(context, "Update skipped", android.widget.Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        setCancelable(false)
+                    }
+                }
+                .create()
+        }
 
-        if (isGlass) dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         dialog.show()
         if (isGlass) {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setTextColor(context.resources.getColor(R.color.accent_primary, null))

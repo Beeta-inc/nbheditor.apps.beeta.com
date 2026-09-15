@@ -1,0 +1,248 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="16dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="12dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="#3C4043"
+    app:cardBackgroundColor="#000000">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="⌨️ Keyboard Shortcuts"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF" />
+
+            <ImageButton
+                android:id="@+id/btnCloseShortcuts"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:src="@android:drawable/ic_menu_close_clear_cancel"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:tint="#9AA0A6"
+                android:contentDescription="Close" />
+        </LinearLayout>
+
+        <!-- Shortcuts List -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="20dp">
+
+            <!-- Item 1: Capture new note -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="8dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Capture new note"
+                    android:textSize="13sp"
+                    android:textColor="#E0E0E0" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="N"
+                    android:textSize="11sp"
+                    android:fontFamily="monospace"
+                    android:textColor="#FFFFFF"
+                    android:background="@drawable/bg_suggestion_chip"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="2dp" />
+            </LinearLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#222222" />
+
+            <!-- Item 2: Search notes -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="8dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Search notes"
+                    android:textSize="13sp"
+                    android:textColor="#E0E0E0" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="/ or Ctrl+K"
+                    android:textSize="11sp"
+                    android:fontFamily="monospace"
+                    android:textColor="#FFFFFF"
+                    android:background="@drawable/bg_suggestion_chip"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="2dp" />
+            </LinearLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#222222" />
+
+            <!-- Item 3: Save & close note -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="8dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Save &amp; close note"
+                    android:textSize="13sp"
+                    android:textColor="#E0E0E0" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ctrl+Enter"
+                    android:textSize="11sp"
+                    android:fontFamily="monospace"
+                    android:textColor="#FFFFFF"
+                    android:background="@drawable/bg_suggestion_chip"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="2dp" />
+            </LinearLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#222222" />
+
+            <!-- Item 4: Toggle Zen / Focus mode -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="8dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Toggle Zen / Focus mode"
+                    android:textSize="13sp"
+                    android:textColor="#E0E0E0" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Alt+Z"
+                    android:textSize="11sp"
+                    android:fontFamily="monospace"
+                    android:textColor="#FFFFFF"
+                    android:background="@drawable/bg_suggestion_chip"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="2dp" />
+            </LinearLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#222222" />
+
+            <!-- Item 5: Close dialog / note -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="8dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Close dialog / note"
+                    android:textSize="13sp"
+                    android:textColor="#E0E0E0" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Esc"
+                    android:textSize="11sp"
+                    android:fontFamily="monospace"
+                    android:textColor="#FFFFFF"
+                    android:background="@drawable/bg_suggestion_chip"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="2dp" />
+            </LinearLayout>
+
+            <View android:layout_width="match_parent" android:layout_height="1dp" android:background="#222222" />
+
+            <!-- Item 6: Show shortcuts -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingVertical="8dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Show shortcuts"
+                    android:textSize="13sp"
+                    android:textColor="#E0E0E0" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Shift+?"
+                    android:textSize="11sp"
+                    android:fontFamily="monospace"
+                    android:textColor="#FFFFFF"
+                    android:background="@drawable/bg_suggestion_chip"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="2dp" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Got it Button -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGotItShortcuts"
+            android:layout_width="match_parent"
+            android:layout_height="44dp"
+            android:text="Got it"
+            android:textColor="#000000"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textAllCaps="false"
+            app:cornerRadius="22dp"
+            app:backgroundTint="#FFFFFF" />
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="8dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="#3C4043"
+    app:cardBackgroundColor="#1E1E1E">
+
+    <GridLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:columnCount="4"
+        android:padding="12dp">
+
+        <!-- Default Black -->
+        <View android:id="@+id/colorDefault" android:layout_width="32dp" android:layout_height="32dp" android:layout_margin="4dp" android:background="@drawable/circle_bg_dark" />
+        <!-- Coral -->
+        <View android:id="@+id/colorCoral" android:layout_width="32dp" android:layout_height="32dp" android:layout_margin="4dp" android:background="#77172e" />
+        <!-- Peach -->
+        <View android:id="@+id/colorPeach" android:layout_width="32dp" android:layout_height="32dp" android:layout_margin="4dp" android:background="#692b17" />
+        <!-- Sand -->
+        <View android:id="@+id/colorSand" android:layout_width="32dp" android:layout_height="32dp" android:layout_margin="4dp" android:background="#7c4a03" />
+
+        <!-- Mint -->
+        <View android:id="@+id/colorMint" android:layout_width="32dp" android:layout_height="32dp" android:layout_margin="4dp" android:background="#264d3b" />
+        <!-- Sage -->
+        <View android:id="@+id/colorSage" android:layout_width="32dp" android:layout_height="32dp" android:layout_margin="4dp" android:background="#0c625d" />
+        <!-- Fog -->
+        <View android:id="@+id/colorFog" android:layout_width="32dp" android:layout_height="32dp" android:layout_margin="4dp" android:background="#256377" />
+        <!-- Storm -->
+        <View android:id="@+id/colorStorm" android:layout_width="32dp" android:layout_height="32dp" android:layout_margin="4dp" android:background="#284255" />
+
+        <!-- Dusk -->
+        <View android:id="@+id/colorDusk" android:layout_width="32dp" android:layout_height="32dp" android:layout_margin="4dp" android:background="#472e5b" />
+        <!-- Blossom -->
+        <View android:id="@+id/colorBlossom" android:layout_width="32dp" android:layout_height="32dp" android:layout_margin="4dp" android:background="#6c394f" />
+        <!-- Clay -->
+        <View android:id="@+id/colorClay" android:layout_width="32dp" android:layout_height="32dp" android:layout_margin="4dp" android:background="#4b443a" />
+        <!-- Chalk -->
+        <View android:id="@+id/colorChalk" android:layout_width="32dp" android:layout_height="32dp" android:layout_margin="4dp" android:background="#232427" />
+
+    </GridLayout>
+
+</com.google.android.material.card.MaterialCardView>

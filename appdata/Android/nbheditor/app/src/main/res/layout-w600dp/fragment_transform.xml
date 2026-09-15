@@ -5,6 +5,12 @@
     android:id="@+id/recyclerview_transform"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#000000"
+    android:clipToPadding="false"
+    android:paddingStart="12dp"
+    android:paddingEnd="12dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="24dp"
     app:layoutManager="GridLayoutManager"
     app:spanCount="4"
     tools:context=".ui.transform.TransformFragment" />

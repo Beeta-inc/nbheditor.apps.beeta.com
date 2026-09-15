@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/editor_bg">
+    android:background="#111111">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -14,10 +14,10 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="LaTeX Math Editor"
-            android:textSize="20sp"
+            android:text="LaTeX Math Formula"
+            android:textSize="18sp"
             android:textStyle="bold"
-            android:textColor="@color/editor_text"
+            android:textColor="#FFFFFF"
             android:layout_marginBottom="16dp" />
 
         <!-- Category Tabs -->
@@ -40,8 +40,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Quick Insert:"
-            android:textSize="14sp"
-            android:textColor="@color/editor_text"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="#9AA0A6"
             android:layout_marginBottom="8dp" />
 
         <HorizontalScrollView
@@ -63,23 +64,24 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="LaTeX Code:"
-            android:textSize="14sp"
-            android:textColor="@color/editor_text"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="#9AA0A6"
             android:layout_marginBottom="8dp" />
 
         <EditText
             android:id="@+id/latexInput"
             android:layout_width="match_parent"
             android:layout_height="120dp"
-            android:background="@drawable/bg_glass_card"
+            android:background="@drawable/bg_input_dark"
             android:padding="12dp"
             android:gravity="top|start"
             android:inputType="textMultiLine"
             android:textSize="14sp"
             android:fontFamily="monospace"
-            android:textColor="@color/editor_text"
+            android:textColor="#FFFFFF"
             android:hint="Enter LaTeX code here..."
-            android:textColorHint="@color/editor_hint"
+            android:textColorHint="#9AA0A6"
             android:layout_marginBottom="16dp" />
 
         <!-- Preview -->
@@ -87,8 +89,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Live Preview:"
-            android:textSize="14sp"
-            android:textColor="@color/editor_text"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="#9AA0A6"
             android:layout_marginBottom="8dp" />
 
         <HorizontalScrollView
@@ -98,8 +101,8 @@
 
             <ScrollView
                 android:layout_width="wrap_content"
-                android:layout_height="200dp"
-                android:background="@drawable/bg_glass_card"
+                android:layout_height="140dp"
+                android:background="@drawable/bg_modal_dark"
                 android:padding="16dp"
                 android:layout_marginBottom="16dp">
 
@@ -125,7 +128,8 @@
                 android:layout_height="wrap_content"
                 android:text="Cancel"
                 android:textAllCaps="false"
-                style="@style/Widget.Material3.Button.TextButton"
+                android:textColor="#9AA0A6"
+                app:backgroundTint="@android:color/transparent"
                 android:layout_marginEnd="8dp" />
 
             <com.google.android.material.button.MaterialButton
@@ -134,7 +138,8 @@
                 android:layout_height="wrap_content"
                 android:text="Insert"
                 android:textAllCaps="false"
-                app:backgroundTint="@color/accent_primary"
+                android:textColor="#000000"
+                app:backgroundTint="#FFFFFF"
                 app:cornerRadius="8dp" />
         </LinearLayout>
 

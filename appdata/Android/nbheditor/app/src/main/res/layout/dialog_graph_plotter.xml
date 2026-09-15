@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="wrap_content"
+    android:background="@android:color/transparent">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:background="@drawable/bg_modal_dark"
+        android:padding="20dp">
 
         <TextView
             android:layout_width="match_parent"
@@ -15,12 +17,15 @@
             android:text="Graph Type:"
             android:textSize="14sp"
             android:textStyle="bold"
+            android:textColor="#FFFFFF"
             android:layout_marginBottom="8dp" />
 
         <Spinner
             android:id="@+id/graphTypeSpinner"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@drawable/bg_input_dark"
+            android:padding="12dp"
             android:layout_marginBottom="16dp" />
 
         <!-- Preview -->
@@ -29,12 +34,14 @@
             android:layout_height="wrap_content"
             android:text="Preview:"
             android:textSize="14sp"
+            android:textColor="#FFFFFF"
             android:layout_marginBottom="8dp" />
 
         <ScrollView
             android:layout_width="match_parent"
             android:layout_height="300dp"
-            android:background="#F0F0F0"
+            android:background="@drawable/bg_input_dark"
+            android:padding="8dp"
             android:layout_marginBottom="16dp">
 
             <ImageView
@@ -59,6 +66,7 @@
                 android:text="Data Points:"
                 android:textSize="14sp"
                 android:textStyle="bold"
+                android:textColor="#FFFFFF"
                 android:layout_marginBottom="8dp" />
 
             <Button
@@ -67,13 +75,16 @@
                 android:layout_height="wrap_content"
                 android:text="+ Add Data Point"
                 android:textSize="12sp"
-                android:layout_marginBottom="8dp" />
+                android:background="@drawable/bg_primary_button"
+                android:textColor="#000000"
+                android:layout_marginBottom="12dp" />
 
             <LinearLayout
                 android:id="@+id/dataPointsContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" />
+                android:orientation="vertical"
+                android:layout_marginBottom="16dp" />
         </LinearLayout>
 
         <!-- Function Input (for function plots) -->
@@ -90,6 +101,7 @@
                 android:text="Function (use 'x' as variable):"
                 android:textSize="14sp"
                 android:textStyle="bold"
+                android:textColor="#FFFFFF"
                 android:layout_marginBottom="8dp" />
 
             <EditText
@@ -97,6 +109,10 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:hint="e.g., sin(x), x^2, x^3 - 2*x + 1"
+                android:textColorHint="#808080"
+                android:textColor="#FFFFFF"
+                android:background="@drawable/bg_input_dark"
+                android:padding="12dp"
                 android:inputType="text"
                 android:layout_marginBottom="8dp" />
 
@@ -105,7 +121,7 @@
                 android:layout_height="wrap_content"
                 android:text="Supported: sin, cos, tan, sqrt, abs, ln, log, exp, pi, e, ^"
                 android:textSize="11sp"
-                android:textColor="#666666"
+                android:textColor="#AAAAAA"
                 android:layout_marginBottom="12dp" />
 
             <LinearLayout
@@ -124,13 +140,19 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="X Min:"
-                        android:textSize="12sp" />
+                        android:textColor="#FFFFFF"
+                        android:textSize="12sp"
+                        android:layout_marginBottom="4dp" />
 
                     <EditText
                         android:id="@+id/etXMin"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="-10"
+                        android:textColorHint="#808080"
+                        android:textColor="#FFFFFF"
+                        android:background="@drawable/bg_input_dark"
+                        android:padding="12dp"
                         android:inputType="numberDecimal|numberSigned" />
                 </LinearLayout>
 
@@ -144,13 +166,19 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:text="X Max:"
-                        android:textSize="12sp" />
+                        android:textColor="#FFFFFF"
+                        android:textSize="12sp"
+                        android:layout_marginBottom="4dp" />
 
                     <EditText
                         android:id="@+id/etXMax"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="10"
+                        android:textColorHint="#808080"
+                        android:textColor="#FFFFFF"
+                        android:background="@drawable/bg_input_dark"
+                        android:padding="12dp"
                         android:inputType="numberDecimal|numberSigned" />
                 </LinearLayout>
             </LinearLayout>
@@ -161,7 +189,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Generate Preview"
-            android:layout_marginTop="16dp" />
+            android:background="@drawable/bg_primary_button"
+            android:textColor="#000000"
+            android:layout_marginTop="20dp" />
 
     </LinearLayout>
 </ScrollView>
+

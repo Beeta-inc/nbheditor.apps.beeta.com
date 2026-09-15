@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="16dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="1dp"
+    app:strokeColor="#3C4043"
+    app:cardBackgroundColor="#111111">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Beeta Apps &amp; Tools"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:layout_marginBottom="16dp" />
+
+        <GridLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="3"
+            android:alignmentMode="alignMargins"
+            android:columnOrderPreserved="false">
+
+            <!-- 1. Writer -->
+            <LinearLayout
+                android:id="@+id/appLaunchWriter"
+                android:layout_width="0dp"
+                android:layout_height="76dp"
+                android:layout_columnWeight="1"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="@drawable/bg_toolbar_btn">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="✍️" android:textSize="22sp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Writer" android:textColor="#E8EAED" android:textSize="12sp" android:paddingTop="3dp"/>
+            </LinearLayout>
+
+            <!-- 2. Editor -->
+            <LinearLayout
+                android:id="@+id/appLaunchEditor"
+                android:layout_width="0dp"
+                android:layout_height="76dp"
+                android:layout_columnWeight="1"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="@drawable/bg_toolbar_btn">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📝" android:textSize="22sp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Editor" android:textColor="#E8EAED" android:textSize="12sp" android:paddingTop="3dp"/>
+            </LinearLayout>
+
+            <!-- 3. Tasks -->
+            <LinearLayout
+                android:id="@+id/appLaunchTasks"
+                android:layout_width="0dp"
+                android:layout_height="76dp"
+                android:layout_columnWeight="1"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="@drawable/bg_toolbar_btn">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="☑️" android:textSize="22sp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Tasks" android:textColor="#E8EAED" android:textSize="12sp" android:paddingTop="3dp"/>
+            </LinearLayout>
+
+            <!-- 4. Ask AI -->
+            <LinearLayout
+                android:id="@+id/appLaunchAi"
+                android:layout_width="0dp"
+                android:layout_height="76dp"
+                android:layout_columnWeight="1"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="@drawable/bg_toolbar_btn">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="✨" android:textSize="22sp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Ask AI" android:textColor="#E8EAED" android:textSize="12sp" android:paddingTop="3dp"/>
+            </LinearLayout>
+
+            <!-- 5. Collab -->
+            <LinearLayout
+                android:id="@+id/appLaunchCollab"
+                android:layout_width="0dp"
+                android:layout_height="76dp"
+                android:layout_columnWeight="1"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="@drawable/bg_toolbar_btn">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="👥" android:textSize="22sp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Collab" android:textColor="#E8EAED" android:textSize="12sp" android:paddingTop="3dp"/>
+            </LinearLayout>
+
+            <!-- 6. Sketch / Draw -->
+            <LinearLayout
+                android:id="@+id/appLaunchDraw"
+                android:layout_width="0dp"
+                android:layout_height="76dp"
+                android:layout_columnWeight="1"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="@drawable/bg_toolbar_btn">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🎨" android:textSize="22sp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Sketch" android:textColor="#E8EAED" android:textSize="12sp" android:paddingTop="3dp"/>
+            </LinearLayout>
+
+            <!-- 7. LaTeX Math -->
+            <LinearLayout
+                android:id="@+id/appLaunchLatex"
+                android:layout_width="0dp"
+                android:layout_height="76dp"
+                android:layout_columnWeight="1"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="@drawable/bg_toolbar_btn">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📐" android:textSize="22sp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="LaTeX" android:textColor="#E8EAED" android:textSize="12sp" android:paddingTop="3dp"/>
+            </LinearLayout>
+
+            <!-- 8. Plotter -->
+            <LinearLayout
+                android:id="@+id/appLaunchPlotter"
+                android:layout_width="0dp"
+                android:layout_height="76dp"
+                android:layout_columnWeight="1"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="@drawable/bg_toolbar_btn">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📈" android:textSize="22sp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Plotter" android:textColor="#E8EAED" android:textSize="12sp" android:paddingTop="3dp"/>
+            </LinearLayout>
+
+            <!-- 9. Snapshots / Recovery -->
+            <LinearLayout
+                android:id="@+id/appLaunchRecovery"
+                android:layout_width="0dp"
+                android:layout_height="76dp"
+                android:layout_columnWeight="1"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="@drawable/bg_toolbar_btn">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="⏱️" android:textSize="22sp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Snapshots" android:textColor="#E8EAED" android:textSize="12sp" android:paddingTop="3dp"/>
+            </LinearLayout>
+
+            <!-- 10. Device Pairing -->
+            <LinearLayout
+                android:id="@+id/appLaunchPair"
+                android:layout_width="0dp"
+                android:layout_height="76dp"
+                android:layout_columnWeight="1"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="@drawable/bg_toolbar_btn">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📱" android:textSize="22sp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Pair" android:textColor="#E8EAED" android:textSize="12sp" android:paddingTop="3dp"/>
+            </LinearLayout>
+
+            <!-- 11. NeTuArk Share -->
+            <LinearLayout
+                android:id="@+id/appLaunchNetuark"
+                android:layout_width="0dp"
+                android:layout_height="76dp"
+                android:layout_columnWeight="1"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="@drawable/bg_toolbar_btn">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🌐" android:textSize="22sp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="NeTuArk" android:textColor="#E8EAED" android:textSize="12sp" android:paddingTop="3dp"/>
+            </LinearLayout>
+
+            <!-- 12. Dev Docs -->
+            <LinearLayout
+                android:id="@+id/appLaunchDevDocs"
+                android:layout_width="0dp"
+                android:layout_height="76dp"
+                android:layout_columnWeight="1"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="@drawable/bg_toolbar_btn">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="💻" android:textSize="22sp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Dev Docs" android:textColor="#E8EAED" android:textSize="12sp" android:paddingTop="3dp"/>
+            </LinearLayout>
+
+            <!-- 13. Gateway -->
+            <LinearLayout
+                android:id="@+id/appLaunchGateway"
+                android:layout_width="0dp"
+                android:layout_height="76dp"
+                android:layout_columnWeight="1"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="@drawable/bg_toolbar_btn">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="⚡" android:textSize="22sp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Gateway" android:textColor="#E8EAED" android:textSize="12sp" android:paddingTop="3dp"/>
+            </LinearLayout>
+
+            <!-- 14. Settings -->
+            <LinearLayout
+                android:id="@+id/appLaunchSettings"
+                android:layout_width="0dp"
+                android:layout_height="76dp"
+                android:layout_columnWeight="1"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:clickable="true"
+                android:focusable="true"
+                android:background="@drawable/bg_toolbar_btn">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="⚙️" android:textSize="22sp"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Settings" android:textColor="#E8EAED" android:textSize="12sp" android:paddingTop="3dp"/>
+            </LinearLayout>
+
+        </GridLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>
