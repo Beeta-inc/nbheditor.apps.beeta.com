@@ -14,6 +14,8 @@ import android.view.ActionMode
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
+import androidx.appcompat.widget.AppCompatEditText
+import androidx.core.text.HtmlCompat
 import androidx.core.widget.TextViewCompat
 import kotlin.math.max
 import kotlin.math.min
